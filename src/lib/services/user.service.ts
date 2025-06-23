@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, updatePassword, EmailAuthProvider, signOut } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, reauthenticateWithCredential, updatePassword, EmailAuthProvider, signOut, getAuth } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/firebaseClient';
 import type { RegistrationFormData, User } from '@/lib/types/user';
@@ -68,4 +68,16 @@ export async function changePassword(currentPassword: string, newPassword: strin
 
 export async function logout() {
     await signOut(auth);
+}
+
+export async function refreshIdToken(): Promise<string> {
+    const user = getAuth().currentUser;
+    if (!user) throw new Error('No user is currently signed in');
+
+    try {
+        const refreshedToken = await user.getIdToken(true);
+        return refreshedToken;
+    } catch (error: any) {
+        throw new Error('Failed to refresh token: ' + error.message);
+    }
 }

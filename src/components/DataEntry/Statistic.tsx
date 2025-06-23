@@ -15,26 +15,29 @@ import {
     FilePdfOutlined,
     FileExcelOutlined,
 } from '@ant-design/icons';
-import { getWasteSummaryByYear } from '@/lib/api/wasteRecord';
+import { getWasteStatisticByYear } from '@/lib/api/wasteRecord';
 import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatNumber } from '@/lib/helper/formatter';
 
-const { Title } = Typography;
-const { Option } = Select;
+const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
 
-const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sept', 'oct', 'nov', 'dec'];
+const currentYear = new Date().getFullYear();
+const yearOptions = Array.from({ length: currentYear - 2023 + 1 }, (_, i) => ({
+    label: (2023 + i).toString(),
+    value: 2023 + i,
+})).reverse();
 
 const WasteManagementTable = () => {
-    const [year, setYear] = useState(2025);
+    const [year, setYear] = useState(currentYear);
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
 
     const fetchData = async (selectedYear: number) => {
         setLoading(true);
         try {
-            const res = await getWasteSummaryByYear(selectedYear);
+            const res = await getWasteStatisticByYear(selectedYear);
             setData(res);
         } catch (err: any) {
             message.error(err?.response?.data?.error || 'Failed to fetch waste report');
@@ -186,8 +189,8 @@ const WasteManagementTable = () => {
         ws['!merges'] = merges;
 
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, `WasteSummary-${year}`);
-        XLSX.writeFile(wb, `WasteSummary-${year}.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, `WasteStatistic-${year}`);
+        XLSX.writeFile(wb, `WasteStatistic-${year}.xlsx`);
     };
 
 
@@ -195,10 +198,10 @@ const WasteManagementTable = () => {
         if (!data) return;
 
         const doc = new jsPDF();
-        doc.setFontSize(14);
-        doc.text(`Waste Management Summary (${year})`, 14, 16);
+        doc.setFontSize(12);
+        doc.text(`Waste Statistic (${year})`, 14, 16);
 
-        const disposalGroups = columns.slice(1); // Skip "Month"
+        const disposalGroups = columns.slice(1);
 
         const headerRow1: any[] = [''];
         const headerRow2: any[] = ['Month'];
@@ -244,7 +247,7 @@ const WasteManagementTable = () => {
             margin: { top: 20 },
         });
 
-        doc.save(`WasteSummary-${year}.pdf`);
+        doc.save(`WasteStatistic-${year}.pdf`);
     };
 
     return (
@@ -254,11 +257,12 @@ const WasteManagementTable = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Space align="center">
                         <span style={{ fontSize: '16px', fontWeight: 'bold' }}>Year:</span>
-                        <Select value={year} onChange={setYear} style={{ width: 120 }}>
-                            <Option value={2023}>2023</Option>
-                            <Option value={2024}>2024</Option>
-                            <Option value={2025}>2025</Option>
-                        </Select>
+                        <Select
+                            value={year}
+                            onChange={setYear}
+                            style={{ width: 120 }}
+                            options={yearOptions}
+                        />
                     </Space>
                     <Space>
                         <Button icon={<FileExcelOutlined />} onClick={handleExportExcel}>
@@ -275,7 +279,6 @@ const WasteManagementTable = () => {
                     <div className='text-center'>
                         <Spin tip="Loading waste report..." />
                     </div>
-
                 ) : (
                     <Table
                         columns={columns}
@@ -301,16 +304,16 @@ const WasteManagementTable = () => {
                         }}
                     >
                         <div style={{ textAlign: 'center' }}>
-                            <strong>Total Landfilling:</strong> {footerTotals.landfill} KG
+                            <strong>Total Landfilling:</strong> {formatNumber(footerTotals.landfill)} KG
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                            <strong>Total Recycling:</strong> {footerTotals.recycling} KG
+                            <strong>Total Recycling:</strong> {formatNumber(footerTotals.recycling)} KG
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                            <strong>Total Composting:</strong> {footerTotals.composting} KG
+                            <strong>Total Composting:</strong> {formatNumber(footerTotals.composting)} KG
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                            <strong>Total ER:</strong> {footerTotals.energyRecovery} KG
+                            <strong>Total ER:</strong> {formatNumber(footerTotals.energyRecovery)} KG
                         </div>
                     </div>
                 )}

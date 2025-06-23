@@ -1,6 +1,6 @@
 'use client';
 
-import { requestPasswordReset } from '@/lib/api/auth';
+import { resetPassword } from '@/lib/services/user.service';
 import { Form, Input, Button, Typography, message } from 'antd';
 import { useState } from 'react';
 
@@ -13,7 +13,7 @@ export default function ResetPasswordForm() {
     const handleFinish = async (values: any) => {
         setLoading(true);
         try {
-            await requestPasswordReset(values.email);
+            await resetPassword(values.email);
             message.success(`Password reset link sent to ${values.email}`);
             form.resetFields();
         } catch (error: any) {
@@ -52,7 +52,7 @@ export default function ResetPasswordForm() {
 
                 <div className="flex gap-8">
                     <a href="/auth/login" className="text-primary underline">Already have an account? Sign In</a>
-                    <a href="/auth/register" className="text-primary underline">Don't have an account? Sign Up
+                    <a href="/auth/signup" className="text-primary underline">Don't have an account? Sign Up
                     </a>
                 </div>
             </Form>

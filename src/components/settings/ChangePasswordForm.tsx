@@ -20,7 +20,7 @@ const ChangePasswordForm = () => {
             message.success('Password updated successfully');
             form.resetFields();
         } catch (err: any) {
-            message.error(err.message || 'Failed to change password');
+            message.error('Failed to change password, check your current password');
         }
     };
 
@@ -34,7 +34,10 @@ const ChangePasswordForm = () => {
                             <Form.Item
                                 name="currentPassword"
                                 label="Current Password"
-                                rules={[{ required: true, message: 'Please enter current password' }]}
+                                rules={[
+                                    { required: true, message: 'Please enter current password' },
+                                    { min: 6, message: 'Password must be at least 6 characters long' }
+                                ]}
                             >
                                 <Input />
                             </Form.Item>
@@ -43,19 +46,35 @@ const ChangePasswordForm = () => {
                             <Form.Item
                                 name="newPassword"
                                 label="New Password"
-                                rules={[{ required: true, message: 'Please enter new password' }]}
+                                rules={[
+                                    { required: true, message: 'Please enter new password' },
+                                    { min: 6, message: 'Password must be at least 6 characters long' },
+                                ]}
                             >
-                                <Input />
+                                <Input.Password />
                             </Form.Item>
+
                         </Col>
                         <Col xs={24}>
                             <Form.Item
                                 name="confirmPassword"
                                 label="Confirm Password"
-                                rules={[{ required: true, message: 'Please enter confirm password' }]}
+                                dependencies={['newPassword']}
+                                rules={[
+                                    { required: true, message: 'Please confirm your password' },
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            if (!value || getFieldValue('newPassword') === value) {
+                                                return Promise.resolve();
+                                            }
+                                            return Promise.reject(new Error('Passwords do not match'));
+                                        },
+                                    }),
+                                ]}
                             >
-                                <Input />
+                                <Input.Password />
                             </Form.Item>
+
                         </Col>
 
                     </Row>

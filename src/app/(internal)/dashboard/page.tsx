@@ -1,6 +1,5 @@
 import CustomBreadcrumb from "@/components/breadcrumb/CustomBreadcrumb";
-import CampusYearSelector from "@/components/dashboard/CampusYearSelector";
-import InfoCardGrid from "@/components/dashboard/InfoCardGrid";
+import DashboardSection from "@/components/dashboard/DashboardSection";
 
 export default function DashboardPage() {
     return (
@@ -8,9 +7,7 @@ export default function DashboardPage() {
             <CustomBreadcrumb items={[
                 { title: 'Dashboard' }
             ]} />
-            <CampusYearSelector />
-            <br />
-            <InfoCardGrid />
+            <DashboardSection />
         </div>
     );
 }

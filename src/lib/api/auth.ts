@@ -1,5 +1,5 @@
 export async function registerUser(data: any) {
-    const res = await fetch('/api/auth/register', {
+    const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

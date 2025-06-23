@@ -9,13 +9,30 @@ import {
     FaLeaf,
     FaMoneyBillWave,
 } from 'react-icons/fa';
-export default function InfoCardGrid() {
+
+interface InfoCardGrid {
+    totalWaste: number;
+    totalRecycled: number;
+    totalLandfilled: number;
+    totalGHGReduction: number;
+    totalLandfillSavings: number;
+}
+
+export default function InfoCardGrid({
+    totalWaste,
+    totalRecycled,
+    totalLandfilled,
+    totalGHGReduction,
+    totalLandfillSavings,
+}: InfoCardGrid) {
+    const format = (num: number | undefined) => (num ?? 0).toFixed(2);
+
     const cardData = [
-        { icon: <FaFileAlt />, itemLabel: 'Total Waste Generated', value: `${500} Tonnes` },
-        { icon: <FaRecycle />, itemLabel: 'Total Waste Recycled', value: `${50} Tonnes` },
-        { icon: <FaTrashAlt />, itemLabel: 'Total Waste to Landfill', value: `${450} Tonnes` },
-        { icon: <FaLeaf />, itemLabel: 'Total GHG Reduction', value: `${70000} kgCO2eq` },
-        { icon: <FaMoneyBillWave />, itemLabel: 'Landfill Cost Saving', value: `RM ${150000}` },
+        { icon: <FaFileAlt />, itemLabel: 'Total Waste Generated', value: `${format(totalWaste)} Tonnes` },
+        { icon: <FaRecycle />, itemLabel: 'Total Waste Recycled', value: `${format(totalRecycled)} Tonnes` },
+        { icon: <FaTrashAlt />, itemLabel: 'Total Waste to Landfill', value: `${format(totalLandfilled)} Tonnes` },
+        { icon: <FaLeaf />, itemLabel: 'Total GHG Reduction', value: `${format(totalGHGReduction)} kg CO₂e` },
+        { icon: <FaMoneyBillWave />, itemLabel: 'Landfill Cost Saving', value: `RM ${format(totalLandfillSavings)}` },
     ];
 
     return (

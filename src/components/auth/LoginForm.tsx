@@ -3,27 +3,29 @@
 import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { loginUser } from '@/lib/services/user.service';
+import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
 
 const { Title, Text } = Typography;
 
 export default function LoginForm() {
-    const router = useRouter();
+    const { login } = useAuth();
+    const [loading, setLoading] = useState(false);
 
     const onFinish = async (values: any) => {
         const { email, password } = values;
 
         try {
+            setLoading(true);
             const { token, user } = await loginUser(email, password);
 
-            localStorage.setItem('token', token);
-            localStorage.setItem('user', JSON.stringify(user));
+            await login(token, user);
 
-            message.success('Login successful!');
-            router.push('/dashboard');
         } catch (error: any) {
             message.error(error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -55,7 +57,7 @@ export default function LoginForm() {
                     </Form.Item>
 
                     <Form.Item>
-                        <Button type="primary" htmlType="submit" block>
+                        <Button type="primary" loading={loading} htmlType="submit" block>
                             Sign In
                         </Button>
                     </Form.Item>
@@ -66,7 +68,7 @@ export default function LoginForm() {
                         Forgot your password?
 
                     </Link>
-                    <Link href="/auth/register" style={{ fontSize: 12 }}>
+                    <Link href="/auth/signup" style={{ fontSize: 12 }}>
                         Don't have an account? Sign Up
                     </Link>
                 </div>

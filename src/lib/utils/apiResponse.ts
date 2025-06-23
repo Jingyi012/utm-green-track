@@ -8,7 +8,7 @@ export interface PaginationMeta {
 }
 
 export interface PaginatedResponse<T> {
-    succeed: boolean;
+    success: boolean;
     data: T[];
     pagination: PaginationMeta;
 }
@@ -22,7 +22,7 @@ export function formatPaginatedResponse<T>(
     const totalPages = Math.ceil(totalRecords / pageSize);
 
     return {
-        succeed: true,
+        success: true,
         data,
         pagination: {
             pageNumber,

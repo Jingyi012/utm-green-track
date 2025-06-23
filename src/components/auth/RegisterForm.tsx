@@ -153,7 +153,7 @@ export default function RegistrationForm() {
                     <Col xs={24} md={12}>
                         <Form.Item label={<span>&nbsp;</span>} >
                             <Button type="primary" htmlType="submit" loading={loading} className="w-full">
-                                Register
+                                Sign Up
                             </Button>
                             <div className="text-right my-1">
                                 By clicking Sign Up, you agree to our Terms and Privacy Policy.

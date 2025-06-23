@@ -67,8 +67,14 @@ export async function uploadAttachment(file: File): Promise<string> {
     return json.url || json.fileUrl || '';
 }
 
-export async function getWasteSummaryByYear(year: number) {
-    const res = await fetchWithAuth(`/api/waste-record/summary?year=${year}`);
-    if (!res.ok) throw new Error('Failed to fetch waste summary');
+export async function getWasteStatisticByYear(year: number) {
+    const res = await fetchWithAuth(`/api/waste-record/statistic?year=${year}`);
+    if (!res.ok) throw new Error('Failed to fetch waste statistic');
+    return res.json();
+}
+
+export async function getMonthlyCampusWasteChartByYear(campus: string, year: number) {
+    const res = await fetchWithAuth(`/api/waste-record/monthly-summary?campus=${campus}&year=${year}`);
+    if (!res.ok) throw new Error('Failed to fetch monthly campus waste chart');
     return res.json();
 }
