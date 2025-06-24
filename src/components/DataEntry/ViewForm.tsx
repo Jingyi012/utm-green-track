@@ -50,34 +50,34 @@ const WasteTable = () => {
             title: 'No.',
             render: (_: any, __: any, index: number) => (page - 1) * pageSize + index + 1,
             width: 60,
-            align: 'center',
+            align: 'center' as const,
         },
         {
             title: 'Date',
             dataIndex: 'date',
             render: (date: string) => new Date(date).toLocaleDateString('en-GB'),
-            align: 'center',
+            align: 'center' as const,
         },
         {
             title: 'UTM Campus', dataIndex: 'campusName',
-            align: 'center'
+            align: 'center' as const
         },
         {
             title: 'Location', dataIndex: 'location',
-            align: 'center'
+            align: 'center' as const
         },
         {
             title: 'Disposal Method', dataIndex: 'disposalMethod',
-            align: 'center'
+            align: 'center' as const
         },
         {
             title: 'Waste Type', dataIndex: 'wasteType',
-            align: 'center'
+            align: 'center' as const
         },
         {
             title: 'Waste Weight (kg)',
             dataIndex: 'wasteWeight',
-            align: 'center',
+            align: 'center' as const,
         },
         {
             title: 'Attachment',
@@ -94,7 +94,7 @@ const WasteTable = () => {
                 const color = status === 'New' ? 'blue' : 'green';
                 return <Badge color={color} text={status} />;
             },
-            align: 'center',
+            align: 'center' as const,
         },
     ];
 

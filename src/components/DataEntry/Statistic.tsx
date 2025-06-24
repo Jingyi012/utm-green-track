@@ -86,9 +86,9 @@ const WasteManagementTable = () => {
             title: 'Month',
             dataIndex: 'month',
             key: 'month',
-            fixed: 'left',
+            fixed: "left" as const,
             width: 80,
-            align: 'center',
+            align: 'center' as const,
             render: renderCell,
         },
         {
