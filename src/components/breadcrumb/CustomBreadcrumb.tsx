@@ -7,7 +7,7 @@ import { Divider } from 'antd';
 const CustomBreadcrumb = ({ items }: { items: { title: string; href?: string }[] }) => {
     return (
         <>
-            <nav className="text-sm">
+            <nav className="text-sm my-3">
                 <ol className="flex items-center space-x-2">
                     {items.map((item, index) => (
                         <li key={index} className="flex items-center space-x-2">
@@ -23,7 +23,6 @@ const CustomBreadcrumb = ({ items }: { items: { title: string; href?: string }[]
                     ))}
                 </ol>
             </nav>
-            <Divider />
         </>
 
     );

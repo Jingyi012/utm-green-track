@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/firebase/verifyToken';
-import { getWasteStatistic } from '@/lib/services/wasteSummary.service';
+import { getWasteStatistic } from '@/server/services/wasteSummary.service';
+import { formatResponse } from '@/lib/types/apiResponse';
 
 export async function GET(req: NextRequest) {
     try {
@@ -10,8 +11,8 @@ export async function GET(req: NextRequest) {
 
         const summary = await getWasteStatistic({ uid, year });
 
-        return NextResponse.json(summary);
+        return NextResponse.json(formatResponse(summary));
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(formatResponse(null, false, error.message), { status: 500 });
     }
 }

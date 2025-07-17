@@ -1,6 +1,6 @@
 'use client';
 
-import { getProfile, updateProfile } from '@/lib/api/profile';
+import { getProfile, updateProfile } from '@/lib/services/profile';
 import { User } from '@/lib/types/user';
 import {
     Button,

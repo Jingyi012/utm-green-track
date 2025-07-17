@@ -1,6 +1,6 @@
 'use client';
 
-import { registerUser } from '@/lib/api/auth';
+import { registerUser } from '@/lib/services/auth';
 import { Form, Input, Button, Row, Col, Select, Typography, message, Modal } from 'antd';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';

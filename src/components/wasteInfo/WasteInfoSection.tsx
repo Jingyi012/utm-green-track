@@ -1,3 +1,4 @@
+import { Card } from "antd";
 import CollapsibleWasteInfo from "./CollapsibleWasteInfo";
 import WasteInfoUpperCards from "./WasteInfoUpperCards";
 
@@ -27,13 +28,13 @@ const wasteManagementItems = [
 
 const WasteInfoSection = () => {
     return (
-        <div style={{ padding: '24px' }}>
+        <Card title={"Waste Info"}>
             <WasteInfoUpperCards />
             <CollapsibleWasteInfo
                 items={wasteManagementItems}
                 defaultActiveKey={[1]}
             />
-        </div>
+        </Card>
     );
 }
 

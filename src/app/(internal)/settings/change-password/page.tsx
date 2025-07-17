@@ -1,3 +1,4 @@
+'use client';
 import CustomBreadcrumb from "@/components/breadcrumb/CustomBreadcrumb";
 import ChangePasswordForm from "@/components/settings/ChangePasswordForm";
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByUID, updateUserProfile } from '@/lib/services/user-admin.service';
+import { getUserByUID, updateUserProfile } from '@/server/services/user-admin.service';
 import { verifyToken } from '@/lib/firebase/verifyToken';
 
 export async function GET(req: NextRequest) {

@@ -59,7 +59,7 @@ const CollapsibleWasteInfo: React.FC<CollapsibleWasteInfoProps> = ({
 
       <style jsx global>{`
   .ant-collapse-item .ant-collapse-header {
-    background-color:rgb(67, 148, 30);
+    background-color:#2c661f;
     font-size: 16px;
     font-weight: 600;
     padding: 12px 16px;

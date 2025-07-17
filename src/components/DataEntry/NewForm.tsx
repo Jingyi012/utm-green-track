@@ -17,8 +17,11 @@ import {
 import FormItem from 'antd/es/form/FormItem';
 import { UploadOutlined, EditOutlined, DeleteOutlined, PaperClipOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
-import { createWasteRecord, uploadAttachment } from '@/lib/api/wasteRecord';
+import { createWasteRecord, uploadAttachment } from '@/lib/services/wasteRecord';
 import { WasteRecordInput } from '@/lib/types/wasteRecord';
+import { Campus, CampusLabels } from '@/lib/enum/campus';
+import { WasteType, WasteTypeLabels } from '@/lib/enum/wasteType';
+import { DisposalMethod, DisposalMethodLabels } from '@/lib/enum/disposalMethod';
 
 const { Title } = Typography;
 
@@ -35,61 +38,58 @@ export default function WasteEntryForm() {
     const disposalMethod = Form.useWatch("disposalMethod", form);
     const editingMethod = Form.useWatch("disposalMethod", editForm);
 
-    const campusOptions = [
-        { label: "UTM Johor Bahru", value: "UTM Johor Bahru" },
-        { label: "UTM Kuala Lumpur", value: "UTM Kuala Lumpur" },
-        { label: "UTM Pagoh", value: "UTM Pagoh" },
-    ];
+    const campusOptions = Object.values(Campus).map((campus) => ({
+        label: CampusLabels[campus],
+        value: campus,
+    }));
 
     const locationOptions = [
         { label: "BPA, JTNCP", value: "BPA, JTNCP" },
     ];
 
-    const disposalMethodOptions = [
-        { label: "Landfilling", value: "Landfilling" },
-        { label: "Recycling", value: "Recycling" },
-        { label: "Composting", value: "Composting" },
-        { label: "Energy Recovery", value: "EnergyRecovery" },
-    ];
+    const disposalMethodOptions = Object.values(DisposalMethod).map((method) => ({
+        label: DisposalMethodLabels[method],
+        value: method,
+    }));
 
-    const wasteTypeMap: Record<string, { label: string; value: string }[]> = {
-        Landfilling: [
-            { label: "General waste", value: "General waste" },
-            { label: "Bulk waste", value: "Bulk waste" },
-            { label: "Landscape waste", value: "Landscape waste" },
-            { label: "Recycleble item", value: "Recycleble item" },
+    const wasteTypeMap: Record<string, { label: string; value: WasteType }[]> = {
+        landfilling: [
+            { label: WasteTypeLabels[WasteType.GeneralWaste], value: WasteType.GeneralWaste },
+            { label: WasteTypeLabels[WasteType.BulkWaste], value: WasteType.BulkWaste },
+            { label: WasteTypeLabels[WasteType.LandscapeWaste], value: WasteType.LandscapeWaste },
+            { label: WasteTypeLabels[WasteType.RecyclableItem], value: WasteType.RecyclableItem },
         ],
-        Recycling: [
-            { label: "Paper", value: "Paper" },
-            { label: "Plastic", value: "Plastic" },
-            { label: "Metal", value: "Metal" },
-            { label: "Rubber", value: "Rubber" },
-            { label: "E-waste", value: "E-waste" },
-            { label: "Textile", value: "Textile" },
-            { label: "Used cooking oil", value: "Used cooking oil" },
+        recycling: [
+            { label: WasteTypeLabels[WasteType.Paper], value: WasteType.Paper },
+            { label: WasteTypeLabels[WasteType.Plastic], value: WasteType.Plastic },
+            { label: WasteTypeLabels[WasteType.Metal], value: WasteType.Metal },
+            { label: WasteTypeLabels[WasteType.Rubber], value: WasteType.Rubber },
+            { label: WasteTypeLabels[WasteType.Ewaste], value: WasteType.Ewaste },
+            { label: WasteTypeLabels[WasteType.Textile], value: WasteType.Textile },
+            { label: WasteTypeLabels[WasteType.UsedCookingOil], value: WasteType.UsedCookingOil },
         ],
-        Composting: [
-            { label: "Landscape waste", value: "Landscape waste" },
-            { label: "Food/Kitchen waste", value: "Food/Kitchen waste" },
-            { label: "Animal manure", value: "Animal manure" },
+        composting: [
+            { label: WasteTypeLabels[WasteType.LandscapeWaste], value: WasteType.LandscapeWaste },
+            { label: WasteTypeLabels[WasteType.FoodKitchenWaste], value: WasteType.FoodKitchenWaste },
+            { label: WasteTypeLabels[WasteType.AnimalManure], value: WasteType.AnimalManure },
         ],
-        EnergyRecovery: [
-            { label: "Wood waste", value: "Wood waste" },
-            { label: "Food waste", value: "Food waste" },
+        energyRecovery: [
+            { label: WasteTypeLabels[WasteType.WoodWaste], value: WasteType.WoodWaste },
+            { label: WasteTypeLabels[WasteType.FoodWaste], value: WasteType.FoodWaste },
         ],
     };
 
     useEffect(() => {
         if (disposalMethod) {
             setWasteTypeOptions(wasteTypeMap[disposalMethod] || []);
-            form.setFieldsValue({ type: undefined });
+            form.setFieldsValue({ wasteType: undefined });
         }
     }, [disposalMethod]);
 
     useEffect(() => {
         if (editingMethod) {
             setEditWasteTypeOptions(wasteTypeMap[editingMethod] || []);
-            editForm.setFieldsValue({ type: undefined });
+            editForm.setFieldsValue({ wasteType: undefined });
         }
     }, [editingMethod]);
 
@@ -99,7 +99,7 @@ export default function WasteEntryForm() {
                 key: `${Date.now()}`,
                 date: new Date().toLocaleDateString('en-GB'),
                 ...values,
-                weight: Number(values.weight),
+                wasteWeight: Number(values.wasteWeight),
                 file: values.file || [],
             };
 
@@ -136,6 +136,7 @@ export default function WasteEntryForm() {
     };
 
     const handleSubmit = async () => {
+        const hide = message.loading("Submitting records");
         try {
             const processedRecords = await Promise.all(
                 tableData.map(async (record) => {
@@ -149,7 +150,7 @@ export default function WasteEntryForm() {
                     }
 
                     return {
-                        campusName: record.campusName,
+                        campus: record.campus,
                         location: record.location,
                         disposalMethod: record.disposalMethod,
                         wasteType: record.wasteType,
@@ -159,7 +160,8 @@ export default function WasteEntryForm() {
                     };
                 })
             );
-            await createWasteRecord(processedRecords); // send array to API
+            await createWasteRecord(processedRecords);
+            hide();
             message.success('All waste records submitted successfully');
             setTableData([]);
             form.resetFields();
@@ -173,10 +175,10 @@ export default function WasteEntryForm() {
     const columns = [
         { title: 'No.', render: (_: any, __: any, index: number) => index + 1 },
         { title: 'Date', dataIndex: 'date' },
-        { title: 'UTM Campus', dataIndex: 'campusName' },
+        { title: 'UTM Campus', dataIndex: 'campus', render: (value: Campus) => CampusLabels[value] || value, },
         { title: 'Location', dataIndex: 'location' },
-        { title: 'Disposal Method', dataIndex: 'disposalMethod' },
-        { title: 'Waste Type', dataIndex: 'wasteType' },
+        { title: 'Disposal Method', dataIndex: 'disposalMethod', render: (value: DisposalMethod) => DisposalMethodLabels[value] || value, },
+        { title: 'Waste Type', dataIndex: 'wasteType', render: (value: WasteType) => WasteTypeLabels[value] || value, },
         { title: 'Waste Weight (kg)', dataIndex: 'wasteWeight' },
         {
             title: 'Attachment',
@@ -200,7 +202,7 @@ export default function WasteEntryForm() {
                     <Title level={5}>Basic Info</Title>
                     <Row gutter={16}>
                         <Col xs={24} md={12}>
-                            <FormItem name="campusName" label="UTM Campus" rules={[{ required: true }]}>
+                            <FormItem name="campus" label="UTM Campus" rules={[{ required: true }]}>
                                 <Select placeholder="-- Please Choose --" options={campusOptions} />
                             </FormItem>
                         </Col>
@@ -277,16 +279,18 @@ export default function WasteEntryForm() {
                     <FormItem name="location" label="Location" rules={[{ required: true }]}>
                         <Select options={locationOptions} />
                     </FormItem>
-                    <FormItem name="method" label="Disposal Method" rules={[{ required: true }]}>
+                    <FormItem name="disposalMethod" label="Disposal Method" rules={[{ required: true }]}>
                         <Select options={disposalMethodOptions} />
                     </FormItem>
-                    <FormItem name="type" label="Waste Type" rules={[{ required: true }]}>
+                    <FormItem name="wasteType" label="Waste Type" rules={[{ required: true }]}>
                         <Select options={editWasteTypeOptions} />
                     </FormItem>
-                    <FormItem name="weight" label="Waste Weight (kg)" rules={[{ required: true }]}>
+                    <FormItem name="wasteWeight" label="Waste Weight (kg)" rules={[{ required: true }]}>
                         <Input type="number" />
                     </FormItem>
-                    <Button type="primary" htmlType="submit">Save</Button>
+                    <div className='flex justify-center'>
+                        <Button type="primary" htmlType="submit">Save</Button>
+                    </div>
                 </Form>
             </Modal>
         </>

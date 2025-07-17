@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import '@ant-design/v5-patch-for-react-19';
-import { AntdRegistry } from "@ant-design/nextjs-registry";
-import { ConfigProvider } from "antd";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AppProviders } from "@/contexts/AppProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,25 +29,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AntdRegistry>
-          <ConfigProvider
-            theme={{
-              token: {
-                colorPrimary: '#2c661f',
-              },
-              components: {
-                Menu: {
-                  itemActiveBg: '#c8edb8',
-                  itemSelectedBg: '#c8edb8'
-                }
-              }
-            }}
-          >
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </ConfigProvider>
-        </AntdRegistry>
+        <AppProviders>
+          {children}
+        </AppProviders>
       </body>
     </html>
   );

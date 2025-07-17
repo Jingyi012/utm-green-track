@@ -1,4 +1,4 @@
-import { fetchWithAuth } from "./common";
+import { buildQueryParams, fetchWithAuth } from "./common";
 
 const API_URL = '/api/waste-record';
 
@@ -12,22 +12,33 @@ export async function createWasteRecord(data: any) {
     return res.json();
 }
 
-export async function getWasteRecordsPaginated(page: number, pageSize: number, search = '') {
-    const params = new URLSearchParams({
-        page: String(page),
-        pageSize: String(pageSize),
-        search,
-    });
+export async function getWasteRecordsPaginated(params: {
+    pageNumber: number;
+    pageSize: number;
+    campus?: string;
+    wasteType?: string;
+    disposalMethod?: string;
+    year?: string;
+    status?: string;
+}) {
+    const query = buildQueryParams(params);
 
-    const res = await fetchWithAuth(`/api/waste-record?${params}`);
+    const res = await fetchWithAuth(`/api/waste-record?${query}`);
     const json = await res.json();
 
     if (!res.ok) throw new Error(json.error || 'Failed to fetch paginated records');
     return json;
 }
 
-export async function getWasteRecords() {
-    const res = await fetchWithAuth(`${API_URL}`);
+export async function getWasteRecords(params: {
+    campus?: string;
+    wasteType?: string;
+    disposalMethod?: string;
+    year?: string;
+}) {
+    const query = buildQueryParams(params);
+
+    const res = await fetchWithAuth(`${API_URL}?${query}`);
     if (!res.ok) throw new Error('Failed to fetch records');
     return res.json();
 }

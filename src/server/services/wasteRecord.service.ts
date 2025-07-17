@@ -3,10 +3,7 @@ import { Timestamp } from 'firebase-admin/firestore'; // Import from admin
 import { getStorage } from 'firebase-admin/storage';
 
 import { WasteRecord } from '@/lib/types/wasteRecord';
-import { formatPaginatedResponse } from '../utils/apiResponse';
-
-import * as XLSX from 'xlsx';
-import PDFDocument from 'pdfkit';
+import { WasteRecordStatus } from '@/lib/enum/wasteRecordStatus';
 
 type WasteRecordInput = Omit<WasteRecord, 'createdAt' | 'updatedAt'>;
 
@@ -44,17 +41,23 @@ export async function uploadAttachment(file: File): Promise<string> {
 
 // Create Waste Record by batch
 export async function createWasteRecords(
-    dataList: { data: WasteRecordInput }[], userId: string
+    dataList: WasteRecordInput[], userId: string
 ): Promise<string[]> {
     const batch = db.batch();
     const createdIds: string[] = [];
     const collectionRef = db.collection('wasteRecords');
 
-    dataList.forEach(item => {
-        const docRef = collectionRef.doc(); // Auto-generate ID
+    dataList.forEach(data => {
+        const docRef = collectionRef.doc();
+
+        const parsedWeight = typeof data.wasteWeight === 'string'
+            ? parseFloat(data.wasteWeight)
+            : data.wasteWeight;
+
         const record = {
-            ...item.data,
-            status: 'New',
+            ...data,
+            wasteWeight: parsedWeight,
+            status: WasteRecordStatus.New,
             createdAt: Timestamp.now(),
             createdBy: userId,
             updatedAt: Timestamp.now(),
@@ -69,13 +72,19 @@ export async function createWasteRecords(
 
 // Create Waste Record
 export async function createWasteRecord(data: WasteRecordInput, userId: string): Promise<string> {
+    const parsedWeight = typeof data.wasteWeight === 'string'
+        ? parseFloat(data.wasteWeight)
+        : data.wasteWeight;
+
     const docRef = await db.collection('wasteRecords').add({
         ...data,
-        status: 'New',
+        wasteWeight: parsedWeight,
+        status: WasteRecordStatus.New,
         createdAt: Timestamp.now(),
         createdBy: userId,
         updatedAt: Timestamp.now(),
     });
+
     return docRef.id;
 }
 
@@ -107,7 +116,7 @@ export async function getAllWasteRecords({
             const data = doc.data() as WasteRecord;
 
             return [
-                data.campusName,
+                data.campus,
                 data.location,
                 data.disposalMethod,
                 data.wasteType,
@@ -140,9 +149,13 @@ export async function getAllWasteRecords({
         };
     });
 
-    return shouldPaginate
-        ? formatPaginatedResponse(data, pageNumber!, pageSize!, totalRecords)
-        : { data, total: totalRecords };
+    return {
+        data,
+        totalRecords,
+        pageNumber,
+        pageSize,
+        paginated: shouldPaginate,
+    };
 }
 
 // Read Single Waste Record
@@ -175,72 +188,4 @@ export async function deleteWasteRecord(id: string) {
     }
 
     await docRef.delete();
-}
-
-// Export excel
-export async function exportExcelWasteRecord(params: any) {
-    const records = await getAllWasteRecords(params);
-    const headers = [
-        ['No.', 'Date', 'Campus', 'Location', 'Disposal Method', 'Waste Type', 'Weight (KG)', 'Status'],
-    ];
-
-    const rows = records.data.map((r, i) => [
-        i + 1,
-        new Date(r.date).toLocaleDateString('en-GB'),
-        r.campusName,
-        r.location,
-        r.disposalMethod,
-        r.wasteType,
-        r.wasteWeight,
-        r.status,
-    ]);
-
-    const worksheet = XLSX.utils.aoa_to_sheet([...headers, ...rows]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'WasteRecords');
-
-    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-
-    return buffer;
-}
-
-export async function exportPdfWasteRecord(params: any) {
-    const records = await getAllWasteRecords(params);
-    const doc = new PDFDocument({ size: 'A4', margin: 40 });
-    const buffers: Buffer[] = [];
-    doc.font('Helvetica');
-
-    doc.fontSize(16).text('Waste Records Report', { align: 'center' });
-    doc.moveDown();
-
-    const tableHeaders = ['No.', 'Date', 'Campus', 'Location', 'Disposal Method', 'Waste Type', 'Weight (KG)', 'Status'];
-
-    // Table header
-    doc.fontSize(10).fillColor('green').text(tableHeaders.join(' | '));
-    doc.fillColor('black').moveDown(0.5);
-
-    // Table body
-    records.data.forEach((record, i) => {
-        doc.text(
-            [
-                i + 1,
-                new Date(record.date).toLocaleDateString('en-GB'),
-                record.campusName,
-                record.location,
-                record.disposalMethod,
-                record.wasteType,
-                record.wasteWeight,
-                record.status,
-            ].join(' | ')
-        );
-    });
-
-    doc.end();
-    const pdfBuffer: Buffer = await new Promise(resolve => {
-        doc.on('end', () => {
-            const finalBuffer = Buffer.concat(buffers);
-            resolve(finalBuffer);
-        });
-    });
-    return pdfBuffer;
 }

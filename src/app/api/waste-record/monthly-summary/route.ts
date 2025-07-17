@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/firebase/verifyToken';
-import { GetCampusMonthlySummary } from '@/lib/services/wasteSummary.service';
+import { GetCampusMonthlySummary } from '@/server/services/wasteSummary.service';
+import { formatResponse } from '@/lib/types/apiResponse';
 
 export async function GET(req: NextRequest) {
     try {
@@ -10,8 +11,14 @@ export async function GET(req: NextRequest) {
         const campus = searchParams.get('campus') || undefined;
         const summary = await GetCampusMonthlySummary({ campus, year });
 
-        return NextResponse.json(summary);
+        const response = formatResponse(summary.data, summary.success, summary.error);
+        if (summary.success) {
+            return NextResponse.json(response);
+        } else {
+            return NextResponse.json(response, { status: 500 });
+        }
+
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(formatResponse(null, false, error.message), { status: 500 });
     }
 }

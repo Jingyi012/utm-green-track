@@ -2,7 +2,7 @@ import { UploadFile } from "antd"
 
 export type WasteRecord = {
     id?: string,
-    campusName: string,
+    campus: string,
     location: string,
     disposalMethod: string,
     wasteWeight: number,

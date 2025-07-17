@@ -1,3 +1,4 @@
+'use client';
 import RegistrationForm from "@/components/auth/RegisterForm";
 import Image from 'next/image';
 

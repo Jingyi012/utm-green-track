@@ -1,6 +1,6 @@
 'use client';
 
-import { Avatar, Dropdown, Layout, Menu, MenuProps, message } from 'antd';
+import { Avatar, Button, Dropdown, Layout, Menu, MenuProps, message, theme } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { menuItems, profileMenuItems } from '@/lib/config/menu';
 import { usePathname, useRouter } from 'next/navigation';
@@ -18,6 +18,9 @@ type UserInfo = {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const [collapsed, setCollapsed] = useState(false);
+    const {
+        token: { colorPrimary, colorBgContainer },
+    } = theme.useToken();
     const router = useRouter();
     const pathname = usePathname();
     const { user, logout } = useAuth()
@@ -43,97 +46,75 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
         <ProtectedRoute>
             <Layout style={{ minHeight: '100vh' }}>
-                {/* Header with Collapse Button */}
-                <Header style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    zIndex: 1000,
-                    width: '100%',
-                    background: '#2c661f',
-                    padding: '0 24px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    height: 64,
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        {/* Collapse Button */}
-                        <div
+                <Sider
+                    trigger={null}
+                    collapsible
+                    collapsed={collapsed}
+                    onCollapse={(value) => setCollapsed(value)}
+                    theme='light'
+                    breakpoint="lg"
+                    collapsedWidth="0"
+                    style={{
+                        position: 'sticky',
+                        height: '100vh',
+                        top: 0,
+                        bottom: 0,
+                        scrollbarWidth: 'thin',
+                        scrollbarGutter: 'stable',
+                    }}
+                >
+                    <div className='h-[44px] m-[10px] flex justify-center items-center'>
+                        <div className='flex justify-center items-center'>
+                            <Image src="/images/logo2.png" alt="Logo" height={40} width={40} />
+                            <span style={{ fontWeight: 'bold', color: colorPrimary }}>UTM Green Track</span>
+                        </div>
+                    </div>
+
+                    <Menu
+                        theme="light"
+                        mode="inline"
+                        defaultOpenKeys={['/data-entry', '/settings']}
+                        selectedKeys={[pathname]}
+                        items={menuItems}
+                        onClick={({ key }) => router.push(key)}
+                        inlineCollapsed={collapsed}
+                    />
+                </Sider>
+                <Layout>
+                    <Header style={{ padding: '0', background: colorPrimary, display: 'flex', justifyContent: "space-between", position: 'sticky', top: 0, zIndex: '1000' }}>
+                        <Button
+                            type="text"
+                            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
                             onClick={() => setCollapsed(!collapsed)}
                             style={{
                                 color: 'white',
-                                cursor: 'pointer',
-                                fontSize: '20px',
-                                marginRight: '16px'
+                                fontSize: '16px',
+                                width: 64,
+                                height: 64,
                             }}
-                        >
-                            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                        </div>
-
-                        <Image src="/images/logo2.png" alt="Logo" height={40} width={40} />
-
-                    </div>
-
-                    <Dropdown
-                        menu={{ items: profileMenuItems, onClick: handleMenuClick }}
-                        trigger={['click']}
-                        placement="bottomRight"
-                    >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginRight: 8 }}>
-                                <span style={{ color: 'white', lineHeight: 1 }}>Welcome</span>
-                                <span style={{ color: 'white', fontWeight: 500, lineHeight: 1.5 }}>{user?.name || 'User'}</span>
-                            </div>
-                            <Avatar size="large" icon={<UserOutlined />} />
-                        </div>
-                    </Dropdown>
-                </Header>
-
-                <Layout style={{ marginTop: 64 }}>
-                    <Sider
-                        collapsible
-                        collapsed={collapsed}
-                        trigger={null}
-                        width={200}
-                        collapsedWidth={80}
-                        style={{
-                            position: 'fixed',
-                            height: 'calc(100vh - 64px)',
-                            left: 0,
-                            top: 64,
-                            zIndex: 100,
-                            backgroundColor: '#fff',
-                            overflow: 'auto',
-                        }}
-                    >
-                        <Menu
-                            theme="light"
-                            mode="inline"
-                            defaultOpenKeys={['/data-entry', '/settings']}
-                            selectedKeys={[pathname]}
-                            items={menuItems}
-                            onClick={({ key }) => router.push(key)}
-                            style={{ backgroundColor: '#fff', height: '100%' }}
-                            inlineCollapsed={collapsed}
                         />
-                    </Sider>
 
+                        <Dropdown
+                            menu={{ items: profileMenuItems, onClick: handleMenuClick }}
+                            trigger={['click']}
+                            placement="bottomRight"
+                        >
+                            <div className="flex items-center gap-2 cursor-pointer mr-[24px]">
+                                <div className="flex flex-col items-end mr-2">
+                                    <span className="text-white leading-none">Welcome</span>
+                                    <span className="text-white font-medium leading-snug">{user?.name || 'User'}</span>
+                                </div>
+                                <Avatar size="large" icon={<UserOutlined />} />
+                            </div>
+                        </Dropdown>
+                    </Header>
                     {/* Content */}
-                    <Content
-                        style={{
-                            marginLeft: collapsed ? 80 : 200,
-                            padding: 24,
-                            minHeight: 'calc(100vh - 64px)',
-                            background: '#fff',
-                            transition: 'margin-left 0.2s ease',
-                        }}
-                    >
+                    <Content style={{ margin: '16px 24px' }}>
                         {children}
                     </Content>
                 </Layout>
             </Layout>
-        </ProtectedRoute>
+        </ProtectedRoute >
     );
 }
 

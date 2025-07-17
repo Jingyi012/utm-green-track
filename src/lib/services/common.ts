@@ -15,3 +15,15 @@ export async function fetchWithAuth(
         headers,
     });
 }
+
+export function buildQueryParams(params: Record<string, any>): string {
+    const query = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') {
+            query.append(key, String(value));
+        }
+    });
+
+    return query.toString();
+}

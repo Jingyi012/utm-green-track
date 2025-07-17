@@ -1,66 +1,68 @@
 import { Timestamp } from 'firebase-admin/firestore';
-import { WasteRecord } from '../types/wasteRecord';
+import { WasteRecord } from '../../lib/types/wasteRecord';
 import { db } from '@/lib/firebase/firebaseAdmin';
+import { DisposalMethod } from '@/lib/enum/disposalMethod';
+import { MONTH_NAMES } from '@/lib/enum/monthName';
 
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
-
-function toCamelCase(str: string): string {
-    return str
-        .replace(/\s(.)/g, ($1) => $1.toUpperCase())
-        .replace(/\s/g, '')
-        .replace(/^(.)/, ($1) => $1.toLowerCase())
-        .replace(/-/g, '');
-}
+const monthNames = MONTH_NAMES;
 
 type CategoryTotals = {
-    landfill: number;
+    landfilling: number;
     recycling: number;
     composting: number;
     energyRecovery: number;
     [key: string]: number;
 };
 
+type MonthlyWasteData = {
+    month: string;
+} & Record<DisposalMethod, Record<string, number>>;
+
 export function groupWasteByMonthAndSummarize(records: WasteRecord[], year: number) {
-    const monthlyData: Record<string, any> = {};
+    const monthlyData: MonthlyWasteData[] = [];
+
     const totals: Record<string, any> = {};
     const categoryTotals: CategoryTotals = {
-        landfill: 0,
+        landfilling: 0,
         recycling: 0,
         composting: 0,
         energyRecovery: 0,
     };
 
-    // Initialize structure
-    monthNames.forEach(month => {
-        monthlyData[month] = {
-            landfill: {},
+    // Initialize array with empty month structures
+    MONTH_NAMES.forEach(month => {
+        monthlyData.push({
+            month,
+            landfilling: {},
             recycling: {},
             composting: {},
-            energyRecovery: {}
-        };
+            energyRecovery: {},
+        });
     });
 
     for (const record of records) {
-        const month = monthNames[new Date(record.createdAt).getMonth()];
-        const disposalMethod = toCamelCase(record.disposalMethod?.trim());
-        const wasteType = toCamelCase(record.wasteType?.trim());
+        const monthIndex = new Date(record.createdAt).getMonth();
+        const monthEntry = monthlyData[monthIndex];
+
+        const disposalMethod = record.disposalMethod;
+        const wasteType = record.wasteType;
         const weight = typeof record.wasteWeight === 'number' ? record.wasteWeight : 0;
 
         if (!disposalMethod || !wasteType) continue;
 
-        if (!monthlyData[month][disposalMethod]) {
-            monthlyData[month][disposalMethod] = {};
-        }
-        if (!monthlyData[month][disposalMethod][wasteType]) {
-            monthlyData[month][disposalMethod][wasteType] = 0;
-        }
-        monthlyData[month][disposalMethod][wasteType] += weight;
+        const disposalObj = monthEntry[disposalMethod as DisposalMethod] || {};
 
+        // Update monthly waste data
+        disposalObj[wasteType] = (disposalObj[wasteType] || 0) + weight;
+        monthEntry[disposalMethod as DisposalMethod] = disposalObj;
+
+        // Update total per disposal method and type
         if (!totals[disposalMethod]) {
             totals[disposalMethod] = {};
         }
         totals[disposalMethod][wasteType] = (totals[disposalMethod][wasteType] || 0) + weight;
 
+        // Update category totals
         if (categoryTotals[disposalMethod] !== undefined) {
             categoryTotals[disposalMethod] += weight;
         } else {
@@ -117,7 +119,7 @@ export const GetCampusMonthlySummary = async (request: { campus?: string, year?:
             .where('createdAt', '<', new Date(`${year + 1}-01-01`))
 
         if (request.campus) {
-            query = query.where('campusName', '==', request.campus);
+            query = query.where('campus', '==', request.campus);
         }
 
         const records = await query.get();
@@ -162,7 +164,7 @@ export const GetCampusMonthlySummary = async (request: { campus?: string, year?:
         processedRecords.forEach(record => {
             const month = monthNames[new Date(record.createdAt).getMonth()];
             const monthKey = `${month}`;
-            const method = toCamelCase(record.disposalMethod) as keyof typeof monthlySummary[string];
+            const method = record.disposalMethod as keyof typeof monthlySummary[string];
 
             if (monthlySummary[monthKey] && method in monthlySummary[monthKey]) {
                 monthlySummary[monthKey][method] += record.wasteWeight;
@@ -180,18 +182,20 @@ export const GetCampusMonthlySummary = async (request: { campus?: string, year?:
             success: true,
             data: {
                 summary: summaryTotals,
-                monthlySummary: result
+                monthlySummary: result,
+                metadata: {
+                    year,
+                    generatedAt: new Date().toISOString(),
+                    dataSource: 'UTM GreenTrack',
+                },
             },
-            year,
-            generatedAt: new Date().toISOString()
         };
 
     } catch (error) {
 
         return {
             success: false,
-            error: 'Failed to generate monthly summary',
-            details: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error)
         };
     }
 };
@@ -217,20 +221,20 @@ const calculateSummaryTotal = (records: WasteRecord[]) => {
         totalWaste += weight;
 
         switch (record.disposalMethod) {
-            case 'Recycling':
+            case DisposalMethod.Recycling:
                 totalRecycled += weight;
                 totalGHGReduction += weight * GHG_EMISSION_FACTORS.Recycling;
                 totalLandfillSavings += weight * LANDFILL_COST_PER_KG;
                 break;
-            case 'Composting':
+            case DisposalMethod.Composting:
                 totalGHGReduction += weight * GHG_EMISSION_FACTORS.Composting;
                 totalLandfillSavings += weight * LANDFILL_COST_PER_KG;
                 break;
-            case 'Energy Recovery':
+            case DisposalMethod.EnergyRecovery:
                 totalGHGReduction += weight * GHG_EMISSION_FACTORS.EnergyRecovery;
                 totalLandfillSavings += weight * LANDFILL_COST_PER_KG;
                 break;
-            case 'Landfilling':
+            case DisposalMethod.Landfilling:
                 totalLandfilled += weight;
                 totalGHGReduction += weight * GHG_EMISSION_FACTORS.Landfilling;
                 break;
