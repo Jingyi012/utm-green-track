@@ -1,191 +1,123 @@
-import { db } from '@/lib/firebase/firebaseAdmin';
-import { Timestamp } from 'firebase-admin/firestore'; // Import from admin
-import { getStorage } from 'firebase-admin/storage';
-
-import { WasteRecord } from '@/lib/types/wasteRecord';
+import { prisma } from '@/lib/prisma/prisma';
 import { WasteRecordStatus } from '@/lib/enum/wasteRecordStatus';
+import { WasteRecord, WasteRecordFilter } from '@/lib/types/wasteRecord';
 
-type WasteRecordInput = Omit<WasteRecord, 'createdAt' | 'updatedAt'>;
+type WasteRecordInput = Omit<WasteRecord, 'id' | 'createdAt' | 'updatedAt'>;
 
-// Upload Attachment to Firebase Storage
-export async function uploadAttachment(file: File): Promise<string> {
-    const maxSizeMB = 5;
-    if (file.size > maxSizeMB * 1024 * 1024) {
-        throw new Error(`File size exceeds ${maxSizeMB}MB limit.`);
-    }
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-    if (!allowedTypes.includes(file.type)) {
-        throw new Error(`Unsupported file type. Allowed types: JPG, PNG, PDF.`);
-    }
-
-    const fileName = `attachments/${Date.now()}_${file.name}`;
-    const fileBuffer = Buffer.from(await file.arrayBuffer());
-
-    // Upload the file
-    const bucket = getStorage().bucket();
-    await bucket.file(fileName).save(fileBuffer, {
-        metadata: {
-            contentType: file.type,
+// Create a single Waste Record
+export async function createWasteRecord(
+    data: WasteRecordInput,
+    userId: number
+): Promise<number> {
+    const created = await prisma.wasteRecord.create({
+        data: {
+            ...data,
+            status: WasteRecordStatus.New,
+            createdById: userId,
         },
     });
 
-    // Get download URL
-    const [url] = await bucket.file(fileName).getSignedUrl({
-        action: 'read',
-        expires: '03-09-2491' // Far future date
-    });
-
-    return url;
+    return created.id;
 }
 
-// Create Waste Record by batch
+// Create multiple Waste Records in batch
 export async function createWasteRecords(
-    dataList: WasteRecordInput[], userId: string
-): Promise<string[]> {
-    const batch = db.batch();
-    const createdIds: string[] = [];
-    const collectionRef = db.collection('wasteRecords');
-
-    dataList.forEach(data => {
-        const docRef = collectionRef.doc();
-
-        const parsedWeight = typeof data.wasteWeight === 'string'
-            ? parseFloat(data.wasteWeight)
-            : data.wasteWeight;
-
-        const record = {
-            ...data,
-            wasteWeight: parsedWeight,
-            status: WasteRecordStatus.New,
-            createdAt: Timestamp.now(),
-            createdBy: userId,
-            updatedAt: Timestamp.now(),
-        };
-        batch.set(docRef, record);
-        createdIds.push(docRef.id);
-    });
-
-    await batch.commit();
-    return createdIds;
-}
-
-// Create Waste Record
-export async function createWasteRecord(data: WasteRecordInput, userId: string): Promise<string> {
-    const parsedWeight = typeof data.wasteWeight === 'string'
-        ? parseFloat(data.wasteWeight)
-        : data.wasteWeight;
-
-    const docRef = await db.collection('wasteRecords').add({
+    dataList: WasteRecordInput[],
+    userId: number
+): Promise<number[]> {
+    const records = dataList.map((data) => ({
         ...data,
-        wasteWeight: parsedWeight,
+        wasteWeight:
+            typeof data.wasteWeight === 'string'
+                ? parseFloat(data.wasteWeight)
+                : data.wasteWeight,
         status: WasteRecordStatus.New,
-        createdAt: Timestamp.now(),
-        createdBy: userId,
-        updatedAt: Timestamp.now(),
-    });
+        createdById: userId,
+    }));
 
-    return docRef.id;
+    // Use individual create if you need returned IDs
+    const createdRecords = await Promise.all(
+        records.map((record) => prisma.wasteRecord.create({ data: record }))
+    );
+
+    return createdRecords.map((record) => record.id);
 }
 
-// Read All Waste Records
+// Get all Waste Records with optional user filter + pagination
 export async function getAllWasteRecords({
     uid,
-    pageSize,
     pageNumber,
-    search
-}: {
-    uid?: string;
-    pageSize?: number;
-    pageNumber?: number;
-    search?: string;
-}) {
-    let query = db.collection('wasteRecords').orderBy('createdAt', 'desc');
+    pageSize,
+    campus,
+    disposalMethod,
+    wasteType,
+    status,
+    fromDate,
+    toDate,
+}: WasteRecordFilter) {
+    const where = {
+        ...(uid && { createdById: uid }),
+        ...(campus && { campus }),
+        ...(disposalMethod && { disposalMethod }),
+        ...(wasteType && { wasteType }),
+        ...(status && { status }),
+        ...(fromDate || toDate
+            ? {
+                date: {
+                    ...(fromDate && { gte: new Date(fromDate) }),
+                    ...(toDate && { lte: new Date(toDate) }),
+                },
+            }
+            : {}),
+    };
 
-    if (uid) {
-        query = query.where('createdBy', '==', uid);
-    }
+    const skip = pageSize && pageNumber ? (pageNumber - 1) * pageSize : undefined;
+    const take = pageSize;
 
-    const snapshot = await query.get();
-    let allDocs = snapshot.docs;
-
-    // In-memory search filtering
-    if (search) {
-        const lowerSearch = search.toLowerCase();
-        allDocs = allDocs.filter(doc => {
-            const data = doc.data() as WasteRecord;
-
-            return [
-                data.campus,
-                data.location,
-                data.disposalMethod,
-                data.wasteType,
-                data.wasteWeight?.toString(),
-            ]
-                .filter(Boolean)
-                .some(field =>
-                    String(field).toLowerCase().includes(lowerSearch)
-                );
-        });
-    }
-
-    // Handle pagination only if pageSize and pageNumber are provided
-    const shouldPaginate = typeof pageSize !== 'undefined' && typeof pageNumber !== 'undefined';
-    let pagedDocs = allDocs;
-    let totalRecords = allDocs.length;
-
-    if (shouldPaginate) {
-        const offset = (pageNumber! - 1) * pageSize!;
-        pagedDocs = allDocs.slice(offset, offset + pageSize!);
-    }
-
-    const data: WasteRecord[] = pagedDocs.map((doc) => {
-        const record = doc.data() as WasteRecord;
-        return {
-            ...record,
-            id: doc.id,
-            createdAt: record.createdAt instanceof Timestamp ? record.createdAt.toDate() : record.createdAt,
-            updatedAt: record.updatedAt instanceof Timestamp ? record.updatedAt.toDate() : record.updatedAt,
-        };
-    });
+    const [data, totalRecords] = await Promise.all([
+        prisma.wasteRecord.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take,
+        }),
+        prisma.wasteRecord.count({ where }),
+    ]);
 
     return {
         data,
         totalRecords,
         pageNumber,
         pageSize,
-        paginated: shouldPaginate,
+        paginated: !!(pageSize && pageNumber),
     };
 }
 
-// Read Single Waste Record
-export async function getWasteRecordById(id: string): Promise<WasteRecord | null> {
-    const docRef = db.collection('wasteRecords').doc(id);
-    const snapshot = await docRef.get();
-    return snapshot.exists ? (snapshot.data() as WasteRecord) : null;
-}
-
-// Update Waste Record
-export async function updateWasteRecord(id: string, data: Partial<WasteRecord>) {
-    const docRef = db.collection('wasteRecords').doc(id);
-    await docRef.update({
-        ...data,
-        updatedAt: Timestamp.now(),
+// Get a single Waste Record by ID
+export async function getWasteRecordById(id: number): Promise<WasteRecord | null> {
+    return await prisma.wasteRecord.findUnique({
+        where: { id },
     });
 }
 
-// Delete Waste Record
-export async function deleteWasteRecord(id: string) {
-    const docRef = db.collection('wasteRecords').doc(id);
-    const record = await getWasteRecordById(id);
+// Update a Waste Record
+export async function updateWasteRecord(id: number, data: Partial<WasteRecord>) {
+    const updateData = {
+        ...data,
+        updatedAt: new Date(), // Optional, if @updatedAt not used in schema
+    };
 
-    if (record?.attachmentUrl) {
-        // Extract the file path from the URL
-        const url = new URL(record.attachmentUrl);
-        const filePath = decodeURIComponent(url.pathname.split('/o/')[1].split('?')[0]);
-        const bucket = getStorage().bucket();
-        await bucket.file(filePath).delete().catch(() => { });
-    }
+    await prisma.wasteRecord.update({
+        where: { id },
+        data: updateData,
+    });
+}
 
-    await docRef.delete();
+// Delete a Waste Record
+export async function deleteWasteRecord(id: number) {
+    // Optional: Handle deleting attachments here if needed
+
+    await prisma.wasteRecord.delete({
+        where: { id },
+    });
 }

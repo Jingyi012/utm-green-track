@@ -2,7 +2,10 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { message } from 'antd';
-import { toPascalCase } from '../utils/formatter';
+
+function getNestedValue(obj: any, path: (string | number)[]): any {
+    return path.reduce((acc, key) => acc?.[key], obj);
+}
 
 export const exportExcelWasteStatistic = (tableData: any[], columns: any[], year: number) => {
     if (!tableData || tableData.length === 0) {
@@ -25,11 +28,14 @@ export const exportExcelWasteStatistic = (tableData: any[], columns: any[], year
     });
 
     const dataRows = tableData.map(row => {
-        const rowData = [toPascalCase(row.month)];
+        const rowData = [row.month];
         disposalGroups.forEach(group => {
             const children = group.children ?? [group];
-            children.forEach((child: { dataIndex: string | number; }) => {
-                rowData.push(row[child.dataIndex] || 0);
+            children.forEach((child: { dataIndex: string[] | number }) => {
+                const value = Array.isArray(child.dataIndex)
+                    ? getNestedValue(row, child.dataIndex)
+                    : row[child.dataIndex];
+                rowData.push(value ?? 0);
             });
         });
         return rowData;
@@ -87,12 +93,15 @@ export const exportPDFWasteStatistic = (tableData: any[], columns: any[], year: 
         columnSpans.push(...Array(children.length).fill(1));
     });
 
-    const tableBody = tableData.map(row => {
-        const rowData = [toPascalCase(row.month)];
+    const dataRows = tableData.map(row => {
+        const rowData = [row.month];
         disposalGroups.forEach(group => {
             const children = group.children ?? [group];
-            children.forEach((child: { dataIndex: string | number; }) => {
-                rowData.push(row[child.dataIndex] || 0);
+            children.forEach((child: { dataIndex: string[] | number }) => {
+                const value = Array.isArray(child.dataIndex)
+                    ? getNestedValue(row, child.dataIndex)
+                    : row[child.dataIndex];
+                rowData.push(value ?? 0);
             });
         });
         return rowData;
@@ -101,7 +110,7 @@ export const exportPDFWasteStatistic = (tableData: any[], columns: any[], year: 
     autoTable(doc, {
         startY: 20,
         head: [headerRow1, headerRow2],
-        body: tableBody,
+        body: dataRows,
         styles: {
             fontSize: 6.5,
             halign: 'center',

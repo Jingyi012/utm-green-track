@@ -18,3 +18,15 @@ export type WasteRecordInput = WasteRecord & {
     key: string,
     file: UploadFile[]
 }
+
+export type WasteRecordFilter = {
+    uid: number;
+    pageNumber?: number;
+    pageSize?: number;
+    campus?: string;
+    disposalMethod?: string;
+    wasteType?: string;
+    status?: string;
+    fromDate?: string;
+    toDate?: string;
+}

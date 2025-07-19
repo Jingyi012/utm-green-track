@@ -1,6 +1,6 @@
 'use client';
 
-import { resetPassword } from '@/lib/services/user.service';
+import { requestPasswordReset } from '@/lib/services/auth';
 import { Form, Input, Button, Typography, message } from 'antd';
 import { useState } from 'react';
 
@@ -13,7 +13,7 @@ export default function ResetPasswordForm() {
     const handleFinish = async (values: any) => {
         setLoading(true);
         try {
-            await resetPassword(values.email);
+            await requestPasswordReset(values.email);
             message.success(`Password reset link sent to ${values.email}`);
             form.resetFields();
         } catch (error: any) {

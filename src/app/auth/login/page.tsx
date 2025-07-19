@@ -2,7 +2,7 @@
 import LoginForm from "@/components/auth/LoginForm";
 import Image from 'next/image';
 
-export default function ChangePasswordPage() {
+export default function LoginPage() {
     return (
         <>
             <div className="relative h-90 bg-primary flex justify-center items-center flex-col">

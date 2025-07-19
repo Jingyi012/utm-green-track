@@ -3,32 +3,34 @@
 import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { loginUser } from '@/lib/services/user.service';
-import { useAuth } from '@/contexts/AuthContext';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 export default function LoginForm() {
-    const { login } = useAuth();
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
     const onFinish = async (values: any) => {
-        const { email, password } = values;
+        setLoading(true);
 
-        try {
-            setLoading(true);
-            const { token, user } = await loginUser(email, password);
+        const res = await signIn('credentials', {
+            redirect: false,
+            email: values.email,
+            password: values.password,
+        });
 
-            await login(token, user);
+        setLoading(false);
 
-        } catch (error: any) {
-            message.error(error.message);
-        } finally {
-            setLoading(false);
+        if (res?.error) {
+            message.error(res.error);
+        } else {
+            message.success('Login successful');
+            router.push('/dashboard');
         }
     };
-
 
     return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -66,7 +68,6 @@ export default function LoginForm() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
                     <Link href="/auth/reset-password" style={{ fontSize: 12 }}>
                         Forgot your password?
-
                     </Link>
                     <Link href="/auth/signup" style={{ fontSize: 12 }}>
                         Don't have an account? Sign Up

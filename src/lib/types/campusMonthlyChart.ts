@@ -1,8 +1,5 @@
-export type CampusMonthlyChart = {
-    month: string,
-    landfilling: number,
-    recycling: number,
-    composting: number,
-    energyRecovery: number,
-    total: number
+export interface CampusMonthlyChart {
+    month: string;
+    disposalMethod: string;
+    totalWeight: number;
 }

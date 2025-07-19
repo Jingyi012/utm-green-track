@@ -7,7 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { UserOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import ProtectedRoute from '@/components/routes/ProtectedRoute';
-import { useAuth } from '@/contexts/AuthContext';
+import { signOut, useSession } from 'next-auth/react';
 
 const { Header, Sider, Content } = Layout;
 
@@ -23,25 +23,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     } = theme.useToken();
     const router = useRouter();
     const pathname = usePathname();
-    const { user, logout } = useAuth()
+    const { data: session } = useSession();
+    const user = session?.user;
 
     const handleMenuClick: MenuProps['onClick'] = async ({ key }) => {
         if (key === 'logout') {
             try {
-                await logout();
+                await signOut({ callbackUrl: '/auth/login' });
             } catch (err) {
                 message.error('Logout failed!');
             }
         }
     };
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            refreshAuth();
-        }, 55 * 60 * 1000); // 55 minutes
-
-        return () => clearInterval(interval);
-    }, []);
 
     return (
         <ProtectedRoute>

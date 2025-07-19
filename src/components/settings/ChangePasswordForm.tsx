@@ -1,6 +1,6 @@
 'use client';
+import { changePassword } from '@/lib/services/auth';
 import { Button, Card, Col, Form, Input, message, Row, Select, Typography } from 'antd';
-import { changePassword } from '@/lib/services/user.service';
 const { Title } = Typography;
 const { Option } = Select;
 
@@ -15,7 +15,7 @@ const ChangePasswordForm = () => {
                 return message.error("Passwords don't match");
             }
 
-            await changePassword(currentPassword, newPassword);
+            await changePassword({ currentPassword, newPassword, confirmNewPassword: confirmPassword });
 
             message.success('Password updated successfully');
             form.resetFields();

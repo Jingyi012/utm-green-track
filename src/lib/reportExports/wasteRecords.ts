@@ -2,6 +2,10 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { message } from 'antd';
 import autoTable from 'jspdf-autotable';
+import { DisposalMethod, DisposalMethodLabels } from '../enum/disposalMethod';
+import { WasteType, WasteTypeLabels } from '../enum/wasteType';
+import { WasteRecordStatus, wasteRecordStatusLabels } from '../enum/wasteRecordStatus';
+import { Campus, CampusLabels } from '../enum/campus';
 
 export function exportExcelWasteRecord(records: any[], filename = 'WasteRecords.xlsx') {
     if (!records || records.length === 0) {
@@ -15,13 +19,13 @@ export function exportExcelWasteRecord(records: any[], filename = 'WasteRecords.
 
     const rows = records.map((r, i) => [
         i + 1,
-        new Date(r.date).toLocaleDateString('en-GB'),
-        r.campus,
-        r.location,
-        r.disposalMethod,
-        r.wasteType,
-        r.wasteWeight,
-        r.status,
+        new Date(r.date).toLocaleDateString("en-GB"),
+        CampusLabels[r.campus as Campus] ?? r.campus,
+        r.location ?? "-",
+        DisposalMethodLabels[r.disposalMethod as DisposalMethod] ?? r.disposalMethod,
+        WasteTypeLabels[r.wasteType as WasteType] ?? r.wasteType,
+        r.wasteWeight.toFixed(2),
+        wasteRecordStatusLabels[r.status as WasteRecordStatus] ?? r.status,
     ]);
 
     const worksheet = XLSX.utils.aoa_to_sheet([...headers, ...rows]);
@@ -60,15 +64,15 @@ export function exportPdfWasteRecord(records: any[], filename = 'WasteRecords.pd
     ];
 
     // Format rows
-    const body = records.map((record, index) => [
-        index + 1,
-        new Date(record.date).toLocaleDateString('en-GB'),
-        record.campus,
-        record.location,
-        record.disposalMethod,
-        record.wasteType,
-        String(record.wasteWeight),
-        record.status,
+    const body = records.map((r, i) => [
+        i + 1,
+        new Date(r.date).toLocaleDateString("en-GB"),
+        CampusLabels[r.campus as Campus] ?? r.campus,
+        r.location ?? "-",
+        DisposalMethodLabels[r.disposalMethod as DisposalMethod] ?? r.disposalMethod,
+        WasteTypeLabels[r.wasteType as WasteType] ?? r.wasteType,
+        r.wasteWeight.toFixed(2),
+        wasteRecordStatusLabels[r.status as WasteRecordStatus] ?? r.status,
     ]);
 
     // Generate table

@@ -6,7 +6,7 @@ import {
 } from '@/server/services/wasteRecord.service';
 import { formatResponse } from '@/lib/types/apiResponse';
 
-export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id: number }> }) {
     try {
         const id = (await params).id;
         const record = await getWasteRecordById(id);
@@ -17,7 +17,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: number }> }) {
     try {
         const id = (await params).id;
         const body = await req.json();
@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: number }> }) {
     try {
         const id = (await params).id;
         await deleteWasteRecord(id);

@@ -1,5 +1,7 @@
+const API_URL = '/api/auth';
+
 export async function registerUser(data: any) {
-    const res = await fetch('/api/auth/signup', {
+    const res = await fetch(`${API_URL}/signup`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -15,23 +17,8 @@ export async function registerUser(data: any) {
     return res.json();
 }
 
-export async function loginUser(data: { email: string; password: string }) {
-    const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
-
-    if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Login failed');
-    }
-
-    return res.json(); // Returns { token, user }
-}
-
 export async function requestPasswordReset(email: string) {
-    const res = await fetch('/api/auth/reset-password', {
+    const res = await fetch(`${API_URL}/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -42,5 +29,21 @@ export async function requestPasswordReset(email: string) {
         throw new Error(error || 'Failed to send reset email');
     }
 
-    return res.json(); // { message: 'Reset email sent' }
+    return res.json();
+}
+
+export async function changePassword(data: { currentPassword: string, newPassword: string, confirmNewPassword: string }): Promise<void> {
+    const res = await fetch(`${API_URL}/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+
+    const json = await res.json();
+
+    if (!res.ok) {
+        throw new Error(json.error || 'Failed to update profile');
+    }
+
+    return json;
 }

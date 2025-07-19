@@ -1,25 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createWasteRecords, getAllWasteRecords } from '@/server/services/wasteRecord.service';
-import { verifyToken } from '@/lib/firebase/verifyToken';
 import { formatPaginatedResponse, formatResponse } from '@/lib/types/apiResponse';
+import { WasteRecordFilter } from '@/lib/types/wasteRecord';
+import { getToken } from 'next-auth/jwt';
 
 export async function GET(req: NextRequest) {
     try {
-        const { uid: tokenUID } = await verifyToken(req);
         const { searchParams } = new URL(req.url);
+        const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-        const uid = searchParams.get('uid') || tokenUID;
-        const params: {
-            uid: string;
-            pageNumber?: number;
-            pageSize?: number;
-            campus?: string;
-            disposalMethod?: string;
-            wasteType?: string;
-            status?: string;
-            fromDate?: string;
-            toDate?: string;
-        } = {
+        if (!token || !token.id) {
+            return NextResponse.json(formatResponse(null, false, 'Unauthorized'), { status: 401 });
+        }
+
+        const uidParam = searchParams.get('uid');
+        const uid = uidParam ? parseInt(uidParam, 10) : token.id;
+
+        const params: WasteRecordFilter = {
             uid,
             pageNumber: searchParams.get('pageNumber') ? parseInt(searchParams.get('pageNumber')!) : undefined,
             pageSize: searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!) : undefined,
@@ -55,7 +52,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
-        const { uid } = await verifyToken(req);
+        const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+        if (!token || !token.id) {
+            return NextResponse.json(formatResponse(null, false, 'Unauthorized'), { status: 401 });
+        }
+        const uid = token.id;
+
         const body = await req.json();
         if (!Array.isArray(body)) {
             return NextResponse.json(

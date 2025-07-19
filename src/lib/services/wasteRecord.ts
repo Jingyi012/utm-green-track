@@ -1,9 +1,9 @@
-import { buildQueryParams, fetchWithAuth } from "./common";
+import { buildQueryParams } from "./common";
 
 const API_URL = '/api/waste-record';
 
 export async function createWasteRecord(data: any) {
-    const res = await fetchWithAuth(`${API_URL}`, {
+    const res = await fetch(`${API_URL}`, {
         method: 'POST',
         body: JSON.stringify(data),
     });
@@ -23,7 +23,7 @@ export async function getWasteRecordsPaginated(params: {
 }) {
     const query = buildQueryParams(params);
 
-    const res = await fetchWithAuth(`/api/waste-record?${query}`);
+    const res = await fetch(`/api/waste-record?${query}`);
     const json = await res.json();
 
     if (!res.ok) throw new Error(json.error || 'Failed to fetch paginated records');
@@ -38,13 +38,13 @@ export async function getWasteRecords(params: {
 }) {
     const query = buildQueryParams(params);
 
-    const res = await fetchWithAuth(`${API_URL}?${query}`);
+    const res = await fetch(`${API_URL}?${query}`);
     if (!res.ok) throw new Error('Failed to fetch records');
     return res.json();
 }
 
 export async function updateWasteRecord(id: string, data: any) {
-    const res = await fetchWithAuth(`${API_URL}/${id}`, {
+    const res = await fetch(`${API_URL}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
     });
@@ -55,7 +55,7 @@ export async function updateWasteRecord(id: string, data: any) {
 }
 
 export async function deleteWasteRecord(id: string) {
-    const res = await fetchWithAuth(`${API_URL}/${id}`, {
+    const res = await fetch(`${API_URL}/${id}`, {
         method: 'DELETE',
     });
 
@@ -68,7 +68,7 @@ export async function uploadAttachment(file: File): Promise<string> {
     const formData = new FormData();
     formData.append('file', file);
 
-    const res = await fetchWithAuth('/api/waste-record/upload', {
+    const res = await fetch('/api/waste-record/upload', {
         method: 'POST',
         body: formData,
     });
@@ -79,13 +79,13 @@ export async function uploadAttachment(file: File): Promise<string> {
 }
 
 export async function getWasteStatisticByYear(year: number) {
-    const res = await fetchWithAuth(`/api/waste-record/statistic?year=${year}`);
+    const res = await fetch(`/api/waste-record/statistic?year=${year}`);
     if (!res.ok) throw new Error('Failed to fetch waste statistic');
     return res.json();
 }
 
-export async function getMonthlyCampusWasteChartByYear(campus: string, year: number) {
-    const res = await fetchWithAuth(`/api/waste-record/monthly-summary?campus=${campus}&year=${year}`);
+export async function getCampusMonthlySummary(campus: string, year: number) {
+    const res = await fetch(`/api/waste-record/monthly-summary?campus=${campus}&year=${year}`);
     if (!res.ok) throw new Error('Failed to fetch monthly campus waste chart');
     return res.json();
 }

@@ -2,12 +2,54 @@
 import { useEffect, useState } from "react";
 import InfoCardGrid from "./InfoCardGrid";
 import { Card, Col, message, Row, Select, Skeleton, Spin } from "antd";
-import { getMonthlyCampusWasteChartByYear } from "@/lib/services/wasteRecord";
+import { getCampusMonthlySummary } from "@/lib/services/wasteRecord";
 import { Column } from "@ant-design/charts";
 import { CampusMonthlyChart } from "@/lib/types/campusMonthlyChart";
 import { DisposalMethod, DisposalMethodLabels } from "@/lib/enum/disposalMethod";
-import { toPascalCase } from "@/lib/utils/formatter";
 import { Campus, CampusLabels } from "@/lib/enum/campus";
+
+export function transformMonthlyChartData(
+    rawData: CampusMonthlyChart[],
+    year = 2025
+): CampusMonthlyChart[] {
+    const allMonths = Array.from({ length: 12 }, (_, i) =>
+        new Date(year, i).toLocaleString("default", { month: "short" })
+    );
+
+    const disposalMethods = Object.values(DisposalMethod);
+
+    const dataMap = new Map<string, CampusMonthlyChart>();
+
+    // Initialize all months × disposal methods to 0
+    for (const month of allMonths) {
+        for (const method of disposalMethods) {
+            const label = DisposalMethodLabels[method];
+            const key = `${month}_${label}`;
+            dataMap.set(key, {
+                month,
+                disposalMethod: label,
+                totalWeight: 0,
+            });
+        }
+    }
+
+    // Overwrite with actual values
+    rawData.forEach((item) => {
+        const month = new Date(year, Number(item.month) - 1).toLocaleString("default", { month: "short" });
+        const methodLabel = DisposalMethodLabels[item.disposalMethod as DisposalMethod];
+        const key = `${month}_${methodLabel}`;
+
+        if (dataMap.has(key)) {
+            dataMap.set(key, {
+                month,
+                disposalMethod: methodLabel,
+                totalWeight: item.totalWeight,
+            });
+        }
+    });
+
+    return Array.from(dataMap.values());
+}
 
 const DashboardSection = () => {
     const currentYear = new Date().getFullYear();
@@ -29,27 +71,21 @@ const DashboardSection = () => {
         totalGHGReduction: 0,
         totalLandfillSavings: 0
     });
-    const [monthlyChartData, setMonthlyChartData] = useState<{ month: string; category: string; value: number; }[]>([]);
+    const [monthlyChartData, setMonthlyChartData] = useState<CampusMonthlyChart[]>([]);
 
     const fecthMonthlyData = async () => {
         try {
             setChartLoading(true);
 
-            const response = await getMonthlyCampusWasteChartByYear(campus, year);
+            const response = await getCampusMonthlySummary(campus, year);
 
             if (response.data.summary) {
                 setSummary(response.data.summary);
             }
 
             if (response.data.monthlySummary) {
-
-                const monthlyChartData = response.data.monthlySummary.flatMap((item: CampusMonthlyChart) => [
-                    { month: toPascalCase(item.month), category: DisposalMethodLabels[DisposalMethod.Landfilling], value: item.landfilling },
-                    { month: toPascalCase(item.month), category: DisposalMethodLabels[DisposalMethod.Recycling], value: item.recycling },
-                    { month: toPascalCase(item.month), category: DisposalMethodLabels[DisposalMethod.Composting], value: item.composting },
-                    { month: toPascalCase(item.month), category: DisposalMethodLabels[DisposalMethod.EnergyRecovery], value: item.energyRecovery },
-                ]);
-                setMonthlyChartData(monthlyChartData);
+                const chartData = transformMonthlyChartData(response.data.monthlySummary);
+                setMonthlyChartData(chartData);
             }
 
         } catch {
@@ -66,9 +102,9 @@ const DashboardSection = () => {
     const config = {
         data: monthlyChartData,
         xField: 'month',
-        yField: 'value',
+        yField: 'totalWeight',
         stack: true,
-        colorField: 'category',
+        colorField: 'disposalMethod',
         legend: {
             position: 'top',
         },

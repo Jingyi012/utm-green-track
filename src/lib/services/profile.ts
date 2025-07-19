@@ -1,9 +1,8 @@
-import { fetchWithAuth } from "./common";
 
 const API_URL = '/api/profile';
 
 export async function getProfile() {
-    const res = await fetchWithAuth(API_URL, { method: 'GET' });
+    const res = await fetch(API_URL, { method: 'GET' });
     const json = await res.json();
 
     if (!res.ok) {
@@ -14,7 +13,7 @@ export async function getProfile() {
 }
 
 export async function updateProfile(data: any) {
-    const res = await fetchWithAuth(API_URL, {
+    const res = await fetch(API_URL, {
         method: 'PUT',
         body: JSON.stringify(data),
     });

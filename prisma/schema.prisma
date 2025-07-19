@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  passwordHash String
+  role         String
+  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime      @updatedAt @db.Timestamptz(3)
+
+  profile      UserProfile?
+  wasteRecords WasteRecord[] @relation("UserWasteRecords")
+}
+
+model UserProfile {
+  id            Int      @id @default(autoincrement())
+  name          String
+  contactNo     String?
+  staffMatricNo String   @unique
+  department    String
+  position      String
+
+  userId        Int      @unique
+  user          User     @relation(fields: [userId], references: [id])
+
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model WasteRecord {
+  id             Int      @id @default(autoincrement())
+  wasteType      String
+  wasteWeight    Float
+  disposalMethod String
+  location       String
+  status         String
+  campus         String
+  date           DateTime @db.Timestamptz(3)
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+
+  createdById    Int
+  createdBy      User     @relation(fields: [createdById], references: [id], name: "UserWasteRecords")
+}
