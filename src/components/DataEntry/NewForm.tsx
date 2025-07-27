@@ -17,7 +17,7 @@ import {
 import FormItem from 'antd/es/form/FormItem';
 import { UploadOutlined, EditOutlined, DeleteOutlined, PaperClipOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
-import { createWasteRecord, uploadAttachment } from '@/lib/services/wasteRecord';
+import { createWasteRecord, uploadAttachment, uploadAttachments } from '@/lib/services/wasteRecord';
 import { WasteRecordInput } from '@/lib/types/wasteRecord';
 import { Campus, CampusLabels } from '@/lib/enum/campus';
 import { WasteType, WasteTypeLabels } from '@/lib/enum/wasteType';
@@ -89,23 +89,33 @@ export default function WasteEntryForm() {
     useEffect(() => {
         if (editingMethod) {
             setEditWasteTypeOptions(wasteTypeMap[editingMethod] || []);
-            editForm.setFieldsValue({ wasteType: undefined });
+
+            const currentType = editForm.getFieldValue('wasteType');
+            const validTypes = (wasteTypeMap[editingMethod] || []).map((opt) => opt.value);
+
+            if (!validTypes.includes(currentType)) {
+                editForm.setFieldsValue({ wasteType: undefined });
+            }
         }
     }, [editingMethod]);
 
     const handleAdd = () => {
-        form.validateFields().then((values) => {
-            const newRow = {
-                key: `${Date.now()}`,
-                date: new Date().toLocaleDateString('en-GB'),
-                ...values,
-                wasteWeight: Number(values.wasteWeight),
-                file: values.file || [],
-            };
+        form.validateFields()
+            .then((values) => {
+                const newRow = {
+                    key: `${Date.now()}`,
+                    date: new Date().toLocaleDateString('en-GB'),
+                    ...values,
+                    wasteWeight: Number(values.wasteWeight),
+                    file: values.file || [],
+                };
 
-            setTableData(prev => [...prev, newRow]);
-            form.resetFields();
-        });
+                setTableData(prev => [...prev, newRow]);
+                form.resetFields();
+            })
+            .catch((err) => {
+                message.error('Please complete all required fields before adding.');
+            });
     };
 
     const handleEdit = (record: any) => {
@@ -136,41 +146,61 @@ export default function WasteEntryForm() {
     };
 
     const handleSubmit = async () => {
-        const hide = message.loading("Submitting records");
-        try {
-            const processedRecords = await Promise.all(
-                tableData.map(async (record) => {
-                    let attachmentUrl: string | undefined;
+        if (tableData.length === 0) {
+            return message.warning('No data to submit. Please add at least one entry.');
+        }
+        console.log(tableData)
+        Modal.confirm({
+            title: 'Confirm Submission',
+            content: 'Are you sure you want to submit all the waste records?',
+            okText: 'Yes, Submit',
+            cancelText: 'Cancel',
+            onOk: async () => {
+                const hide = message.loading("Submitting records...");
 
-                    if (record.file && record.file.length > 0) {
-                        const rawFile = record.file[0]?.originFileObj;
-                        if (rawFile) {
-                            attachmentUrl = await uploadAttachment(rawFile);
+                try {
+                    for (const record of tableData) {
+                        try {
+                            // Create record
+                            const createResponse = await createWasteRecord({
+                                campus: record.campus,
+                                location: record.location,
+                                disposalMethod: record.disposalMethod,
+                                wasteType: record.wasteType,
+                                wasteWeight: record.wasteWeight,
+                                date: new Date().toISOString(),
+                            });
+
+                            const createdId = createResponse.data.id;
+                            if (!createdId) throw new Error('Failed to obtain record ID');
+
+                            // Upload attachment if exists
+                            const fileList: File[] = (record.file ?? [])
+                                .map((f: any) => f.originFileObj)
+                                .filter(Boolean);
+
+                            if (fileList.length > 0) {
+                                const uploadResponse = await uploadAttachments(fileList, createdId);
+                            }
+
+                        } catch (recordErr) {
+                            console.error(`Failed to submit record for ${record.wasteType}`, recordErr);
+                            message.warning(`Record failed: ${record.wasteType}`);
                         }
                     }
 
-                    return {
-                        campus: record.campus,
-                        location: record.location,
-                        disposalMethod: record.disposalMethod,
-                        wasteType: record.wasteType,
-                        wasteWeight: record.wasteWeight,
-                        date: new Date().toISOString(),
-                        attachmentUrl,
-                    };
-                })
-            );
-            await createWasteRecord(processedRecords);
-            hide();
-            message.success('All waste records submitted successfully');
-            setTableData([]);
-            form.resetFields();
-        } catch (err: any) {
-            console.error(err);
-            message.error(err.message || 'Failed to submit records');
-        }
-    };
+                    hide();
+                    message.success('All waste records submitted successfully');
+                    setTableData([]);
+                    form.resetFields();
 
+                } catch (err: any) {
+                    hide();
+                    message.error(err.message || 'Unexpected error occurred');
+                }
+            },
+        });
+    };
 
     const columns = [
         { title: 'No.', render: (_: any, __: any, index: number) => index + 1 },
@@ -182,7 +212,8 @@ export default function WasteEntryForm() {
         { title: 'Waste Weight (kg)', dataIndex: 'wasteWeight' },
         {
             title: 'Attachment',
-            render: () => <PaperClipOutlined />,
+            dataIndex: 'file',
+            render: (files: any[]) => files?.length > 0 ? `${files.length} file(s)` : 'None',
         },
         {
             title: 'Remark',
@@ -238,13 +269,18 @@ export default function WasteEntryForm() {
                                 getValueFromEvent={e => Array.isArray(e) ? e : e?.fileList}
                             >
                                 <Upload
-                                    beforeUpload={() => false}
+                                    beforeUpload={(file) => {
+                                        const isLt5M = file.size / 1024 / 1024 < 5;
+                                        if (!isLt5M) {
+                                            message.error('File must be smaller than 5MB!');
+                                        }
+                                        return isLt5M || Upload.LIST_IGNORE;
+                                    }}
                                     maxCount={1}
                                 >
                                     <Button icon={<UploadOutlined />}>Add file</Button>
                                 </Upload>
                             </Form.Item>
-
                         </Col>
                     </Row>
 
@@ -287,6 +323,25 @@ export default function WasteEntryForm() {
                     </FormItem>
                     <FormItem name="wasteWeight" label="Waste Weight (kg)" rules={[{ required: true }]}>
                         <Input type="number" />
+                    </FormItem>
+                    <FormItem
+                        name="file"
+                        label="Attachment"
+                        valuePropName="fileList"
+                        getValueFromEvent={e => Array.isArray(e) ? e : e?.fileList}
+                    >
+                        <Upload
+                            beforeUpload={(file) => {
+                                const isLt5M = file.size / 1024 / 1024 < 5;
+                                if (!isLt5M) {
+                                    message.error('File must be smaller than 5MB!');
+                                }
+                                return isLt5M || Upload.LIST_IGNORE;
+                            }}
+                            maxCount={1}
+                        >
+                            <Button icon={<UploadOutlined />}>Add files</Button>
+                        </Upload>
                     </FormItem>
                     <div className='flex justify-center'>
                         <Button type="primary" htmlType="submit">Save</Button>

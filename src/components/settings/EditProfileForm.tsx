@@ -13,6 +13,7 @@ import {
     Typography,
     message,
     Spin,
+    Skeleton,
 } from 'antd';
 import { useEffect, useState } from 'react';
 
@@ -29,8 +30,8 @@ const EditProfileForm = () => {
         const fetchData = async () => {
             try {
                 const profile = await getProfile();
-                setUserData(profile);
-                form.setFieldsValue(profile);
+                setUserData(profile.data);
+                form.setFieldsValue(profile.data);
             } catch (error: any) {
                 message.error(error.message || 'Failed to load profile');
             } finally {
@@ -54,18 +55,10 @@ const EditProfileForm = () => {
         }
     };
 
-    if (loading) {
-        return (
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 100 }}>
-                <Spin size="large" tip="Loading profile..." />
-            </div>
-        );
-    }
-
     return (
         <>
             <Title level={3}>Account Information</Title>
-            <Card>
+            <Card loading={loading}>
                 <Form form={form} layout="vertical">
                     <Row gutter={16}>
                         <Col xs={24} md={12}>
@@ -136,9 +129,15 @@ const EditProfileForm = () => {
                             <Form.Item
                                 name="contactNo"
                                 label="Contact No."
-                                rules={[{ required: true, message: 'Enter your contact number' }]}
+                                rules={[
+                                    { required: true, message: 'Enter your contact number' },
+                                    {
+                                        pattern: /^\+?\d{10,15}$/,
+                                        message: 'Enter a valid contact number (10–15 digits, optional +)',
+                                    },
+                                ]}
                             >
-                                <Input />
+                                <Input type='tel' />
                             </Form.Item>
                         </Col>
                     </Row>

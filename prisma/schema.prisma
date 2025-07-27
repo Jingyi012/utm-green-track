@@ -48,4 +48,17 @@ model WasteRecord {
 
   createdById    Int
   createdBy      User     @relation(fields: [createdById], references: [id], name: "UserWasteRecords")
+
+  attachments    WasteRecordAttachment[]
+}
+
+model WasteRecordAttachment {
+  id             Int      @id @default(autoincrement())
+  filePath       String
+  fileName       String
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+
+  wasteRecordId  Int
+  wasteRecord    WasteRecord @relation(fields: [wasteRecordId], references: [id])
 }

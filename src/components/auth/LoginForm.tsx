@@ -33,8 +33,8 @@ export default function LoginForm() {
     };
 
     return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <Card style={{ width: 400, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+        <div className="flex justify-center item-center relative bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-1">
+            <Card style={{ width: 400, border: 'none' }}>
                 <Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
                     Login
                 </Title>
@@ -65,11 +65,11 @@ export default function LoginForm() {
                     </Form.Item>
                 </Form>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-                    <Link href="/auth/reset-password" style={{ fontSize: 12 }}>
+                <div className="flex gap-8 text-xs justify-between">
+                    <Link href="/auth/reset-password">
                         Forgot your password?
                     </Link>
-                    <Link href="/auth/signup" style={{ fontSize: 12 }}>
+                    <Link href="/auth/signup">
                         Don't have an account? Sign Up
                     </Link>
                 </div>

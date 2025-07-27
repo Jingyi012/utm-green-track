@@ -2,7 +2,9 @@ import { prisma } from '@/lib/prisma/prisma';
 import { WasteRecordStatus } from '@/lib/enum/wasteRecordStatus';
 import { WasteRecord, WasteRecordFilter } from '@/lib/types/wasteRecord';
 
-type WasteRecordInput = Omit<WasteRecord, 'id' | 'createdAt' | 'updatedAt'>;
+const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN_URL || 'http://localhost:3000';
+type WasteRecordInput = Omit<WasteRecord, 'id' | 'createdAt' | 'updatedAt' | 'attachments'>;
+type WasteRecordUpdatePayload = Omit<WasteRecord, 'id' | 'createdAt' | 'updatedAt' | 'attachments'>;
 
 // Create a single Waste Record
 export async function createWasteRecord(
@@ -12,6 +14,10 @@ export async function createWasteRecord(
     const created = await prisma.wasteRecord.create({
         data: {
             ...data,
+            wasteWeight:
+                typeof data.wasteWeight === 'string'
+                    ? parseFloat(data.wasteWeight)
+                    : data.wasteWeight,
             status: WasteRecordStatus.New,
             createdById: userId,
         },
@@ -80,12 +86,28 @@ export async function getAllWasteRecords({
             orderBy: { createdAt: 'desc' },
             skip,
             take,
+            include: {
+                attachments: {
+                    select: {
+                        id: true,
+                        filePath: true,
+                    }
+                },
+            },
         }),
         prisma.wasteRecord.count({ where }),
     ]);
 
+    const dataWithFullURLs = data.map(record => ({
+        ...record,
+        attachments: record.attachments.map(att => ({
+            ...att,
+            url: `${DOMAIN}${att.filePath}`,
+        })),
+    }));
+
     return {
-        data,
+        data: dataWithFullURLs,
         totalRecords,
         pageNumber,
         pageSize,
@@ -101,10 +123,10 @@ export async function getWasteRecordById(id: number): Promise<WasteRecord | null
 }
 
 // Update a Waste Record
-export async function updateWasteRecord(id: number, data: Partial<WasteRecord>) {
+export async function updateWasteRecord(id: number, data: WasteRecordUpdatePayload) {
     const updateData = {
         ...data,
-        updatedAt: new Date(), // Optional, if @updatedAt not used in schema
+        updatedAt: new Date(),
     };
 
     await prisma.wasteRecord.update({

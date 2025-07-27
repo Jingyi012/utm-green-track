@@ -64,28 +64,46 @@ export async function deleteWasteRecord(id: string) {
     return json;
 }
 
-export async function uploadAttachment(file: File): Promise<string> {
+export async function uploadAttachment(file: File, wasteRecordId: number) {
     const formData = new FormData();
+    formData.append('wasteRecordId', `${wasteRecordId}`);
     formData.append('file', file);
 
-    const res = await fetch('/api/waste-record/upload', {
+    const res = await fetch(`${API_URL}/upload`, {
         method: 'POST',
         body: formData,
     });
 
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || 'Failed to upload attachment');
-    return json.url || json.fileUrl || '';
+    return json;
+}
+
+export async function uploadAttachments(fileList: File[], wasteRecordId: number) {
+    const formData = new FormData();
+    formData.append('wasteRecordId', `${wasteRecordId}`);
+    for (const file of fileList) {
+        formData.append('file', file);
+    }
+
+    const res = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        body: formData,
+    });
+
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to upload attachment');
+    return json;
 }
 
 export async function getWasteStatisticByYear(year: number) {
-    const res = await fetch(`/api/waste-record/statistic?year=${year}`);
+    const res = await fetch(`${API_URL}/statistic?year=${year}`);
     if (!res.ok) throw new Error('Failed to fetch waste statistic');
     return res.json();
 }
 
 export async function getCampusMonthlySummary(campus: string, year: number) {
-    const res = await fetch(`/api/waste-record/monthly-summary?campus=${campus}&year=${year}`);
+    const res = await fetch(`${API_URL}/monthly-summary?campus=${campus}&year=${year}`);
     if (!res.ok) throw new Error('Failed to fetch monthly campus waste chart');
     return res.json();
 }

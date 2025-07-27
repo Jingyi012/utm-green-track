@@ -34,7 +34,7 @@ export default function RegistrationForm() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto bg-white p-8 shadow rounded">
+        <div className="mx-auto bg-white p-8 shadow rounded-xl bg-white/95 backdrop-blur-sm border border-green-100">
             <Title level={3} className="text-center mb-6 text-primary">Create New Account</Title>
             <Form layout="vertical" form={form} onFinish={handleRegister}>
                 <Row gutter={16}>
@@ -164,10 +164,6 @@ export default function RegistrationForm() {
                         </Form.Item>
                     </Col>
                 </Row>
-
-                <Form.Item>
-
-                </Form.Item>
             </Form>
             <Modal
                 title="Registration Successful"

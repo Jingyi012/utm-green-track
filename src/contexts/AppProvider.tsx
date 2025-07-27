@@ -1,6 +1,6 @@
 'use client';
 
-import { ConfigProvider } from 'antd';
+import { App, ConfigProvider } from 'antd';
 import { ProConfigProvider, enUSIntl } from '@ant-design/pro-components';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { SessionProvider } from 'next-auth/react';
@@ -11,7 +11,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             <ConfigProvider locale={enUSIntl}
                 theme={{
                     token: {
-                        colorPrimary: '#2c661f',
+                        colorPrimary: '#15803d',
                         colorPrimaryHover: '#388426', // Slightly lighter for hover state
                         colorPrimaryActive: '#1e4b14', // Darker for active state
                         colorBgContainer: '#ffffffff', // Neutral light background
@@ -30,9 +30,11 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
                 }}
             >
                 <ProConfigProvider intl={enUSIntl}>
-                    <SessionProvider>
-                        {children}
-                    </SessionProvider>
+                    <App>
+                        <SessionProvider>
+                            {children}
+                        </SessionProvider>
+                    </App>
                 </ProConfigProvider>
             </ConfigProvider>
         </AntdRegistry>

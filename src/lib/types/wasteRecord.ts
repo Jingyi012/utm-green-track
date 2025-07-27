@@ -1,17 +1,22 @@
 import { UploadFile } from "antd"
 
 export type WasteRecord = {
-    id?: string,
+    id?: number,
     campus: string,
     location: string,
     disposalMethod: string,
     wasteWeight: number,
     wasteType: string,
-    attachmentUrl: string,
     status: string,
     date: Date,
+    attachments?: Attachments,
     createdAt: Date,
     updatedAt: Date
+}
+
+export type Attachments = {
+    id: number,
+    url: string
 }
 
 export type WasteRecordInput = WasteRecord & {

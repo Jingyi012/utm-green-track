@@ -38,9 +38,33 @@ export async function registerUser(data: RegistrationFormData): Promise<void> {
 
 export async function getUserByEmail(email: string): Promise<User> {
     try {
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({
+            where: { email },
+            select: {
+                id: true,
+                email: true,
+                role: true,
+                profile: {
+                    select: {
+                        name: true,
+                        contactNo: true,
+                        staffMatricNo: true,
+                        department: true,
+                        position: true,
+                    },
+                },
+            },
+        });
+
         if (!user) throw new Error('User not found');
-        return user as User;
+        if (!user.profile) throw new Error('User profile not found');
+
+        const { profile, ...baseUser } = user;
+
+        return {
+            ...baseUser,
+            ...profile,
+        };
     } catch (error: any) {
         throw new Error(error.message);
     }
@@ -121,7 +145,7 @@ export async function updateUserProfile(
     }
 }
 
-export async function deleteUser(uid: string): Promise<void> {
+export async function deleteUser(uid: number): Promise<void> {
     try {
         await prisma.user.delete({ where: { id: uid } });
     } catch (error: any) {

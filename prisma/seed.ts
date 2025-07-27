@@ -6,14 +6,14 @@ async function main() {
     // Create User + Profile
     const user1 = await prisma.user.create({
         data: {
-            email: 'john@example.com',
+            email: 'jingyi012@gmail.com',
             passwordHash: 'hashedpassword123',
             role: 'staff',
             profile: {
                 create: {
-                    name: 'John Doe',
+                    name: 'Jing Yi',
                     staffMatricNo: 'STAFF001',
-                    department: 'Environmental',
+                    department: 'Malaysia-Japan Advanced Research Centre',
                     position: 'Technician',
                     contactNo: '011-12345678'
                 }

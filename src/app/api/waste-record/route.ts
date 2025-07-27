@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createWasteRecords, getAllWasteRecords } from '@/server/services/wasteRecord.service';
+import { createWasteRecord, createWasteRecords, getAllWasteRecords } from '@/server/services/wasteRecord.service';
 import { formatPaginatedResponse, formatResponse } from '@/lib/types/apiResponse';
 import { WasteRecordFilter } from '@/lib/types/wasteRecord';
 import { getToken } from 'next-auth/jwt';
@@ -60,17 +60,11 @@ export async function POST(req: NextRequest) {
         const uid = token.id;
 
         const body = await req.json();
-        if (!Array.isArray(body)) {
-            return NextResponse.json(
-                formatResponse(null, false, 'Expected an array of records'),
-                { status: 400 }
-            );
-        }
 
-        const result = await createWasteRecords(body, uid);
+        const result = await createWasteRecord(body, uid);
 
         return NextResponse.json(
-            formatResponse({ ids: result }, true, 'Waste records created successfully'),
+            formatResponse({ id: result }, true, 'Waste record created successfully'),
             { status: 201 }
         );
     } catch (error: any) {

@@ -50,7 +50,7 @@ export default function ResetPasswordForm() {
                     </Button>
                 </Form.Item>
 
-                <div className="flex gap-8">
+                <div className="flex gap-8 text-xs justify-between">
                     <a href="/auth/login" className="text-primary underline">Already have an account? Sign In</a>
                     <a href="/auth/signup" className="text-primary underline">Don't have an account? Sign Up
                     </a>

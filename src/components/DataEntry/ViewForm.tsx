@@ -55,7 +55,7 @@ const WasteTable = () => {
             });
             setData(res.data);
             setTotal(res.pagination.totalCount);
-
+            setPage(res.pagination.pageNumber);
             return {
                 data: res.data,
                 success: res.success,
@@ -160,11 +160,18 @@ const WasteTable = () => {
         },
         {
             title: 'Attachment',
-            render: () => (
-                <Tooltip title="View Attachment">
-                    <PaperClipOutlined />
-                </Tooltip>
-            ),
+            dataIndex: 'attachments',
+            render: (attachments: { filePath: string }[]) => {
+                if (!attachments || attachments.length === 0) return '-';
+
+                return attachments.map((file, index) => (
+                    <Tooltip title="View Attachment" key={index}>
+                        <a href={file.filePath} target="_blank" rel="noopener noreferrer" style={{ marginRight: 8 }}>
+                            <PaperClipOutlined />
+                        </a>
+                    </Tooltip>
+                ));
+            },
             hideInSearch: true,
         },
         {

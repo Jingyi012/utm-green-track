@@ -1,9 +1,9 @@
 export type User = {
-    id: string;
+    id: number;
     name: string;
     email: string;
     department: string;
-    contactNo: string;
+    contactNo: string | null;
     position: string;
     role: string;
     staffMatricNo: string;

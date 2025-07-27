@@ -1,11 +1,11 @@
 'use client';
 
 import { Avatar, Button, Dropdown, Layout, Menu, MenuProps, message, theme } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { menuItems, profileMenuItems } from '@/lib/config/menu';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { UserOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import ProtectedRoute from '@/components/routes/ProtectedRoute';
 import { signOut, useSession } from 'next-auth/react';
 
@@ -35,6 +35,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             }
         }
     };
+
+    const initials = user?.name
+        ? user.name
+            .split(' ')
+            .map(word => word[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase()
+        : 'US';
 
     return (
         <ProtectedRoute>
@@ -74,7 +83,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     />
                 </Sider>
                 <Layout>
-                    <Header style={{ padding: '0', background: colorPrimary, display: 'flex', justifyContent: "space-between", position: 'sticky', top: 0, zIndex: '1000' }}>
+                    <Header style={{
+                        padding: '0',
+                        background: 'linear-gradient(135deg, #15803d 0%, #16a34a 50%, #059669 100%)',
+                        display: 'flex',
+                        justifyContent: "space-between",
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: '1000'
+                    }}>
                         <Button
                             type="text"
                             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -94,10 +111,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         >
                             <div className="flex items-center gap-2 cursor-pointer mr-[24px]">
                                 <div className="flex flex-col items-end mr-2">
-                                    <span className="text-white leading-none">Welcome</span>
+                                    <span className="text-white text-xs leading-none">Welcome</span>
                                     <span className="text-white font-medium leading-snug">{user?.name || 'User'}</span>
                                 </div>
-                                <Avatar size="large" icon={<UserOutlined />} />
+                                <Avatar size="large" style={{ backgroundColor: '#0f6448ff' }}>
+                                    {initials}
+                                </Avatar>
                             </div>
                         </Dropdown>
                     </Header>
@@ -109,8 +128,4 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </Layout>
         </ProtectedRoute >
     );
-}
-
-function refreshAuth() {
-    throw new Error('Function not implemented.');
 }

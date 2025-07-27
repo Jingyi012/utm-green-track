@@ -1,24 +1,17 @@
-'use client';
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
-import Image from 'next/image';
+import AuthLayout from "@/components/layout/authLayout";
 
-export default function RegistrationPage() {
+export default function ResetPasswordPage() {
     return (
-        <>
-            <div className="h-30 bg-primary flex justify-center items-center flex-col">
-                <Image
-                    src="/images/logo2.png"
-                    alt="Logo"
-                    height={120}
-                    width={120}
-                    className="z-10"
-                />
-            </div>
-
-            <div className="flex justify-center mt-5">
-                <ResetPasswordForm />
-            </div>
-
-        </>
-    )
+        <AuthLayout
+            title="Reset Your Password"
+            subtitle="Secure Account Recovery"
+            containerSize="small"
+            headerHeight="medium"
+            footerMessage="Secure access to sustainable journey"
+            footerIcon="🔒"
+        >
+            <ResetPasswordForm />
+        </AuthLayout>
+    );
 }

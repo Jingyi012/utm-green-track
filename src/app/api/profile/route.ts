@@ -12,9 +12,9 @@ export async function GET(req: NextRequest) {
         }
 
         const user = await getUserByUID(token.id);
-        return NextResponse.json(user);
+        return NextResponse.json(formatResponse(user));
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 401 });
+        return NextResponse.json(formatResponse(null, false, error.message), { status: 500 });
     }
 }
 
@@ -30,6 +30,6 @@ export async function PUT(req: NextRequest) {
         await updateUserProfile(token.id, data);
         return NextResponse.json({ message: 'Profile updated' });
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        return NextResponse.json(formatResponse(null, false, error.message), { status: 500 });
     }
 }
