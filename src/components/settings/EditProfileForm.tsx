@@ -12,8 +12,6 @@ import {
     Select,
     Typography,
     message,
-    Spin,
-    Skeleton,
 } from 'antd';
 import { useEffect, useState } from 'react';
 

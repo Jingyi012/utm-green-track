@@ -1,6 +1,6 @@
 export enum Campus {
-    UTMJohorBahru = "utmJb",
-    UTMKualaLumpur = "utmKl",
+    UTMJohorBahru = "utmJB",
+    UTMKualaLumpur = "utmKL",
     UTMPagoh = "utmPagoh"
 }
 

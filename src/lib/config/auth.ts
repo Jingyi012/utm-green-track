@@ -24,15 +24,15 @@ export const authOptions: NextAuthOptions = {
                     include: { profile: true },
                 });
 
-                // if (!user || !(await compare(credentials.password, user.passwordHash))) {
-                //     throw new Error("Invalid email or password");
-                // }
+                if (!user || !(await compare(credentials.password, user.passwordHash))) {
+                    throw new Error("Invalid email or password");
+                }
 
                 return {
                     id: user.id,
                     email: user.email,
                     role: user.role,
-                    name: user.profile?.name,
+                    name: user.profile?.name ?? "",
                 };
             },
         }),

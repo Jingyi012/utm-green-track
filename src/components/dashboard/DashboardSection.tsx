@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from "react";
 import InfoCardGrid from "./InfoCardGrid";
-import { Card, Col, message, Row, Select, Skeleton, Spin } from "antd";
-import { getCampusMonthlySummary } from "@/lib/services/wasteRecord";
+import { Card, Col, message, Row, Select, Skeleton } from "antd";
+import { getCampusYearlySummary } from "@/lib/services/wasteRecord";
 import { Column } from "@ant-design/charts";
 import { DisposalMethod, DisposalMethodLabels } from "@/lib/enum/disposalMethod";
 import { Campus, CampusLabels } from "@/lib/enum/campus";
@@ -43,7 +43,7 @@ export function transformMonthlyChartData(
             dataMap.set(key, {
                 month,
                 disposalMethod: methodLabel,
-                totalWeight: item.totalWeight,
+                totalWeight: Number(item.totalWeight.toFixed(2)),
             });
         }
     });
@@ -77,7 +77,7 @@ const DashboardSection = () => {
         try {
             setChartLoading(true);
 
-            const response = await getCampusMonthlySummary(campus, year);
+            const response = await getCampusYearlySummary(campus, year);
 
             if (response.data.summary) {
                 setSummary(response.data.summary);

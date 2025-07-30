@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { resetPassword } from '@/server/services/user.service';
+import { requestPasswordReset } from '@/server/services/user.service';
 import { formatResponse } from '@/lib/types/apiResponse';
 
 export async function POST(req: Request) {
     try {
-        const { token, newPassword } = await req.json();
-        await resetPassword(token, newPassword);
-        return NextResponse.json(formatResponse(null, true, 'Password reset successfully'), { status: 200 });
+        const { email } = await req.json();
+        await requestPasswordReset(email);
+        return NextResponse.json(formatResponse(null, true, 'Reset email sent'), { status: 200 });
     } catch (error: any) {
         return NextResponse.json(formatResponse(null, false, error.message), { status: 400 });
     }

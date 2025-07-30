@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma/prisma';
 import bcrypt from 'bcrypt';
 import type { RegistrationFormData, User } from '@/lib/types/user';
+import crypto from 'crypto';
+import { sendResetEmail } from './email.service';
 
 export async function registerUser(data: RegistrationFormData): Promise<number> {
     const { email, password, confirmPassword, ...profile } = data;
@@ -156,17 +158,68 @@ export async function deleteUser(uid: number): Promise<void> {
     }
 }
 
-export async function resetPassword(email: string): Promise<string> {
-    // Simulate sending reset link — you should implement email logic here
+export async function requestPasswordReset(email: string): Promise<void> {
     try {
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({
+            where: { email },
+            include: {
+                profile: {
+                    select: {
+                        name: true
+                    }
+                }
+            }
+        });
         if (!user) throw new Error("User not found");
 
-        // Normally you'd generate a token + email logic here
-        return `Reset link for ${email} (simulate in dev)`;
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiry = new Date(Date.now() + 1000 * 60 * 60);
+
+        await prisma.passwordResetToken.create({
+            data: {
+                token,
+                userId: user.id,
+                expiresAt: expiry,
+            },
+        });
+
+        const resetLink = `${process.env.NEXT_PUBLIC_DOMAIN_URL}/reset-password?token=${token}`;
+        await sendResetEmail(user.profile?.name ?? "User", email, resetLink);
+
     } catch (error: any) {
         throw new Error(error.message);
     }
+}
+
+export async function validateResetToken(token: string): Promise<void> {
+    const resetRecord = await prisma.passwordResetToken.findUnique({
+        where: { token },
+        include: { user: true },
+    });
+
+    if (!resetRecord || resetRecord.expiresAt < new Date()) {
+        throw new Error('Invalid or expired token');
+    }
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+    const resetRecord = await prisma.passwordResetToken.findUnique({
+        where: { token },
+        include: { user: true },
+    });
+
+    if (!resetRecord || resetRecord.expiresAt < new Date()) {
+        throw new Error('Invalid or expired token');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+        where: { id: resetRecord.user.id },
+        data: { passwordHash: hashedPassword },
+    });
+
+    await prisma.passwordResetToken.delete({ where: { token } });
 }
 
 export async function changePassword(

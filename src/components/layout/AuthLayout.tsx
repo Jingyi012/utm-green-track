@@ -148,7 +148,7 @@ export default function AuthLayout({
             </header>
 
             {/* Enhanced Main Content */}
-            <main className={`container mx-auto px-4 py-8 ${headerHeight === 'small' ? '-mt-12' : '-mt-20'} relative z-20`}>
+            <main className={`container mx-auto px-4 py-8 ${headerHeight === 'small' ? '-mt-12' : headerHeight === 'medium' ? '-mt-15' : '-mt-20'} relative z-20`}>
                 {/* Form Container with Enhanced Styling */}
                 <div className={`relative ${containerSizes[containerSize]} mx-auto`}>
                     {/* Background Glow Effect */}

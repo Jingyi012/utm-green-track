@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma/prisma';
 import { CampusYearSummaryResponse, DisposalCategoryTotal, MonthlyDisposalWasteTypeData, MonthlyStatisticByYearResponse, MonthlyDisposalSummary, WasteTypeTotal } from '@/lib/types/wasteSummary';
+import { Prisma } from '@prisma/client';
 
 const GHG_EMISSION_FACTORS = {
     Landfilling: 0.5,
@@ -14,30 +15,32 @@ export async function getWasteStatistic({ uid, year }: { uid?: number; year: num
     const startDate = `${year}-01-01`;
     const endDate = `${year + 1}-01-01`;
 
-    const params: any[] = [startDate, endDate];
-    let whereClause = `WHERE "createdAt" >= $1::timestamp AND "createdAt" < $2::timestamp`;
+    const params: Prisma.Sql[] = [
+        Prisma.sql`${startDate}`,
+        Prisma.sql`${endDate}`,
+    ];
+
+    let whereClause = Prisma.sql`WHERE "date" >= ${params[0]}::timestamp AND "date" < ${params[1]}::timestamp`;
 
     if (uid) {
-        params.push(Number(uid));
-        whereClause += ` AND "createdById" = $${params.length}`;
+        params.push(Prisma.sql`${uid}`);
+        whereClause = Prisma.sql`${whereClause} AND "createdById" = ${params[2]}`;
     }
 
-    const query = `
-        SELECT 
-            EXTRACT(MONTH FROM "createdAt") AS month,
-            "disposalMethod",
-            "wasteType",
-            SUM("wasteWeight") AS "totalWeight"
-        FROM "WasteRecord"
-        ${whereClause}
-        GROUP BY month, "disposalMethod", "wasteType"
-        ORDER BY month
-    `;
+    const query = Prisma.sql`
+    SELECT 
+      EXTRACT(MONTH FROM "date") AS month,
+      "disposalMethod",
+      "wasteType",
+      SUM("wasteWeight") AS "totalWeight"
+    FROM "WasteRecord"
+    ${whereClause}
+    GROUP BY month, "disposalMethod", "wasteType"
+    ORDER BY month
+  `;
 
-    const rawRecords = await prisma.$queryRawUnsafe(query, ...params);
-
-    const records = rawRecords as Array<MonthlyDisposalWasteTypeData>;
-    return summarizeWasteStatistic(records, year);
+    const rawRecords = await prisma.$queryRaw<MonthlyDisposalWasteTypeData[]>(query);
+    return summarizeWasteStatistic(rawRecords, year);
 }
 
 export function summarizeWasteStatistic(records: MonthlyDisposalWasteTypeData[], year: number) {
@@ -87,7 +90,7 @@ export function summarizeWasteStatistic(records: MonthlyDisposalWasteTypeData[],
     } as MonthlyStatisticByYearResponse;
 }
 
-export const GetCampusMonthlySummary = async ({
+export const GetCampusYearlySummary = async ({
     campus,
     year = new Date().getFullYear(),
 }: {
@@ -97,24 +100,26 @@ export const GetCampusMonthlySummary = async ({
     const startDate = `${year}-01-01`;
     const endDate = `${year + 1}-01-01`;
 
-    const params: any[] = [startDate, endDate];
-    let whereClause = `WHERE "createdAt" >= $1::timestamp AND "createdAt" < $2::timestamp`;
+    const start = Prisma.sql`${startDate}`;
+    const end = Prisma.sql`${endDate}`;
+    let whereClause = Prisma.sql`WHERE "date" >= ${start}::timestamp AND "date" < ${end}::timestamp`;
 
     if (campus) {
-        params.push(campus);
-        whereClause += ` AND "campus" = $${params.length}`;
+        whereClause = Prisma.sql`${whereClause} AND "campus" = ${Prisma.sql`${campus}`}`;
     }
 
-    const records = await prisma.$queryRawUnsafe(`
+    const query = Prisma.sql`
     SELECT 
-        EXTRACT(MONTH FROM "createdAt") AS month,
-        "disposalMethod",
-        SUM("wasteWeight") AS "totalWeight"
+      EXTRACT(MONTH FROM "date") AS month,
+      "disposalMethod",
+      SUM("wasteWeight") AS "totalWeight"
     FROM "WasteRecord"
     ${whereClause}
     GROUP BY month, "disposalMethod"
     ORDER BY month
-  `, ...params) as MonthlyDisposalSummary[];
+  `;
+
+    const records = await prisma.$queryRaw<MonthlyDisposalSummary[]>(query);
 
     let totalWaste = 0;
     let totalRecycled = 0;

@@ -13,9 +13,21 @@ export async function registerUser(data: any) {
 
 
 export async function requestPasswordReset(email: string) {
-    return fetcher(`${API_URL}/reset-password`, {
+    return fetcher<GeneralResponse<void>>(`${API_URL}/forgot-password`, {
         method: 'POST',
         body: JSON.stringify({ email }),
+    });
+}
+
+export async function validateResetToken(token: string) {
+    const params = new URLSearchParams({ token });
+    return fetcher<GeneralResponse<void>>(`${API_URL}/validate-reset-token?${params.toString()}`);
+}
+
+export async function resetPassword(token: string, newPassword: string) {
+    return fetcher<GeneralResponse<void>>(`${API_URL}/reset-password`, {
+        method: 'POST',
+        body: JSON.stringify({ token, newPassword }),
     });
 }
 

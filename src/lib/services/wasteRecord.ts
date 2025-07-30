@@ -68,6 +68,6 @@ export async function getWasteStatisticByYear(year: number) {
     return fetcher<GeneralResponse<MonthlyStatisticByYearResponse>>(`${API_URL}/statistic?year=${year}`);
 }
 
-export async function getCampusMonthlySummary(campus: string, year: number): Promise<GeneralResponse<CampusYearSummaryResponse>> {
-    return fetcher<GeneralResponse<CampusYearSummaryResponse>>(`${API_URL}/monthly-summary?campus=${campus}&year=${year}`);
+export async function getCampusYearlySummary(campus: string, year: number): Promise<GeneralResponse<CampusYearSummaryResponse>> {
+    return fetcher<GeneralResponse<CampusYearSummaryResponse>>(`${API_URL}/yearly-summary?campus=${campus}&year=${year}`);
 }

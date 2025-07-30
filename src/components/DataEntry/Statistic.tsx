@@ -107,7 +107,7 @@ const WasteManagementTable = () => {
         energyRecovery: 0,
     };
 
-    const renderCell = (value: any, _: any, index: number) => index === 12 ? <strong>{value || 0}</strong> : value || 0;
+    const renderCell = (value: any, _: any, index: number) => index === 12 ? <strong>{formatNumber(value)}</strong> : formatNumber(value);
     const renderMonth = (value: any, _: any, index: number) => index === 12 ? <strong>{value}</strong> : value;
 
     const columns = [

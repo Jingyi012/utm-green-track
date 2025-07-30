@@ -36,7 +36,7 @@ export default function LoginForm() {
         <div className="flex justify-center item-center relative bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-1">
             <Card style={{ width: 400, border: 'none' }}>
                 <Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
-                    Login
+                    Sign In
                 </Title>
                 <Form layout="vertical" onFinish={onFinish}>
                     <Form.Item
@@ -60,13 +60,13 @@ export default function LoginForm() {
 
                     <Form.Item>
                         <Button type="primary" loading={loading} htmlType="submit" block>
-                            Sign In
+                            Login
                         </Button>
                     </Form.Item>
                 </Form>
 
                 <div className="flex gap-8 text-xs justify-between">
-                    <Link href="/auth/reset-password">
+                    <Link href="/auth/forgot-password">
                         Forgot your password?
                     </Link>
                     <Link href="/auth/signup">

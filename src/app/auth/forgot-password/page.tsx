@@ -1,7 +1,7 @@
-import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
+import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
 import AuthLayout from "@/components/layout/AuthLayout";
 
-export default function ResetPasswordPage() {
+export default function ForgotPasswordPage() {
     return (
         <AuthLayout
             title="Reset Your Password"
@@ -11,7 +11,7 @@ export default function ResetPasswordPage() {
             footerMessage="Secure access to sustainable journey"
             footerIcon="🔒"
         >
-            <ResetPasswordForm />
+            <ForgotPasswordForm />
         </AuthLayout>
     );
 }

@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { message } from 'antd';
+import { formatNumber } from '../utils/formatter';
 
 function getNestedValue(obj: any, path: (string | number)[]): any {
     return path.reduce((acc, key) => acc?.[key], obj);
@@ -35,7 +36,7 @@ export const exportExcelWasteStatistic = (tableData: any[], columns: any[], year
                 const value = Array.isArray(child.dataIndex)
                     ? getNestedValue(row, child.dataIndex)
                     : row[child.dataIndex];
-                rowData.push(value ?? 0);
+                rowData.push(formatNumber(value));
             });
         });
         return rowData;
@@ -76,7 +77,7 @@ export const exportPDFWasteStatistic = (tableData: any[], columns: any[], year: 
         return;
     }
 
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: 'landscape' });
     doc.setFontSize(12);
     doc.text(`Waste Statistic (${year})`, 14, 16);
 
@@ -101,7 +102,7 @@ export const exportPDFWasteStatistic = (tableData: any[], columns: any[], year: 
                 const value = Array.isArray(child.dataIndex)
                     ? getNestedValue(row, child.dataIndex)
                     : row[child.dataIndex];
-                rowData.push(value ?? 0);
+                rowData.push(formatNumber(value));
             });
         });
         return rowData;

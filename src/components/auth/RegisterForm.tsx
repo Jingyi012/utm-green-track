@@ -99,7 +99,10 @@ export default function RegistrationForm() {
                         <Form.Item
                             label="Password"
                             name="password"
-                            rules={[{ required: true, message: 'Please enter a password' }]}
+                            rules={[
+                                { required: true, message: 'Please enter a password' },
+                                { min: 6, message: 'Password must be at least 6 characters' }
+                            ]}
                             hasFeedback
                         >
                             <Input.Password placeholder="Enter your password" />
