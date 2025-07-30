@@ -4,21 +4,21 @@ import InfoCardGrid from "./InfoCardGrid";
 import { Card, Col, message, Row, Select, Skeleton, Spin } from "antd";
 import { getCampusMonthlySummary } from "@/lib/services/wasteRecord";
 import { Column } from "@ant-design/charts";
-import { CampusMonthlyChart } from "@/lib/types/campusMonthlyChart";
 import { DisposalMethod, DisposalMethodLabels } from "@/lib/enum/disposalMethod";
 import { Campus, CampusLabels } from "@/lib/enum/campus";
+import { MonthlyDisposalSummary, TotalSummary } from "@/lib/types/wasteSummary";
 
 export function transformMonthlyChartData(
-    rawData: CampusMonthlyChart[],
+    rawData: MonthlyDisposalSummary[],
     year = 2025
-): CampusMonthlyChart[] {
+): MonthlyDisposalSummary[] {
     const allMonths = Array.from({ length: 12 }, (_, i) =>
         new Date(year, i).toLocaleString("default", { month: "short" })
     );
 
     const disposalMethods = Object.values(DisposalMethod);
 
-    const dataMap = new Map<string, CampusMonthlyChart>();
+    const dataMap = new Map<string, MonthlyDisposalSummary>();
 
     // Initialize all months × disposal methods to 0
     for (const month of allMonths) {
@@ -64,14 +64,14 @@ const DashboardSection = () => {
     const [campus, setCampus] = useState(Campus.UTMJohorBahru);
     const [year, setYear] = useState(currentYear);
     const [chartLoading, setChartLoading] = useState<boolean>(false);
-    const [summary, setSummary] = useState({
+    const [summary, setSummary] = useState<TotalSummary>({
         totalWaste: 0,
         totalRecycled: 0,
         totalLandfilled: 0,
         totalGHGReduction: 0,
         totalLandfillSavings: 0
     });
-    const [monthlyChartData, setMonthlyChartData] = useState<CampusMonthlyChart[]>([]);
+    const [monthlyChartData, setMonthlyChartData] = useState<MonthlyDisposalSummary[]>([]);
 
     const fecthMonthlyData = async () => {
         try {

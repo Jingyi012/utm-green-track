@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest) {
 
         const data = await req.json();
         await updateUserProfile(token.id, data);
-        return NextResponse.json({ message: 'Profile updated' });
+        return NextResponse.json(formatResponse(null, true, 'Profile updated'));
     } catch (error: any) {
         return NextResponse.json(formatResponse(null, false, error.message), { status: 500 });
     }

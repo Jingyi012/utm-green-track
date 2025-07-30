@@ -1,7 +1,7 @@
 import { UploadFile } from "antd"
 
 export type WasteRecord = {
-    id?: number,
+    id: number,
     campus: string,
     location: string,
     disposalMethod: string,
@@ -9,14 +9,15 @@ export type WasteRecord = {
     wasteType: string,
     status: string,
     date: Date,
-    attachments?: Attachments,
+    attachments?: Attachment,
     createdAt: Date,
     updatedAt: Date
 }
 
-export type Attachments = {
+export type Attachment = {
     id: number,
-    url: string
+    url: string,
+    fileName: string,
 }
 
 export type WasteRecordInput = WasteRecord & {
@@ -34,4 +35,14 @@ export type WasteRecordFilter = {
     status?: string;
     fromDate?: string;
     toDate?: string;
+}
+
+export type WasteRecordFilterWithoutUid = Omit<WasteRecordFilter, "uid">
+
+export interface WasteRecordIdResponse {
+    id: number;
+}
+
+export interface WasteRecordIdsResponse {
+    ids: number[];
 }

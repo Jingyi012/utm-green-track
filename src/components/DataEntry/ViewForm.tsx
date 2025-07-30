@@ -1,20 +1,17 @@
 'use client';
 
 import {
-    Input,
     Button,
     Tooltip,
-    Badge,
     message,
     Card,
 } from 'antd';
 import {
-    SearchOutlined,
     FilePdfOutlined,
     FileExcelOutlined,
     PaperClipOutlined,
 } from '@ant-design/icons';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getWasteRecords, getWasteRecordsPaginated } from '@/lib/services/wasteRecord';
 import { exportExcelWasteRecord, exportPdfWasteRecord } from '@/lib/reportExports/wasteRecords';
 import { confirmAction } from '@/lib/utils/confirmAction';
@@ -22,7 +19,7 @@ import { ProColumns, ProTable } from '@ant-design/pro-components';
 import { Campus, CampusLabels } from '@/lib/enum/campus';
 import { DisposalMethod, DisposalMethodLabels } from '@/lib/enum/disposalMethod';
 import { WasteType, WasteTypeLabels } from '@/lib/enum/wasteType';
-import { WasteRecord } from '@/lib/types/wasteRecord';
+import { WasteRecord, WasteRecordFilterWithoutUid } from '@/lib/types/wasteRecord';
 import { WasteRecordStatus, wasteRecordStatusLabels } from '@/lib/enum/wasteRecordStatus';
 import { SortOrder } from 'antd/lib/table/interface';
 
@@ -36,16 +33,7 @@ const WasteTable = () => {
     const [excelLoading, setExcelLoading] = useState<boolean>(false);
     const [pdfLoading, setPdfLoading] = useState<boolean>(false);
 
-    const fetchData = async (filters: {
-        pageNumber?: number,
-        pageSize?: number,
-        campus?: string,
-        disposalMethod?: string,
-        wasteType?: string,
-        status?: string,
-        fromDate?: string,
-        toDate?: string
-    }) => {
+    const fetchData = async (filters: WasteRecordFilterWithoutUid) => {
         setLoading(true);
         try {
             const res = await getWasteRecordsPaginated({
@@ -96,18 +84,20 @@ const WasteTable = () => {
             fieldProps: {
                 format: 'YYYY-MM-DD',
             },
-            transform: (value: any) => {
-                if (value && value.length === 2) {
-                    const start = new Date(value[0]);
-                    const end = new Date(value[1]);
-                    end.setHours(23, 59, 59, 999);
+            search: {
+                transform: (value: any) => {
+                    if (value && value.length === 2) {
+                        const start = new Date(value[0]);
+                        const end = new Date(value[1]);
+                        end.setHours(23, 59, 59, 999);
 
-                    return {
-                        fromDate: start.toISOString(),
-                        toDate: end.toISOString(),
-                    };
+                        return {
+                            fromDate: start.toISOString(),
+                            toDate: end.toISOString(),
+                        };
+                    }
+                    return {};
                 }
-                return {};
             }
         },
         {
@@ -161,8 +151,10 @@ const WasteTable = () => {
         {
             title: 'Attachment',
             dataIndex: 'attachments',
-            render: (attachments: { filePath: string }[]) => {
-                if (!attachments || attachments.length === 0) return '-';
+            render: (_: any, record: WasteRecord) => {
+                const attachments = Array.isArray(record.attachments) ? record.attachments : [];
+
+                if (attachments.length === 0) return '-';
 
                 return attachments.map((file, index) => (
                     <Tooltip title="View Attachment" key={index}>

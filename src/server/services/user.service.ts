@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma/prisma';
 import bcrypt from 'bcrypt';
 import type { RegistrationFormData, User } from '@/lib/types/user';
 
-export async function registerUser(data: RegistrationFormData): Promise<void> {
+export async function registerUser(data: RegistrationFormData): Promise<number> {
     const { email, password, confirmPassword, ...profile } = data;
 
     if (password !== confirmPassword) {
@@ -15,7 +15,7 @@ export async function registerUser(data: RegistrationFormData): Promise<void> {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        await prisma.user.create({
+        const user = await prisma.user.create({
             data: {
                 email,
                 passwordHash: hashedPassword,
@@ -31,6 +31,9 @@ export async function registerUser(data: RegistrationFormData): Promise<void> {
                 },
             },
         });
+
+        return user.id;
+
     } catch (error: any) {
         throw new Error(error.message);
     }

@@ -27,14 +27,14 @@ export const formatPaginatedResponse = <T>(
     },
 });
 
-export interface Response<T> {
+export interface GeneralResponse<T> {
     success: boolean;
     data: T;
     message?: string;
     [key: string]: any;
 }
 
-export const formatResponse = <T>(data: T, success: boolean = true, message?: string, extras?: Record<string, any>) => {
+export const formatResponse = <T>(data: T, success: boolean = true, message?: string, extras?: Record<string, any>): GeneralResponse<T> => {
     return {
         success,
         data,

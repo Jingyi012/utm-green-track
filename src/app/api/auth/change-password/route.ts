@@ -13,8 +13,8 @@ export async function PUT(req: NextRequest) {
 
         const { currentPassword, newPassword, confirmNewPassword } = await req.json();
         await changePassword(token.id, currentPassword, newPassword, confirmNewPassword);
-        return NextResponse.json({ message: 'Profile updated' });
+        return NextResponse.json(formatResponse(null, true, 'Password Updated'));
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        return NextResponse.json(formatResponse(null, false, error.message), { status: 400 });
     }
 }

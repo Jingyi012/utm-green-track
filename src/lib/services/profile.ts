@@ -1,28 +1,18 @@
+import { GeneralResponse } from "../types/apiResponse";
+import { User } from "../types/user";
+import { fetcher } from "./common";
 
 const API_URL = '/api/profile';
 
 export async function getProfile() {
-    const res = await fetch(API_URL, { method: 'GET' });
-    const json = await res.json();
-
-    if (!res.ok) {
-        throw new Error(json.error || 'Failed to fetch profile');
-    }
-
-    return json;
+    return fetcher<GeneralResponse<User>>(`${API_URL}`, {
+        method: 'GET',
+    });
 }
 
 export async function updateProfile(data: any) {
-    const res = await fetch(API_URL, {
+    return fetcher<any>(`${API_URL}`, {
         method: 'PUT',
         body: JSON.stringify(data),
     });
-
-    const json = await res.json();
-
-    if (!res.ok) {
-        throw new Error(json.error || 'Failed to update profile');
-    }
-
-    return json;
 }

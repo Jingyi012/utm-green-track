@@ -17,7 +17,7 @@ import {
 import FormItem from 'antd/es/form/FormItem';
 import { UploadOutlined, EditOutlined, DeleteOutlined, PaperClipOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
-import { createWasteRecord, uploadAttachment, uploadAttachments } from '@/lib/services/wasteRecord';
+import { createWasteRecord, uploadAttachments } from '@/lib/services/wasteRecord';
 import { WasteRecordInput } from '@/lib/types/wasteRecord';
 import { Campus, CampusLabels } from '@/lib/enum/campus';
 import { WasteType, WasteTypeLabels } from '@/lib/enum/wasteType';
@@ -149,7 +149,7 @@ export default function WasteEntryForm() {
         if (tableData.length === 0) {
             return message.warning('No data to submit. Please add at least one entry.');
         }
-        console.log(tableData)
+
         Modal.confirm({
             title: 'Confirm Submission',
             content: 'Are you sure you want to submit all the waste records?',

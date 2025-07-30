@@ -13,3 +13,7 @@ export type RegistrationFormData = User & {
     password: string;
     confirmPassword: string;
 };
+
+export type UserIdResponse = {
+    id: number;
+}

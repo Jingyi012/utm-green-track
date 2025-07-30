@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/prisma/prisma';
-import { WasteRecord } from '../../lib/types/wasteRecord';
-import { DisposalMethod } from '@/lib/enum/disposalMethod';
+import { CampusYearSummaryResponse, DisposalCategoryTotal, MonthlyDisposalWasteTypeData, MonthlyStatisticByYearResponse, MonthlyDisposalSummary, WasteTypeTotal } from '@/lib/types/wasteSummary';
 
 const GHG_EMISSION_FACTORS = {
     Landfilling: 0.5,
@@ -10,12 +9,6 @@ const GHG_EMISSION_FACTORS = {
 };
 
 const LANDFILL_COST_PER_KG = 0.10;
-
-interface MonthlyRecord {
-    month: number;
-    disposalMethod: string;
-    totalWeight: number;
-}
 
 export async function getWasteStatistic({ uid, year }: { uid?: number; year: number }) {
     const startDate = `${year}-01-01`;
@@ -43,24 +36,18 @@ export async function getWasteStatistic({ uid, year }: { uid?: number; year: num
 
     const rawRecords = await prisma.$queryRawUnsafe(query, ...params);
 
-    const records = rawRecords as Array<{
-        month: number;
-        disposalMethod: string;
-        wasteType: string;
-        totalWeight: number;
-    }>;
-
+    const records = rawRecords as Array<MonthlyDisposalWasteTypeData>;
     return summarizeWasteStatistic(records, year);
 }
 
-export function summarizeWasteStatistic(records: any[], year: number) {
+export function summarizeWasteStatistic(records: MonthlyDisposalWasteTypeData[], year: number) {
     const totalsMap = new Map<string, number>();
     const categoryTotalsMap = new Map<string, number>();
 
     for (const record of records) {
         const disposalMethod = record.disposalMethod;
         const wasteType = record.wasteType;
-        const weight = parseFloat(record.totalWeight ?? '0');
+        const weight = record.totalWeight;
 
         if (!disposalMethod || !wasteType) continue;
 
@@ -76,16 +63,16 @@ export function summarizeWasteStatistic(records: any[], year: number) {
     }
 
     // Convert to array formats
-    const totals: Array<{ disposalMethod: string; wasteType: string; wasteWeight: number }> = [];
-    const categoryTotals: Array<{ disposalMethod: string; wasteWeight: number }> = [];
+    const totals: Array<WasteTypeTotal> = [];
+    const categoryTotals: Array<DisposalCategoryTotal> = [];
 
     for (const [key, weight] of totalsMap.entries()) {
         const [disposalMethod, wasteType] = key.split('|||');
-        totals.push({ disposalMethod, wasteType, wasteWeight: weight });
+        totals.push({ disposalMethod, wasteType, totalWeight: weight });
     }
 
     for (const [disposalMethod, weight] of categoryTotalsMap.entries()) {
-        categoryTotals.push({ disposalMethod, wasteWeight: weight });
+        categoryTotals.push({ disposalMethod, totalWeight: weight });
     }
 
     return {
@@ -93,11 +80,11 @@ export function summarizeWasteStatistic(records: any[], year: number) {
         monthlyData: records,
         totals,
         categoryTotals,
-        metadata: {
+        metaData: {
             generatedAt: new Date().toISOString(),
             dataSource: 'UTM GreenTrack',
         },
-    };
+    } as MonthlyStatisticByYearResponse;
 }
 
 export const GetCampusMonthlySummary = async ({
@@ -127,7 +114,7 @@ export const GetCampusMonthlySummary = async ({
     ${whereClause}
     GROUP BY month, "disposalMethod"
     ORDER BY month
-  `, ...params) as MonthlyRecord[];
+  `, ...params) as MonthlyDisposalSummary[];
 
     let totalWaste = 0;
     let totalRecycled = 0;
@@ -163,21 +150,18 @@ export const GetCampusMonthlySummary = async ({
     }
 
     return {
-        success: true,
-        data: {
-            summary: {
-                totalWaste,
-                totalRecycled,
-                totalLandfilled,
-                totalGHGReduction,
-                totalLandfillSavings,
-            },
-            monthlySummary: records,
-            metadata: {
-                year,
-                generatedAt: new Date().toISOString(),
-                dataSource: "UTM GreenTrack",
-            },
+        summary: {
+            totalWaste,
+            totalRecycled,
+            totalLandfilled,
+            totalGHGReduction,
+            totalLandfillSavings,
         },
-    };
+        monthlySummary: records,
+        metaData: {
+            year,
+            generatedAt: new Date().toISOString(),
+            dataSource: "UTM GreenTrack",
+        },
+    } as CampusYearSummaryResponse;
 };

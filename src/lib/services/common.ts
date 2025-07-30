@@ -1,19 +1,23 @@
-export async function fetchWithAuth(
+export async function fetcher<TResponse>(
     url: string,
-    options: RequestInit = {}
-): Promise<Response> {
-    const token = localStorage.getItem('token');
+    options?: RequestInit
+): Promise<TResponse> {
+    const isFormData = options?.body instanceof FormData;
 
-    const headers = {
-        ...(options.headers || {}),
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    return fetch(url, {
+    const res = await fetch(url, {
         ...options,
-        headers,
+        headers: {
+            ...(options?.headers || {}),
+            ...(isFormData ? {} : { "Content-Type": "application/json" }),
+        },
     });
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Fetch error ${res.status}: ${res.statusText}\n${errorText}`);
+    }
+
+    return res.json() as Promise<TResponse>;
 }
 
 export function buildQueryParams(params: Record<string, any>): string {

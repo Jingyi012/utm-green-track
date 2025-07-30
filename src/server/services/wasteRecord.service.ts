@@ -41,7 +41,6 @@ export async function createWasteRecords(
         createdById: userId,
     }));
 
-    // Use individual create if you need returned IDs
     const createdRecords = await Promise.all(
         records.map((record) => prisma.wasteRecord.create({ data: record }))
     );
@@ -90,6 +89,7 @@ export async function getAllWasteRecords({
                 attachments: {
                     select: {
                         id: true,
+                        fileName: true,
                         filePath: true,
                     }
                 },
@@ -101,8 +101,9 @@ export async function getAllWasteRecords({
     const dataWithFullURLs = data.map(record => ({
         ...record,
         attachments: record.attachments.map(att => ({
-            ...att,
+            id: att.id,
             url: `${DOMAIN}${att.filePath}`,
+            fileName: att.fileName
         })),
     }));
 

@@ -14,11 +14,12 @@ import {
     FileExcelOutlined,
 } from '@ant-design/icons';
 import { getWasteStatisticByYear } from '@/lib/services/wasteRecord';
-import { formatNumber, toPascalCase } from '@/lib/utils/formatter';
+import { formatNumber } from '@/lib/utils/formatter';
 import { confirmAction } from '@/lib/utils/confirmAction';
 import { exportExcelWasteStatistic, exportPDFWasteStatistic } from '@/lib/reportExports/wasteStatistics';
 import { WasteType, WasteTypeLabels } from '@/lib/enum/wasteType';
 import { DisposalMethod } from '@/lib/enum/disposalMethod';
+import { MonthlyStatisticByYearResponse } from '@/lib/types/wasteSummary';
 
 const currentYear = new Date().getFullYear();
 const yearOptions = Array.from({ length: currentYear - 2023 + 1 }, (_, i) => ({
@@ -26,7 +27,7 @@ const yearOptions = Array.from({ length: currentYear - 2023 + 1 }, (_, i) => ({
     value: 2023 + i,
 })).reverse();
 
-const transformWasteData = (raw: any) => {
+const transformWasteData = (raw: MonthlyStatisticByYearResponse) => {
     const monthMap: Record<string, any> = {};
 
     const getMonthLabel = (month: number) =>
@@ -40,7 +41,7 @@ const transformWasteData = (raw: any) => {
         monthMap[key][disposalMethod][wasteType] = totalWeight;
     }
 
-    // Convert to array & fill missing months (optional)
+    // Convert to array & fill missing months
     const monthlyRows = Array.from({ length: 12 }, (_, i) => {
         const m = i + 1;
         const key = getMonthLabel(m);
@@ -56,18 +57,17 @@ const transformWasteData = (raw: any) => {
         key: 'total',
         month: 'Total',
     };
-    for (const { disposalMethod, wasteType, wasteWeight } of raw.totals) {
+    for (const { disposalMethod, wasteType, totalWeight } of raw.totals) {
         if (!totalsRow[disposalMethod]) totalsRow[disposalMethod] = {};
-        totalsRow[disposalMethod][wasteType] = wasteWeight;
+        totalsRow[disposalMethod][wasteType] = totalWeight;
     }
 
     // Rebuild category total (for summary display)
     const categoryTotals: Record<string, number> = {};
-    for (const { disposalMethod, wasteWeight } of raw.categoryTotals) {
-        categoryTotals[disposalMethod] = wasteWeight;
+    for (const { disposalMethod, totalWeight } of raw.categoryTotals) {
+        categoryTotals[disposalMethod] = totalWeight;
     }
 
-    console.log([...monthlyRows, totalsRow])
     return {
         tableData: [...monthlyRows, totalsRow],
         categoryTotals,
@@ -76,7 +76,7 @@ const transformWasteData = (raw: any) => {
 
 const WasteManagementTable = () => {
     const [year, setYear] = useState<number>(currentYear);
-    const [data, setData] = useState<any>(null);
+    const [data, setData] = useState<{ raw: MonthlyStatisticByYearResponse; tableData: any, categoryTotals: any } | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const [excelLoading, setExcelLoading] = useState<boolean>(false);
     const [pdfLoading, setPdfLoading] = useState<boolean>(false);

@@ -16,12 +16,7 @@ export async function GET(req: NextRequest) {
         const campus = searchParams.get('campus') || undefined;
         const summary = await GetCampusMonthlySummary({ campus, year });
 
-        const response = formatResponse(summary.data, summary.success);
-        if (summary.success) {
-            return NextResponse.json(response);
-        } else {
-            return NextResponse.json(response, { status: 500 });
-        }
+        return NextResponse.json(formatResponse(summary));
 
     } catch (error: any) {
         return NextResponse.json(formatResponse(null, false, error.message), { status: 500 });
