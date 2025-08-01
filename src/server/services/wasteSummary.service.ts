@@ -1,3 +1,4 @@
+import { DisposalMethod } from '@/lib/enum/disposalMethod';
 import { prisma } from '@/lib/prisma/prisma';
 import { CampusYearSummaryResponse, DisposalCategoryTotal, MonthlyDisposalWasteTypeData, MonthlyStatisticByYearResponse, MonthlyDisposalSummary, WasteTypeTotal } from '@/lib/types/wasteSummary';
 import { Prisma } from '@prisma/client';
@@ -134,20 +135,20 @@ export const GetCampusYearlySummary = async ({
         totalWaste += weight;
 
         switch (method) {
-            case 'recycling':
+            case DisposalMethod.Recycling:
                 totalRecycled += weight;
                 totalGHGReduction += weight * GHG_EMISSION_FACTORS.Recycling;
                 totalLandfillSavings += weight * LANDFILL_COST_PER_KG;
                 break;
-            case 'composting':
+            case DisposalMethod.Composting:
                 totalGHGReduction += weight * GHG_EMISSION_FACTORS.Composting;
                 totalLandfillSavings += weight * LANDFILL_COST_PER_KG;
                 break;
-            case 'energyrecovery':
+            case DisposalMethod.EnergyRecovery:
                 totalGHGReduction += weight * GHG_EMISSION_FACTORS.EnergyRecovery;
                 totalLandfillSavings += weight * LANDFILL_COST_PER_KG;
                 break;
-            case 'landfilling':
+            case DisposalMethod.Landfilling:
                 totalLandfilled += weight;
                 totalGHGReduction += weight * GHG_EMISSION_FACTORS.Landfilling;
                 break;
