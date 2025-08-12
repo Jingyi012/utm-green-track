@@ -28,6 +28,7 @@ export function transformMonthlyChartData(
             dataMap.set(key, {
                 month,
                 disposalMethod: label,
+                wasteType: '',
                 totalWeight: 0,
             });
         }
@@ -43,6 +44,7 @@ export function transformMonthlyChartData(
             dataMap.set(key, {
                 month,
                 disposalMethod: methodLabel,
+                wasteType: '',
                 totalWeight: Number(item.totalWeight.toFixed(2)),
             });
         }
@@ -51,7 +53,7 @@ export function transformMonthlyChartData(
     return Array.from(dataMap.values());
 }
 
-const DashboardSection = () => {
+const DashboardSection: React.FC = () => {
     const currentYear = new Date().getFullYear();
     const yearOptions = Array.from(
         { length: currentYear - 2025 + 1 },
@@ -65,11 +67,11 @@ const DashboardSection = () => {
     const [year, setYear] = useState(currentYear);
     const [chartLoading, setChartLoading] = useState<boolean>(false);
     const [summary, setSummary] = useState<TotalSummary>({
-        totalWaste: 0,
-        totalRecycled: 0,
-        totalLandfilled: 0,
+        totalWasteGenerated: 0,
+        totalWasteRecycled: 0,
+        totalWasteToLandfill: 0,
         totalGHGReduction: 0,
-        totalLandfillSavings: 0
+        totalLandfillCostSavings: 0
     });
     const [monthlyChartData, setMonthlyChartData] = useState<MonthlyDisposalSummary[]>([]);
 

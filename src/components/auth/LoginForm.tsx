@@ -45,9 +45,13 @@ export default function LoginForm() {
                         rules={[
                             { required: true, message: 'Please enter your email' },
                             { type: 'email', message: 'Invalid email address' },
+                            {
+                                pattern: /^[a-zA-Z0-9._%+-]+@(utm\.my|graduate\.utm\.my)$/,
+                                message: 'Email must be @utm.my or @graduate.utm.my'
+                            },
                         ]}
                     >
-                        <Input prefix={<UserOutlined />} placeholder="you@example.com" />
+                        <Input prefix={<UserOutlined />} placeholder="you@graduate.utm.my" />
                     </Form.Item>
 
                     <Form.Item
@@ -66,10 +70,10 @@ export default function LoginForm() {
                 </Form>
 
                 <div className="flex gap-8 text-xs justify-between">
-                    <Link href="/auth/forgot-password">
+                    <Link href="/forgot-password">
                         Forgot your password?
                     </Link>
-                    <Link href="/auth/signup">
+                    <Link href="/signup">
                         Don't have an account? Sign Up
                     </Link>
                 </div>

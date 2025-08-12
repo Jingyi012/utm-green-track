@@ -1,16 +1,9 @@
 import { DisposalMethod } from '@/lib/enum/disposalMethod';
+import { WasteType } from '@/lib/enum/wasteType';
 import { prisma } from '@/lib/prisma/prisma';
 import { CampusYearSummaryResponse, DisposalCategoryTotal, MonthlyDisposalWasteTypeData, MonthlyStatisticByYearResponse, MonthlyDisposalSummary, WasteTypeTotal } from '@/lib/types/wasteSummary';
+import { getEmissionFactor } from '@/lib/utils/emissionFactor';
 import { Prisma } from '@prisma/client';
-
-const GHG_EMISSION_FACTORS = {
-    Landfilling: 0.5,
-    Recycling: -0.3,
-    Composting: -0.2,
-    EnergyRecovery: -0.4
-};
-
-const LANDFILL_COST_PER_KG = 0.10;
 
 export async function getWasteStatistic({ uid, year }: { uid?: number; year: number }) {
     const startDate = `${year}-01-01`;
@@ -113,55 +106,56 @@ export const GetCampusYearlySummary = async ({
     SELECT 
       EXTRACT(MONTH FROM "date") AS month,
       "disposalMethod",
+      "wasteType",
       SUM("wasteWeight") AS "totalWeight"
     FROM "WasteRecord"
     ${whereClause}
-    GROUP BY month, "disposalMethod"
+    GROUP BY month, "disposalMethod", "wasteType"
     ORDER BY month
   `;
 
     const records = await prisma.$queryRaw<MonthlyDisposalSummary[]>(query);
 
-    let totalWaste = 0;
-    let totalRecycled = 0;
-    let totalLandfilled = 0;
+    let totalWasteGenerated = 0;
+    let totalWasteRecycled = 0;
+    let totalWasteToLandfill = 0;
     let totalGHGReduction = 0;
-    let totalLandfillSavings = 0;
+    let totalLandfillCostSavings = 0;
 
     for (const row of records) {
-        const method = row.disposalMethod.toLowerCase();
-        const weight = Number(row.totalWeight);
-
-        totalWaste += weight;
+        const method = row.disposalMethod;
+        const weightInTon = row.totalWeight / 1000;
+        totalWasteGenerated += weightInTon;
 
         switch (method) {
             case DisposalMethod.Recycling:
-                totalRecycled += weight;
-                totalGHGReduction += weight * GHG_EMISSION_FACTORS.Recycling;
-                totalLandfillSavings += weight * LANDFILL_COST_PER_KG;
+                totalWasteRecycled += weightInTon;
                 break;
             case DisposalMethod.Composting:
-                totalGHGReduction += weight * GHG_EMISSION_FACTORS.Composting;
-                totalLandfillSavings += weight * LANDFILL_COST_PER_KG;
+                totalWasteRecycled += weightInTon;
                 break;
             case DisposalMethod.EnergyRecovery:
-                totalGHGReduction += weight * GHG_EMISSION_FACTORS.EnergyRecovery;
-                totalLandfillSavings += weight * LANDFILL_COST_PER_KG;
+                totalWasteRecycled += weightInTon;
                 break;
             case DisposalMethod.Landfilling:
-                totalLandfilled += weight;
-                totalGHGReduction += weight * GHG_EMISSION_FACTORS.Landfilling;
                 break;
         }
+
+        totalGHGReduction = weightInTon * getEmissionFactor(method as DisposalMethod, row.wasteType as WasteType);
+
+        row.totalWeight = weightInTon;
     }
+
+    totalWasteToLandfill = totalWasteGenerated - totalWasteRecycled;
+    totalLandfillCostSavings = totalWasteRecycled * 146;
 
     return {
         summary: {
-            totalWaste,
-            totalRecycled,
-            totalLandfilled,
+            totalWasteGenerated,
+            totalWasteRecycled,
+            totalWasteToLandfill,
             totalGHGReduction,
-            totalLandfillSavings,
+            totalLandfillCostSavings,
         },
         monthlySummary: records,
         metaData: {

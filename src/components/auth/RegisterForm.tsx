@@ -2,17 +2,39 @@
 
 import { registerUser } from '@/lib/services/auth';
 import { Form, Input, Button, Row, Col, Select, Typography, message, Modal } from 'antd';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Department } from '@/lib/enum/department';
+import { Position } from '@/lib/enum/position';
+import { StaffRole, StudentRole } from '@/lib/enum/role';
 
 const { Title } = Typography;
-const { Option } = Select;
 
 export default function RegistrationForm() {
     const [form] = Form.useForm();
-    const [loading, setLoading] = useState(false);
-    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
     const router = useRouter();
+
+    const [roleOption, setRoleOption] = useState<Record<string, string>>({});
+
+    const selectedPosition = Form.useWatch('position', form);
+
+    // Dynamically compute role options
+    const roleOptions = useMemo(() => {
+        if (selectedPosition == Position.UTMStaff) {
+            return Object.values(StaffRole).map((r) => ({
+                label: r,
+                value: r
+            }))
+        } else {
+            return Object.values(StudentRole).map((r) => ({
+                label: r,
+                value: r
+            }))
+        }
+
+    }, [selectedPosition]);
 
     const handleRegister = async () => {
         try {
@@ -30,7 +52,7 @@ export default function RegistrationForm() {
 
     const handleNavigateToLogin = () => {
         setIsModalVisible(false);
-        router.push('/auth/login');
+        router.push('/login');
     };
 
     return (
@@ -67,9 +89,10 @@ export default function RegistrationForm() {
                             label="Faculty / Department / College"
                             rules={[{ required: true, message: 'Please select your faculty / department' }]}
                         >
-                            <Select placeholder="Select your department">
-                                <Option value="Malaysia-Japan Advanced Research Centre">Malaysia-Japan Advanced Research Centre</Option>
-                            </Select>
+                            <Select placeholder="Select your department" options={Object.values(Department).map((dept) => ({
+                                label: dept,
+                                value: dept
+                            }))} />
                         </Form.Item>
                     </Col>
 
@@ -89,9 +112,10 @@ export default function RegistrationForm() {
                             label="Position"
                             rules={[{ required: true, message: 'Please select a position' }]}
                         >
-                            <Select placeholder="Select your position">
-                                <Option value="UTM Staff">UTM Staff</Option>
-                            </Select>
+                            <Select placeholder="Select your position" options={Object.values(Position).map((position) => ({
+                                label: position,
+                                value: position
+                            }))} />
                         </Form.Item>
                     </Col>
 
@@ -101,7 +125,7 @@ export default function RegistrationForm() {
                             name="password"
                             rules={[
                                 { required: true, message: 'Please enter a password' },
-                                { min: 6, message: 'Password must be at least 6 characters' }
+                                { min: 8, message: 'Password must be at least 8 characters' }
                             ]}
                             hasFeedback
                         >
@@ -115,10 +139,10 @@ export default function RegistrationForm() {
                             name="role"
                             rules={[{ required: true, message: 'Please select a role' }]}
                         >
-                            <Select placeholder="Select your role">
-                                <Option value="Academic Staff">Academic Staff</Option>
-                                <Option value="Non-Academic Staff">Non-Academic Staff</Option>
-                            </Select>
+                            <Select<any>
+                                placeholder="Select your role"
+                                options={roleOptions}
+                            />
                         </Form.Item>
                     </Col>
 
@@ -162,7 +186,7 @@ export default function RegistrationForm() {
                                 By clicking Sign Up, you agree to our Terms and Privacy Policy.
                             </div>
                             <div className="text-right my-1">
-                                <a href="/auth/login" className="text-primary underline">Already have an account? Sign in</a>
+                                <a href="/login" className="text-primary underline">Already have an account? Sign in</a>
                             </div>
                         </Form.Item>
                     </Col>

@@ -48,7 +48,7 @@ export default function ResetPasswordForm() {
             const res = await resetPassword(token!, values.newPassword);
             if (res.success) {
                 message.success('Password reset successful');
-                router.push('/auth/login');
+                router.push('/login');
             } else {
                 message.error(res.message || 'Password reset failed');
             }
@@ -65,7 +65,7 @@ export default function ResetPasswordForm() {
                 <Title level={4}>Invalid or Expired Link</Title>
                 <Text>The reset password link is not valid. Please request a new one.</Text>
                 <div className="mt-4">
-                    <Button type="primary" onClick={() => { router.push('/auth/forgot-password') }} block>
+                    <Button type="primary" onClick={() => { router.push('/forgot-password') }} block>
                         Request New Link
                     </Button>
                 </div>
@@ -84,7 +84,7 @@ export default function ResetPasswordForm() {
                     label="New Password"
                     rules={[
                         { required: true, message: 'Please enter new password' },
-                        { min: 6, message: 'Password must be at least 6 characters' },
+                        { min: 8, message: 'Password must be at least 6 characters' },
                     ]}
                     hasFeedback
                 >
@@ -98,7 +98,7 @@ export default function ResetPasswordForm() {
                     hasFeedback
                     rules={[
                         { required: true, message: 'Please enter confirm password' },
-                        { min: 6, message: 'Password must be at least 6 characters' },
+                        { min: 8, message: 'Password must be at least 6 characters' },
                         ({ getFieldValue }) => ({
                             validator(_, value) {
                                 return !value || getFieldValue('newPassword') === value
@@ -118,7 +118,7 @@ export default function ResetPasswordForm() {
                 </Form.Item>
 
                 <div className="flex justify-center text-xs gap-4">
-                    <a href="/auth/login" className="text-primary underline">Return to Login</a>
+                    <a href="/login" className="text-primary underline">Return to Login</a>
                 </div>
             </Form>
         </Card>

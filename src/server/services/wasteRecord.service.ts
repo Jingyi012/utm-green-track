@@ -82,7 +82,7 @@ export async function getAllWasteRecords({
     const [data, totalRecords] = await Promise.all([
         prisma.wasteRecord.findMany({
             where,
-            orderBy: { createdAt: 'desc' },
+            orderBy: { date: 'desc' },
             skip,
             take,
             include: {

@@ -51,8 +51,8 @@ export default function ForgotPasswordForm() {
                 </Form.Item>
 
                 <div className="flex gap-8 text-xs justify-between">
-                    <a href="/auth/login" className="text-primary underline">Already have an account? Sign In</a>
-                    <a href="/auth/signup" className="text-primary underline">Don't have an account? Sign Up
+                    <a href="/login" className="text-primary underline">Already have an account? Sign In</a>
+                    <a href="/signup" className="text-primary underline">Don't have an account? Sign Up
                     </a>
                 </div>
             </Form>

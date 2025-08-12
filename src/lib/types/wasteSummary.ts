@@ -1,14 +1,15 @@
 export interface TotalSummary {
-    totalWaste: number;
-    totalRecycled: number;
-    totalLandfilled: number;
+    totalWasteGenerated: number;
+    totalWasteRecycled: number;
+    totalWasteToLandfill: number;
     totalGHGReduction: number;
-    totalLandfillSavings: number;
+    totalLandfillCostSavings: number;
 }
 
 export interface MonthlyDisposalSummary {
     month: string | number;
     disposalMethod: string;
+    wasteType: string;
     totalWeight: number;
 }
 

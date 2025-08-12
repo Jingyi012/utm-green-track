@@ -158,7 +158,7 @@ const WasteTable = () => {
 
                 return attachments.map((file, index) => (
                     <Tooltip title="View Attachment" key={index}>
-                        <a href={file.filePath} target="_blank" rel="noopener noreferrer" style={{ marginRight: 8 }}>
+                        <a href={file.url} target="_blank" rel="noopener noreferrer" style={{ marginRight: 8 }}>
                             <PaperClipOutlined />
                         </a>
                     </Tooltip>

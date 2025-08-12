@@ -1,5 +1,6 @@
 import { Campus } from '@/lib/enum/campus';
 import { DisposalMethod } from '@/lib/enum/disposalMethod';
+import { RecordLocation } from '@/lib/enum/location';
 import { WasteRecordStatus } from '@/lib/enum/wasteRecordStatus';
 import { WasteType } from '@/lib/enum/wasteType';
 import { PrismaClient } from '@prisma/client';
@@ -32,7 +33,7 @@ function getRandom<T>(arr: readonly T[]): T {
 
 function getRandomDateIn2025() {
     const start = new Date("2025-01-01").getTime();
-    const end = new Date("2025-12-31").getTime();
+    const end = new Date("2025-08-11").getTime();
     return new Date(start + Math.random() * (end - start));
 }
 
@@ -89,7 +90,7 @@ async function main() {
             wasteType,
             wasteWeight: Number((Math.random() * 50 + 1).toFixed(2)), // 1kg–50kg
             disposalMethod,
-            location: `Location ${i + 1}`,
+            location: RecordLocation.BPAJTNCP,
             status: getRandom(Object.values(WasteRecordStatus)),
             campus: getRandom(Object.values(Campus)),
             date: getRandomDateIn2025(),

@@ -15,7 +15,7 @@ export async function middleware(req: NextRequest) {
     )
 
     if (isProtected && !token) {
-        const loginUrl = new URL('/auth/login', req.url)
+        const loginUrl = new URL('/login', req.url)
         loginUrl.searchParams.set('callbackUrl', req.url)
         return NextResponse.redirect(loginUrl)
     }
