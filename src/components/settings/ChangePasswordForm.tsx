@@ -9,13 +9,13 @@ const ChangePasswordForm = () => {
 
     const handleSubmit = async () => {
         try {
-            const { currentPassword, newPassword, confirmPassword } = await form.validateFields();
+            const { password, newPassword, confirmPassword } = await form.validateFields();
 
             if (newPassword !== confirmPassword) {
                 return message.error("Passwords don't match");
             }
 
-            await changePassword({ currentPassword, newPassword, confirmNewPassword: confirmPassword });
+            await changePassword({ password, newPassword, confirmNewPassword: confirmPassword });
 
             message.success('Password updated successfully');
             form.resetFields();
@@ -32,11 +32,11 @@ const ChangePasswordForm = () => {
                     <Row gutter={16}>
                         <Col xs={24}>
                             <Form.Item
-                                name="currentPassword"
+                                name="password"
                                 label="Current Password"
                                 rules={[
                                     { required: true, message: 'Please enter current password' },
-                                    { min: 6, message: 'Password must be at least 6 characters long' }
+                                    { min: 8, message: 'Password must be at least 8 characters long' }
                                 ]}
                             >
                                 <Input />
@@ -48,7 +48,7 @@ const ChangePasswordForm = () => {
                                 label="New Password"
                                 rules={[
                                     { required: true, message: 'Please enter new password' },
-                                    { min: 6, message: 'Password must be at least 6 characters long' },
+                                    { min: 8, message: 'Password must be at least 8 characters long' },
                                 ]}
                             >
                                 <Input.Password />

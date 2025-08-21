@@ -1,3 +1,4 @@
+"use client"
 import { Modal } from 'antd';
 
 export function confirmAction({

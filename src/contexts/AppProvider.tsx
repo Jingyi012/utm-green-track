@@ -3,7 +3,7 @@
 import { App, ConfigProvider } from 'antd';
 import { ProConfigProvider, enUSIntl } from '@ant-design/pro-components';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
-import { SessionProvider } from 'next-auth/react';
+import { AuthProvider } from './AuthContext';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
     return (
@@ -31,9 +31,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             >
                 <ProConfigProvider intl={enUSIntl}>
                     <App>
-                        <SessionProvider>
+                        <AuthProvider>
                             {children}
-                        </SessionProvider>
+                        </AuthProvider>
                     </App>
                 </ProConfigProvider>
             </ConfigProvider>

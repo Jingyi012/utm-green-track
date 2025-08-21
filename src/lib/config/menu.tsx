@@ -5,6 +5,8 @@ import {
   LogoutOutlined,
   SettingOutlined,
   InfoCircleOutlined,
+  UsergroupAddOutlined,
+  UnorderedListOutlined,
 } from '@ant-design/icons';
 import { MenuProps } from 'antd';
 import React from 'react';
@@ -31,6 +33,51 @@ export const menuItems: MenuProps['items'] = [
       {
         key: '/data-entry/statistic',
         label: 'Statistic',
+      }
+    ]
+  },
+  {
+    key: '/waste-records',
+    icon: <UnorderedListOutlined />,
+    label: 'Waste Records',
+    children: [
+      {
+        key: '/waste-records/approval',
+        label: 'Approval',
+      },
+      {
+        key: '/waste-records/management',
+        label: 'Management',
+      }
+    ]
+  },
+  {
+    key: '/users',
+    icon: <UsergroupAddOutlined />,
+    label: 'Users',
+    children: [
+      {
+        key: '/users/approval',
+        label: 'Approval',
+      },
+      {
+        key: '/users/management',
+        label: 'Management',
+      }
+    ]
+  },
+  {
+    key: '/configurations',
+    icon: <SettingOutlined />,
+    label: 'Configurations',
+    children: [
+      {
+        key: '/configurations/general',
+        label: 'General Config',
+      },
+      {
+        key: '/configurations/disposal-waste',
+        label: 'Waste Types',
       }
     ]
   },

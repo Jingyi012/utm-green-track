@@ -1,6 +1,5 @@
-'use client';
 import CustomBreadcrumb from "@/components/breadcrumb/CustomBreadcrumb";
-import WasteTable from "@/components/DataEntry/ViewForm";
+import ViewForm from "@/components/DataEntry/ViewForm";
 
 export default function ViewFormPage() {
     return (
@@ -9,7 +8,7 @@ export default function ViewFormPage() {
                 { title: 'Data Entry' },
                 { title: 'View Form' }
             ]} />
-            <WasteTable />
+            <ViewForm />
         </div>
     );
 }

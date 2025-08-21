@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { message } from 'antd';
 import { formatNumber } from '../utils/formatter';
+import { StatisticRow } from '@/components/DataEntry/Statistic';
 
 function getNestedValue(obj: any, path: (string | number)[]): any {
     return path.reduce((acc, key) => acc?.[key], obj);
@@ -29,16 +30,19 @@ export const exportExcelWasteStatistic = (tableData: any[], columns: any[], year
     });
 
     const dataRows = tableData.map(row => {
-        const rowData = [row.month];
+        const rowData: any[] = [row.month];
+
         disposalGroups.forEach(group => {
             const children = group.children ?? [group];
-            children.forEach((child: { dataIndex: string[] | number }) => {
-                const value = Array.isArray(child.dataIndex)
-                    ? getNestedValue(row, child.dataIndex)
-                    : row[child.dataIndex];
+            children.forEach((child: { title: string }) => {
+                const disposalMethod = group.title;
+                const wasteType = child.title;
+
+                const value = row.data?.[disposalMethod]?.[wasteType] ?? 0;
                 rowData.push(formatNumber(value));
             });
         });
+
         return rowData;
     });
 
@@ -71,7 +75,7 @@ export const exportExcelWasteStatistic = (tableData: any[], columns: any[], year
     XLSX.writeFile(wb, `WasteStatistic-${year}.xlsx`);
 };
 
-export const exportPDFWasteStatistic = (tableData: any[], columns: any[], year: number) => {
+export const exportPDFWasteStatistic = (tableData: StatisticRow[], columns: any[], year: number) => {
     if (!tableData || tableData.length === 0) {
         message.warning('No waste statistic available to export.');
         return;
@@ -95,16 +99,20 @@ export const exportPDFWasteStatistic = (tableData: any[], columns: any[], year: 
     });
 
     const dataRows = tableData.map(row => {
-        const rowData = [row.month];
+        const rowData: any[] = [row.month];
+
         disposalGroups.forEach(group => {
             const children = group.children ?? [group];
-            children.forEach((child: { dataIndex: string[] | number }) => {
-                const value = Array.isArray(child.dataIndex)
-                    ? getNestedValue(row, child.dataIndex)
-                    : row[child.dataIndex];
+
+            children.forEach((child: { title: string }) => {
+                const disposalMethod = group.title;
+                const wasteType = child.title;
+
+                const value = row.data?.[disposalMethod]?.[wasteType] ?? 0;
                 rowData.push(formatNumber(value));
             });
         });
+
         return rowData;
     });
 

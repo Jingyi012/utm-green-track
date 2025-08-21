@@ -4,13 +4,12 @@ import { registerUser } from '@/lib/services/auth';
 import { Form, Input, Button, Row, Col, Select, Typography, message, Modal } from 'antd';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Department } from '@/lib/enum/department';
-import { Position } from '@/lib/enum/position';
-import { StaffRole, StudentRole } from '@/lib/enum/role';
+import { useProfileDropdownOptions } from '@/hook/options';
 
 const { Title } = Typography;
 
 export default function RegistrationForm() {
+    const { positions, departments, roles } = useProfileDropdownOptions();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState<boolean>(false);
     const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
@@ -22,19 +21,22 @@ export default function RegistrationForm() {
 
     // Dynamically compute role options
     const roleOptions = useMemo(() => {
-        if (selectedPosition == Position.UTMStaff) {
-            return Object.values(StaffRole).map((r) => ({
-                label: r,
-                value: r
-            }))
-        } else {
-            return Object.values(StudentRole).map((r) => ({
-                label: r,
-                value: r
-            }))
-        }
+        if (!selectedPosition) return [];
 
-    }, [selectedPosition]);
+        const position = positions.find(p => p.id === selectedPosition);
+        if (!position) return [];
+
+        const matchedRoles = roles
+            .filter(r => r.category === position.name)
+            .map(r => ({
+                label: r.name,
+                value: r.id,
+            }));
+
+        return matchedRoles.length > 0
+            ? matchedRoles
+            : [{ label: 'No roles available', value: '', disabled: true }];
+    }, [positions, roles, selectedPosition]);
 
     const handleRegister = async () => {
         try {
@@ -89,17 +91,18 @@ export default function RegistrationForm() {
                             label="Faculty / Department / College"
                             rules={[{ required: true, message: 'Please select your faculty / department' }]}
                         >
-                            <Select placeholder="Select your department" options={Object.values(Department).map((dept) => ({
-                                label: dept,
-                                value: dept
-                            }))} />
+                            <Select placeholder="Select your department"
+                                options={departments.map((dept) => ({
+                                    label: dept.name,
+                                    value: dept.id
+                                }))} />
                         </Form.Item>
                     </Col>
 
                     <Col xs={24} md={12}>
                         <Form.Item
                             label="Contact Number"
-                            name="contactNo"
+                            name="contactNumber"
                             rules={[{ required: true, message: 'Please enter your contact number' }]}
                         >
                             <Input placeholder="e.g. +60123456789" />
@@ -112,10 +115,11 @@ export default function RegistrationForm() {
                             label="Position"
                             rules={[{ required: true, message: 'Please select a position' }]}
                         >
-                            <Select placeholder="Select your position" options={Object.values(Position).map((position) => ({
-                                label: position,
-                                value: position
-                            }))} />
+                            <Select placeholder="Select your position"
+                                options={positions.map((position) => ({
+                                    label: position.name,
+                                    value: position.id
+                                }))} />
                         </Form.Item>
                     </Col>
 

@@ -6,23 +6,39 @@ import WasteInfoUpperCards from "./WasteInfoUpperCards";
 const wasteManagementItems = [
     {
         title: "Solid Waste",
-        description: "Solid waste refers to everyday items discarded by the public, including household garbage, commercial waste, construction debris, and industrial by-products. Proper handling is essential to prevent pollution and health hazards."
+        description: "Any scrap material or other unwanted surplus substance or rejected products arising from the application of any process; and includes any substance required to be disposed of as being broken, worn out, contaminated or otherwise spoiled, but does not include scheduled waste, sewage or radioactive waste."
     },
     {
         title: "Waste Recycling",
-        description: "Recycling involves processing used materials into new products to reduce raw material consumption, save energy, and minimize environmental impact. Common recyclable materials include paper, plastic, metal, and glass."
+        description: "Process of collecting, sorting, and processing materials that would otherwise be disposed of as waste, into new products or raw materials."
     },
     {
         title: "Waste Composting",
-        description: "Composting is the biological decomposition of organic waste—such as food scraps, garden waste, and manure—into nutrient-rich soil conditioner called compost. It reduces landfill usage and supports sustainable agriculture."
+        description: "Biological decomposition of organic waste, such as food waste, garden waste, and animal manure, under controlled aerobic conditions to produce compost (organic fertilizer)."
     },
     {
         title: "Energy Recovery",
-        description: "Energy recovery involves converting non-recyclable waste materials into usable energy through processes like incineration, gasification, or pyrolysis. It helps reduce waste volume while generating electricity or heat."
+        description: "Conversion of waste materials into usable heat, electricity, or fuel through various processes such as incineration, gasification, pyrolysis, and anaerobic digestion."
     },
     {
         title: "Landfilling",
-        description: "Landfilling is the process of disposing of waste materials in a controlled manner on land known as landfill."
+        description: "Final disposal method for solid waste by burying it in a designated and engineered landfill site that minimizes environmental and health risks."
+    },
+    {
+        title: "Residual Waste",
+        description: "Household solid waste and solid waste similar to household solid waste that is not reused, recycled or composted and may be placed in a container."
+    },
+    {
+        title: "Recyclable Waste",
+        description: "Household solid waste and solid waste similar to household solid waste that is separated for recycling, including paper, cardboard, glass, plastic, metal and food waste."
+    },
+    {
+        title: "Bulky Waste",
+        description: "Household solid waste and solid waste similar to household solid waste that is too large to be placed in a container, including appliances, furniture, tree trunks, branches and stumps."
+    },
+    {
+        title: "Landscape Waste",
+        description: "Refers to trees, leaves, creepers, grass, roots attached to the soil and other similar waste from gardens or premises."
     }
 ];
 

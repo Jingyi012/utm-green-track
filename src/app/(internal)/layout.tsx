@@ -1,53 +1,50 @@
 'use client';
 
-import { Avatar, Button, Dropdown, Layout, Menu, MenuProps, message, theme } from 'antd';
+import { Avatar, Button, Dropdown, Layout, Menu, MenuProps, theme } from 'antd';
 import React, { useState } from 'react';
 import { menuItems, profileMenuItems } from '@/lib/config/menu';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
-import ProtectedRoute from '@/components/routes/ProtectedRoute';
-import { signOut, useSession } from 'next-auth/react';
+import PageGuard from '@/components/routes/PageGuard';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { Header, Sider, Content } = Layout;
-
-type UserInfo = {
-    name?: string;
-    [key: string]: any;
-};
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const [collapsed, setCollapsed] = useState(false);
     const {
-        token: { colorPrimary, colorBgContainer },
+        token: { colorPrimary },
     } = theme.useToken();
+
     const router = useRouter();
     const pathname = usePathname();
-    const { data: session } = useSession();
-    const user = session?.user;
+
+    // 👇 get user & logout from context
+    const { user, logout } = useAuth();
 
     const handleMenuClick: MenuProps['onClick'] = async ({ key }) => {
         if (key === 'logout') {
-            try {
-                await signOut({ callbackUrl: '/auth/login' });
-            } catch (err) {
-                message.error('Logout failed!');
-            }
+            await logout(); // clear session
+            router.replace('/login');
         }
     };
 
-    const initials = user?.name
-        ? user.name
+    // 👇 build initials safely
+    const initials = user?.userName
+        ? user.userName
             .split(' ')
             .map(word => word[0])
             .join('')
+            .padEnd(2, user.userName[0]) // ensures at least 2 characters
             .slice(0, 2)
             .toUpperCase()
         : 'US';
 
     return (
-        <ProtectedRoute>
+        <PageGuard>
             <Layout style={{ minHeight: '100vh' }}>
+                {/* Sidebar */}
                 <Sider
                     trigger={null}
                     collapsible
@@ -82,16 +79,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         inlineCollapsed={collapsed}
                     />
                 </Sider>
+
+                {/* Main */}
                 <Layout>
-                    <Header style={{
-                        padding: '0',
-                        background: 'linear-gradient(135deg, #15803d 0%, #16a34a 50%, #059669 100%)',
-                        display: 'flex',
-                        justifyContent: "space-between",
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: '1000'
-                    }}>
+                    <Header
+                        style={{
+                            padding: '0',
+                            background: 'linear-gradient(135deg, #15803d 0%, #16a34a 50%, #059669 100%)',
+                            display: 'flex',
+                            justifyContent: "space-between",
+                            position: 'sticky',
+                            top: 0,
+                            zIndex: '1000'
+                        }}
+                    >
                         <Button
                             type="text"
                             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -112,7 +113,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             <div className="flex items-center gap-2 cursor-pointer mr-[24px]">
                                 <div className="flex flex-col items-end mr-2">
                                     <span className="text-white text-xs leading-none">Welcome</span>
-                                    <span className="text-white font-medium leading-snug">{user?.name || 'User'}</span>
+                                    <span className="text-white font-medium leading-snug">
+                                        {user?.userName || 'User'}
+                                    </span>
                                 </div>
                                 <Avatar size="large" style={{ backgroundColor: '#0f6448ff' }}>
                                     {initials}
@@ -120,12 +123,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             </div>
                         </Dropdown>
                     </Header>
+
                     {/* Content */}
                     <Content style={{ margin: '16px 24px' }}>
                         {children}
                     </Content>
                 </Layout>
             </Layout>
-        </ProtectedRoute >
+        </PageGuard>
     );
 }

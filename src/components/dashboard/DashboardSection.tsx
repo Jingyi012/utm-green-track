@@ -4,89 +4,89 @@ import InfoCardGrid from "./InfoCardGrid";
 import { Card, Col, message, Row, Select, Skeleton } from "antd";
 import { getCampusYearlySummary } from "@/lib/services/wasteRecord";
 import { Column } from "@ant-design/charts";
-import { DisposalMethod, DisposalMethodLabels } from "@/lib/enum/disposalMethod";
-import { Campus, CampusLabels } from "@/lib/enum/campus";
-import { MonthlyDisposalSummary, TotalSummary } from "@/lib/types/wasteSummary";
+import { MonthlyWasteSummary, TotalSummary } from "@/lib/types/wasteSummary";
+import { useWasteRecordDropdownOptions } from "@/hook/options";
+import { MONTH_LABELS_SHORT } from "@/lib/enum/monthName";
+
+export interface ChartDataItem {
+    month: string;
+    disposalMethod: string;
+    //wasteType: string;
+    totalWeight: number;
+}
 
 export function transformMonthlyChartData(
-    rawData: MonthlyDisposalSummary[],
-    year = 2025
-): MonthlyDisposalSummary[] {
-    const allMonths = Array.from({ length: 12 }, (_, i) =>
-        new Date(year, i).toLocaleString("default", { month: "short" })
+    rawData: MonthlyWasteSummary[],
+    disposalMethods: string[],
+): ChartDataItem[] {
+    const monthLabels = MONTH_LABELS_SHORT;
+
+    // Initialize all months × disposalMethods with 0
+    const chartData: ChartDataItem[] = monthLabels.flatMap((monthName, monthIndex) =>
+        disposalMethods.map(method => ({
+            month: monthName,
+            disposalMethod: method,
+            totalWeight: 0,
+        }))
     );
 
-    const disposalMethods = Object.values(DisposalMethod);
-
-    const dataMap = new Map<string, MonthlyDisposalSummary>();
-
-    // Initialize all months × disposal methods to 0
-    for (const month of allMonths) {
-        for (const method of disposalMethods) {
-            const label = DisposalMethodLabels[method];
-            const key = `${month}_${label}`;
-            dataMap.set(key, {
-                month,
-                disposalMethod: label,
-                wasteType: '',
-                totalWeight: 0,
-            });
-        }
-    }
-
-    // Overwrite with actual values
-    rawData.forEach((item) => {
-        const month = new Date(year, Number(item.month) - 1).toLocaleString("default", { month: "short" });
-        const methodLabel = DisposalMethodLabels[item.disposalMethod as DisposalMethod];
-        const key = `${month}_${methodLabel}`;
-
-        if (dataMap.has(key)) {
-            dataMap.set(key, {
-                month,
-                disposalMethod: methodLabel,
-                wasteType: '',
-                totalWeight: Number(item.totalWeight.toFixed(2)),
-            });
-        }
+    // Build a lookup for quick update
+    const lookup = new Map<string, ChartDataItem>();
+    chartData.forEach(item => {
+        lookup.set(`${item.month}_${item.disposalMethod}`, item);
     });
 
-    return Array.from(dataMap.values());
+    // Apply actual rawData if any
+    rawData.forEach(summary => {
+        const monthName = monthLabels[summary.month - 1];
+
+        summary.wasteTypeTotals.forEach(total => {
+            const key = `${monthName}_${total.disposalMethod}`;
+            const existing = lookup.get(key);
+            if (existing) {
+                existing.totalWeight += total.totalWeight;
+            }
+        });
+    });
+
+    return chartData;
 }
 
 const DashboardSection: React.FC = () => {
     const currentYear = new Date().getFullYear();
     const yearOptions = Array.from(
-        { length: currentYear - 2025 + 1 },
+        { length: currentYear - 2023 + 1 },
         (_, i) => {
-            const year = 2025 + i;
+            const year = 2023 + i;
             return { label: year.toString(), value: year };
         }
     ).reverse();
-
-    const [campus, setCampus] = useState(Campus.UTMJohorBahru);
+    const { campuses, disposalMethods } = useWasteRecordDropdownOptions();
+    const [selectedCampus, setSelectedCampus] = useState<string>();
     const [year, setYear] = useState(currentYear);
     const [chartLoading, setChartLoading] = useState<boolean>(false);
     const [summary, setSummary] = useState<TotalSummary>({
         totalWasteGenerated: 0,
         totalWasteRecycled: 0,
         totalWasteToLandfill: 0,
-        totalGHGReduction: 0,
+        totalGhgReduction: 0,
         totalLandfillCostSavings: 0
     });
-    const [monthlyChartData, setMonthlyChartData] = useState<MonthlyDisposalSummary[]>([]);
+    const [monthlyChartData, setMonthlyChartData] = useState<ChartDataItem[]>([]);
 
     const fecthMonthlyData = async () => {
         try {
             setChartLoading(true);
 
-            const response = await getCampusYearlySummary(campus, year);
+            const response = await getCampusYearlySummary(selectedCampus!, year);
 
-            if (response.data.summary) {
-                setSummary(response.data.summary);
+            if (response.data.totalSummary) {
+                setSummary(response.data.totalSummary);
             }
 
-            if (response.data.monthlySummary) {
-                const chartData = transformMonthlyChartData(response.data.monthlySummary);
+            if (response.data.monthlyWasteSummary) {
+                const disposalMethodNames = disposalMethods.map(method => method.name);
+                const chartData = transformMonthlyChartData(response.data.monthlyWasteSummary, disposalMethodNames);
                 setMonthlyChartData(chartData);
             }
 
@@ -98,10 +98,19 @@ const DashboardSection: React.FC = () => {
     };
 
     useEffect(() => {
-        fecthMonthlyData();
-    }, [year, campus]);
+        if (campuses && campuses.length > 0) {
+            const defaultCampus = campuses.find((c) => c.name === "UTM Johor Bahru");
+            setSelectedCampus(defaultCampus?.name);
+        }
+    }, [campuses]);
+
+    useEffect(() => {
+        if (year && selectedCampus)
+            fecthMonthlyData();
+    }, [year, selectedCampus]);
 
     const config = {
+        title: "UTM Solid Waste Generation Trends",
         data: monthlyChartData,
         xField: 'month',
         yField: 'totalWeight',
@@ -134,11 +143,11 @@ const DashboardSection: React.FC = () => {
                     <label>UTM Campus</label>
                     <Select
                         placeholder="Choose a campus"
-                        value={campus}
-                        onChange={(value) => setCampus(value)}
-                        options={Object.values(Campus).map((campus) => ({
-                            label: CampusLabels[campus],
-                            value: campus,
+                        value={selectedCampus}
+                        onChange={(value) => setSelectedCampus(value)}
+                        options={(campuses).map((campus) => ({
+                            label: campus.name,
+                            value: campus.name,
                         }))}
                         style={{ width: '100%' }}
                     />

@@ -4,7 +4,7 @@ import { message } from 'antd';
 import autoTable from 'jspdf-autotable';
 import { DisposalMethod, DisposalMethodLabels } from '../enum/disposalMethod';
 import { WasteType, WasteTypeLabels } from '../enum/wasteType';
-import { WasteRecordStatus, wasteRecordStatusLabels } from '../enum/wasteRecordStatus';
+import { WasteRecordStatus, wasteRecordStatusLabels } from '../enum/status';
 import { Campus, CampusLabels } from '../enum/campus';
 
 export function exportExcelWasteRecord(records: any[], filename = 'WasteRecords.xlsx') {

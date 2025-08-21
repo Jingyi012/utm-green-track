@@ -7,5 +7,5 @@ export function generateMetadata() {
 }
 
 export default function Page() {
-  redirect('/auth/login');
+  redirect('/login');
 }
