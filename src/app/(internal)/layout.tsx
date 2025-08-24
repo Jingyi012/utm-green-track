@@ -2,7 +2,7 @@
 
 import { Avatar, Button, Dropdown, Layout, Menu, MenuProps, theme } from 'antd';
 import React, { useState } from 'react';
-import { menuItems, profileMenuItems } from '@/lib/config/menu';
+import { AppMenuItem, menuItems, profileMenuItems } from '@/lib/config/menu';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
@@ -30,16 +30,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }
     };
 
-    // 👇 build initials safely
     const initials = user?.userName
-        ? user.userName
-            .split(' ')
-            .map(word => word[0])
-            .join('')
-            .padEnd(2, user.userName[0]) // ensures at least 2 characters
-            .slice(0, 2)
-            .toUpperCase()
-        : 'US';
+        ? user.userName[0].toUpperCase()
+        : 'U';
+
+    function filterMenuByRole(items: AppMenuItem[], userRoles?: string[]): AppMenuItem[] {
+        return items
+            .filter(item => {
+                if (!item.roles || !userRoles) return true;
+                return item.roles.some(role => userRoles.includes(role));
+            })
+            .map(item => {
+                if ("children" in item && item.children) {
+                    const filteredChildren = filterMenuByRole(item.children, userRoles);
+
+                    if (filteredChildren.length > 0) {
+                        return { ...item, children: filteredChildren } as AppMenuItem;
+                    }
+
+                    const { children, ...rest } = item;
+                    return rest as AppMenuItem;
+                }
+
+                return item as AppMenuItem;
+            });
+    }
 
     return (
         <PageGuard>
@@ -72,9 +87,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <Menu
                         theme="light"
                         mode="inline"
-                        defaultOpenKeys={['/data-entry', '/settings']}
+                        //defaultOpenKeys={['/data-entry', '/settings']}
                         selectedKeys={[pathname]}
-                        items={menuItems}
+                        items={filterMenuByRole(menuItems, user?.roles)}
                         onClick={({ key }) => router.push(key)}
                         inlineCollapsed={collapsed}
                     />

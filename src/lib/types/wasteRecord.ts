@@ -15,6 +15,9 @@ export interface WasteRecord {
     attachments?: Attachment[],
     userId: string,
     user: string,
+    uploadedAttachments?: {
+        fileList: UploadFile[]
+    }
 }
 
 export interface DisposalMethod {
@@ -23,7 +26,7 @@ export interface DisposalMethod {
 }
 
 export interface Attachment {
-    id: number,
+    id: string,
     fileName: string,
     filePath: string,
 }

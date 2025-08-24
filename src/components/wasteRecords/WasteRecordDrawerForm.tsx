@@ -1,15 +1,16 @@
-import { Col, Row, Form, Button } from 'antd';
+import { Col, Row, Form, Button, UploadFile, Upload } from 'antd';
 import {
     ProFormSelect,
     ProFormText,
     DrawerForm,
     ProFormDigit,
+    ProForm,
 } from '@ant-design/pro-components';
 import { ProCard } from '@ant-design/pro-components';
 import React, { useEffect, useState } from 'react';
 import { Campus, DisposalMethodWithWasteType, WasteTypeWithEmissionFactor } from '@/lib/types/typing';
 import { WasteRecordStatus, wasteRecordStatusLabels } from '@/lib/enum/status';
-import { EditOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, UploadOutlined } from '@ant-design/icons';
 import { WasteRecord } from '@/lib/types/wasteRecord';
 
 export type FormValueType = Partial<WasteRecord>;
@@ -22,6 +23,7 @@ export type UpdateFormDrawerProps = {
     visible: boolean;
     initialValues: Partial<WasteRecord>;
     isEditMode?: boolean;
+    handleDelete?: () => Promise<void>;
 };
 
 const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
@@ -32,6 +34,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
     visible,
     initialValues,
     isEditMode = false,
+    handleDelete
 }) => {
     const [form] = Form.useForm();
     const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -47,7 +50,18 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
 
     useEffect(() => {
         setIsEditing(isEditMode)
-    }, [isEditMode])
+    }, [isEditMode]);
+
+    useEffect(() => {
+        if (initialValues?.disposalMethodId) {
+            const selectedMethod = disposalMethods.find(dm => dm.id === initialValues.disposalMethodId);
+            setWasteTypes(selectedMethod?.wasteTypes ?? []);
+            setSelectedDisposalMethod(initialValues.disposalMethodId);
+        } else {
+            setWasteTypes([]);
+            setSelectedDisposalMethod(undefined);
+        }
+    }, [initialValues?.disposalMethodId, disposalMethods]);
 
     return (
         <DrawerForm
@@ -95,6 +109,13 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                                     return !prev;
                                 });
                             }}
+                        />
+                        <Button
+                            type="text"
+                            icon={
+                                <DeleteOutlined style={{ color: isEditing ? '#ff1818ff' : 'rgba(0, 0, 0, 0.45)' }} />
+                            }
+                            onClick={handleDelete}
                         />
                     </>
                 )
@@ -167,11 +188,6 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                             disabled={!isEditing}
                         />
                     </Col>
-
-                </Row>
-
-                <Row gutter={16}>
-
                     <Col span={12}>
                         <ProFormSelect
                             name="status"
@@ -179,6 +195,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                             rules={[{ required: true, message: 'Please select a status' }]}
                             placeholder="Please select a status"
                             options={[
+                                { label: wasteRecordStatusLabels[WasteRecordStatus.New], value: WasteRecordStatus.New },
                                 { label: wasteRecordStatusLabels[WasteRecordStatus.Verified], value: WasteRecordStatus.Verified },
                                 { label: wasteRecordStatusLabels[WasteRecordStatus.Rejected], value: WasteRecordStatus.Rejected },
                             ]}
@@ -186,6 +203,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                         />
                     </Col>
                 </Row>
+
                 <ProFormText
                     name="id"
                     label="id"
@@ -193,8 +211,32 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                     disabled
                 />
             </ProCard>
-            <ProCard>
+            <ProCard title={"Attachments"} bordered collapsible style={{ marginTop: '16px' }}>
+                <ProForm.Item
+                    name='uploadedAttachments'
+                >
+                    <Upload
+                        multiple
+                        listType="picture"
+                        accept=".pdf,image/*,.xlsx"
+                        defaultFileList={(initialValues?.attachments ?? []).map(a => ({
+                            uid: a.id,
+                            name: a.fileName,
+                            status: 'done',
+                            url: a.filePath,
+                            //type: a.fileName.toLowerCase().endsWith('.pdf') ? 'application/pdf' : undefined,
+                        }))}
 
+                        beforeUpload={(file) => {
+                            return false;
+                        }}
+                        onRemove={(file) => {
+                        }}
+                        disabled={!isEditing}
+                    >
+                        {isEditing && <Button icon={<UploadOutlined />}>Click to Upload</Button>}
+                    </Upload>
+                </ProForm.Item>
             </ProCard>
         </DrawerForm>
     );

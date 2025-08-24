@@ -7,7 +7,7 @@ const API_URL = '/api/disposal-methods';
 export async function getAllDisposalMethod(
     options?: { [key: string]: any }) {
 
-    return api.get<GeneralResponse<DisposalMethodWithWasteType>>(`${API_URL}`, {
+    return api.get<GeneralResponse<DisposalMethodWithWasteType[]>>(`${API_URL}`, {
         ...options,
     });
 }

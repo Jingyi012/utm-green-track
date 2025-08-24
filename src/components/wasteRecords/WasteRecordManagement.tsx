@@ -4,13 +4,12 @@ import { useWasteRecordDropdownOptions } from "@/hook/options";
 import { WasteRecordStatus, wasteRecordStatusLabels } from "@/lib/enum/status";
 import { UserDetails } from "@/lib/types/typing";
 import { ActionType, ProColumns, ProTable } from "@ant-design/pro-components";
-import { Button, Tooltip, message } from "antd";
+import { Button, Modal, Tooltip, message } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useRef } from "react";
 import WasteRecordDrawerForm from "./WasteRecordDrawerForm";
 import { WasteRecord, WasteRecordFilter } from "@/lib/types/wasteRecord";
-import { deleteWasteRecord, getWasteRecordsPaginated, updateWasteRecord } from "@/lib/services/wasteRecord";
-import { PaperClipOutlined } from "@ant-design/icons";
+import { deleteAttachment, deleteWasteRecord, getWasteRecordsPaginated, updateWasteRecord, uploadAttachments } from "@/lib/services/wasteRecord";
 
 const WasteRecordManagement: React.FC = () => {
     const { campuses, disposalMethods, isLoading } = useWasteRecordDropdownOptions();
@@ -54,6 +53,15 @@ const WasteRecordManagement: React.FC = () => {
     const handleWasteRecordUpdate = async (wasteRecord: WasteRecord) => {
         try {
             setLoading(true);
+            const fileList = wasteRecord.uploadedAttachments?.fileList ?? [];
+
+            const newAttachments = fileList.filter(f => f.originFileObj);
+
+            const initialAttachmentIds = selectedRecord?.attachments?.map(f => f.id) ?? [];
+
+            const currentIds = fileList.filter(f => !f.originFileObj).map(f => f.uid);
+
+            const fileToRemove = initialAttachmentIds.filter(id => !currentIds.includes(id));
 
             const res = await updateWasteRecord(wasteRecord.id, {
                 id: wasteRecord.id,
@@ -65,20 +73,37 @@ const WasteRecordManagement: React.FC = () => {
                 status: wasteRecord.status,
             });
 
-            if (res.success) {
-                message.success("User updated successfully");
-                return true;
-            }
-            else {
+            if (!res.success) {
                 message.error(res.message || "Failed to update wasteRecord");
                 return false;
             }
+
+            if (newAttachments.length > 0) {
+                await uploadAttachments(newAttachments, wasteRecord.id);
+            }
+
+            if (fileToRemove.length > 0) {
+                await Promise.all(fileToRemove.map(id => deleteAttachment(id)));
+            }
+
+            message.success("Waste record updated successfully");
+            return true;
         } catch (err) {
             message.error("Failed to update wasteRecord");
             return false;
         } finally {
             setLoading(false);
         }
+    };
+
+    const confirmDeletion = async (wasteRecord: WasteRecord) => {
+        Modal.confirm({
+            title: 'Confirm Deletion',
+            content: 'Are you sure you want to delete this waste record?',
+            okText: 'Yes',
+            cancelText: 'No',
+            onOk: async () => handleWasteRecordDelete(wasteRecord),
+        });
     }
 
     const handleWasteRecordDelete = async (wasteRecord: WasteRecord) => {
@@ -172,13 +197,21 @@ const WasteRecordManagement: React.FC = () => {
 
                 if (attachments.length === 0) return '-';
 
-                return attachments.map((file, index) => (
-                    <Tooltip title="View Attachment" key={index}>
-                        <a href={file.filePath} target="_blank" rel="noopener noreferrer" style={{ marginRight: 8 }}>
-                            <PaperClipOutlined />
-                        </a>
-                    </Tooltip>
-                ));
+                return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        {attachments.map((file, index) => (
+                            <Tooltip title="View Attachment" key={index}>
+                                <a
+                                    href={file.filePath}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    {file.fileName}
+                                </a>
+                            </Tooltip>
+                        ))}
+                    </div>
+                );
             },
             hideInSearch: true,
         },
@@ -246,7 +279,7 @@ const WasteRecordManagement: React.FC = () => {
                         type="link"
                         danger
                         onClick={() => {
-                            handleWasteRecordDelete(record)
+                            confirmDeletion(record);
                         }}
                     >
                         Delete
@@ -312,6 +345,7 @@ const WasteRecordManagement: React.FC = () => {
                 visible={modalOpen}
                 initialValues={selectedRecord || {}}
                 isEditMode={editMode}
+                handleDelete={async () => confirmDeletion(selectedRecord!)}
             />
         </>
     );

@@ -26,8 +26,7 @@ const ChangePasswordForm = () => {
 
     return (
         <>
-            <Title level={3}>Change Password</Title>
-            <Card>
+            <Card title={"Change Password"}>
                 <Form form={form} layout="vertical" style={{ maxWidth: '500px', margin: 'auto' }}>
                     <Row gutter={16}>
                         <Col xs={24}>

@@ -139,7 +139,7 @@ const WasteRecordApproval: React.FC = () => {
                 return attachments.map((file, index) => (
                     <Tooltip title="View Attachment" key={index}>
                         <a href={file.filePath} target="_blank" rel="noopener noreferrer" style={{ marginRight: 8 }}>
-                            <PaperClipOutlined />
+                            {file.fileName}
                         </a>
                     </Tooltip>
                 ));

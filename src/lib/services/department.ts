@@ -7,7 +7,7 @@ const API_URL = '/api/departments';
 export async function getAllDepartment(
     options?: { [key: string]: any }) {
 
-    return api.get<GeneralResponse<Department>>(`${API_URL}`, {
+    return api.get<GeneralResponse<Department[]>>(`${API_URL}`, {
         ...options,
     });
 }

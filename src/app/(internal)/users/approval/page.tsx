@@ -6,7 +6,7 @@ export default function UserApprovalManagementPage() {
         <>
             <CustomBreadcrumb items={[
                 { title: 'User Records' },
-                { title: 'Approval Management' }
+                { title: 'Approval' }
             ]} />
             <UserApproval />
         </>

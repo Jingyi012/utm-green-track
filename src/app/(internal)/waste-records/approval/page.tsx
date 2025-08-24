@@ -6,7 +6,7 @@ export default function WasteRecordApprovalPage() {
         <>
             <CustomBreadcrumb items={[
                 { title: 'Waste Records' },
-                { title: 'Approval Management' }
+                { title: 'Approval' }
             ]} />
             <WasteRecordApproval />
         </>

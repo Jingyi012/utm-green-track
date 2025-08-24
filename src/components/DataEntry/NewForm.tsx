@@ -16,12 +16,10 @@ import {
     ProFormSelect,
     ProFormText,
     ProFormDigit,
-    ProFormUploadButton,
-    ProFormUploadDragger,
 } from '@ant-design/pro-components';
 import { EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons';
-import { useEffect, useState } from 'react';
-import { createWasteRecord, uploadAttachments } from '@/lib/services/wasteRecord';
+import { useState } from 'react';
+import { createWasteRecords } from '@/lib/services/wasteRecord';
 import { WasteRecordInput } from '@/lib/types/wasteRecord';
 import { useWasteRecordDropdownOptions } from '@/hook/options';
 import { WasteTypeWithEmissionFactor } from '@/lib/types/typing';
@@ -103,67 +101,51 @@ export default function WasteEntryForm() {
 
     const handleSubmit = async () => {
         if (tableData.length === 0) {
-            return message.warning('No data to submit. Please add at least one entry.');
+            return message.warning("No data to submit. Please add at least one entry.");
         }
 
         Modal.confirm({
-            title: 'Confirm Submission',
-            content: 'Are you sure you want to submit all the waste records?',
-            okText: 'Yes, Submit',
-            cancelText: 'Cancel',
+            title: "Confirm Submission",
+            content: "Are you sure you want to submit all the waste records?",
+            okText: "Yes, Submit",
+            cancelText: "Cancel",
             onOk: async () => {
                 const hide = message.loading("Submitting records...", 0);
-                const failedRecords: any[] = [];
 
                 try {
-                    for (const record of tableData) {
-                        try {
-                            // 1. Create waste record
-                            const createResponse = await createWasteRecord({
-                                campus: record.campus,
-                                location: record.location,
-                                disposalMethodId: record.disposalMethod,
-                                wasteTypeId: record.wasteType,
-                                wasteWeight: record.wasteWeight,
-                                date: new Date().toISOString(),
-                            });
+                    // Transform tableData into request format
+                    const wasteRecords = tableData.map((record: any) => ({
+                        campus: record.campus,
+                        disposalMethodId: record.disposalMethod,
+                        wasteTypeId: record.wasteType,
+                        wasteWeight: record.wasteWeight,
+                        location: record.location,
+                        activity: record.activity,
+                        date: new Date().toISOString(),
+                        attachments: (record.file ?? [])
+                            .map((f: any) => f.originFileObj as File)
+                            .filter(Boolean),
+                    }));
 
-                            const createdId = createResponse.data;
-                            if (!createdId) throw new Error('Failed to obtain record ID');
+                    // Batch submit all records in one request
+                    const response = await createWasteRecords({
+                        wasteRecords,
+                    });
 
-                            // 2. Upload attachments if exist
-                            const fileList: File[] = (record.file ?? [])
-                                .map((f: any) => f.originFileObj)
-                                .filter(Boolean);
-
-                            if (fileList.length > 0) {
-                                await uploadAttachments(fileList, createdId);
-                            }
-
-                        } catch (recordErr) {
-                            console.error('Failed to submit record:', recordErr);
-                            failedRecords.push(record);
-                        }
-                    }
-
-                    if (failedRecords.length === 0) {
-                        message.success('All waste records submitted successfully');
+                    if (response && response.success) {
+                        message.success("All waste records submitted successfully");
                         setTableData([]);
                         form.resetFields();
                         setSelectedDisposalMethod(undefined);
                         setWasteTypes([]);
-                    } else if (failedRecords.length === tableData.length) {
-                        message.error('Failed to submit all waste records. Please try again.');
                     } else {
-                        message.warning(
-                            `${failedRecords.length} out of ${tableData.length} records failed to submit.`
-                        );
+                        message.error(response.message || "Failed to submit waste records");
                     }
-
                 } catch (err: any) {
-                    message.error(err.message || 'Unexpected error occurred during submission');
+                    console.error("Batch submission failed:", err);
+                    message.error(err.message || "Unexpected error occurred during submission");
                 } finally {
-                    hide(); // always close loading
+                    hide();
                 }
             },
         });
@@ -289,7 +271,7 @@ export default function WasteEntryForm() {
                         </Col>
                     </Row>
 
-                    <Title level={5} style={{ marginTop: 24 }}>Waste Information</Title>
+                    <Title level={5} style={{ marginTop: 12 }}>Waste Information</Title>
                     <Row gutter={16}>
                         <Col xs={24} md={12}>
                             <ProFormSelect

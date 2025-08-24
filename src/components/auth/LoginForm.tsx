@@ -51,10 +51,10 @@ export default function LoginForm() {
                         rules={[
                             { required: true, message: 'Please enter your email' },
                             { type: 'email', message: 'Invalid email address' },
-                            {
-                                pattern: /^[a-zA-Z0-9._%+-]+@(utm\.my|graduate\.utm\.my)$/,
-                                message: 'Email must be @utm.my or @graduate.utm.my'
-                            },
+                            // {
+                            //     pattern: /^[a-zA-Z0-9._%+-]+@(utm\.my|graduate\.utm\.my)$/,
+                            //     message: 'Email must be @utm.my or @graduate.utm.my'
+                            // },
                         ]}
                     >
                         <Input prefix={<UserOutlined />} placeholder="you@graduate.utm.my" />

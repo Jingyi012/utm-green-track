@@ -1,18 +1,26 @@
 'use client'
 import { useEffect, useState } from "react";
 import InfoCardGrid from "./InfoCardGrid";
-import { Card, Col, message, Row, Select, Skeleton } from "antd";
+import { Card, Col, Divider, message, Row, Select, Skeleton, Splitter } from "antd";
 import { getCampusYearlySummary } from "@/lib/services/wasteRecord";
-import { Column } from "@ant-design/charts";
+import { Column, Pie } from "@ant-design/charts";
 import { MonthlyWasteSummary, TotalSummary } from "@/lib/types/wasteSummary";
 import { useWasteRecordDropdownOptions } from "@/hook/options";
 import { MONTH_LABELS_SHORT } from "@/lib/enum/monthName";
+import { DisposalMethodWithWasteType } from "@/lib/types/typing";
+import React from "react";
 
 export interface ChartDataItem {
     month: string;
     disposalMethod: string;
     //wasteType: string;
     totalWeight: number;
+}
+
+export interface PieChartData {
+    wasteType: string,
+    disposalMethod: string;
+    totalWeight: number
 }
 
 export function transformMonthlyChartData(
@@ -52,6 +60,37 @@ export function transformMonthlyChartData(
     return chartData;
 }
 
+function transformRecyclableWasteType(
+    monthlyWasteSummary: MonthlyWasteSummary[]
+): PieChartData[] {
+    const totals: Record<string, Record<string, number>> = {};
+
+    monthlyWasteSummary.forEach((monthData) => {
+        monthData.wasteTypeTotals.forEach((item) => {
+            if (item.disposalMethod !== "Landfilling") {
+                if (!totals[item.disposalMethod]) {
+                    totals[item.disposalMethod] = {};
+                }
+                totals[item.disposalMethod][item.wasteType] =
+                    (totals[item.disposalMethod][item.wasteType] || 0) + item.totalWeight;
+            }
+        });
+    });
+
+    const result: PieChartData[] = [];
+    Object.entries(totals).forEach(([disposalMethod, wasteTypes]) => {
+        Object.entries(wasteTypes).forEach(([wasteType, totalWeight]) => {
+            result.push({
+                disposalMethod,
+                wasteType,
+                totalWeight: parseFloat(totalWeight.toFixed(2)),
+            });
+        });
+    });
+
+    return result;
+}
+
 const DashboardSection: React.FC = () => {
     const currentYear = new Date().getFullYear();
     const yearOptions = Array.from(
@@ -73,6 +112,8 @@ const DashboardSection: React.FC = () => {
         totalLandfillCostSavings: 0
     });
     const [monthlyChartData, setMonthlyChartData] = useState<ChartDataItem[]>([]);
+    const [pieChartData, setPieChartData] = useState<PieChartData[]>([]);
+    const [sizes, setSizes] = React.useState<(number | string)[]>(['60%', '40%']);
 
     const fecthMonthlyData = async () => {
         try {
@@ -88,6 +129,8 @@ const DashboardSection: React.FC = () => {
                 const disposalMethodNames = disposalMethods.map(method => method.name);
                 const chartData = transformMonthlyChartData(response.data.monthlyWasteSummary, disposalMethodNames);
                 setMonthlyChartData(chartData);
+                const pieChart = transformRecyclableWasteType(response.data.monthlyWasteSummary);
+                setPieChartData(pieChart);
             }
 
         } catch {
@@ -131,9 +174,48 @@ const DashboardSection: React.FC = () => {
         interactions: [
             {
                 type: 'active-region',
-                enable: false,
+                enable: true,
             },
         ],
+        tooltip: {
+            items: [
+                (datum: { totalWeight: number; }) => ({
+                    value: `${datum.totalWeight.toFixed(2)}`,
+                }),
+            ],
+        },
+    };
+
+    const pieConfig = {
+        title: "Statistics of recyclable items by waste type",
+        data: pieChartData,
+        angleField: 'totalWeight',
+        colorField: 'wasteType',
+        label: {
+            text: 'wasteType',
+            position: 'outside',
+            style: {
+                fontWeight: 'bold',
+            },
+        },
+        legend: {
+            color: {
+                title: false,
+                position: 'right',
+                rowPadding: 5,
+            },
+        },
+        tooltip: {
+            title: (datum: { disposalMethod: any; wasteType: any; }) => ({
+                value: `${datum.disposalMethod} - ${datum.wasteType}`,
+            }),
+            items: [
+                (datum: { totalWeight: number; }) => ({
+                    name: 'Total Weight',
+                    value: `${datum.totalWeight.toFixed(2)} Tonnes`,
+                }),
+            ],
+        },
     };
 
     return (
@@ -167,9 +249,18 @@ const DashboardSection: React.FC = () => {
             <Skeleton loading={chartLoading}>
                 <InfoCardGrid {...summary} />
                 <br />
-                <Card>
-                    <Column {...config} />
-                </Card>
+                <Divider />
+                <Splitter
+                    onResize={setSizes}
+                    style={{}}
+                >
+                    <Splitter.Panel size={sizes[0]} resizable={true}>
+                        <Column {...config} />
+                    </Splitter.Panel>
+                    <Splitter.Panel size={sizes[1]}>
+                        <Pie {...pieConfig} />
+                    </Splitter.Panel>
+                </Splitter>
             </Skeleton>
         </Card>
     )

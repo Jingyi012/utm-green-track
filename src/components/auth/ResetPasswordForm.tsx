@@ -72,7 +72,7 @@ export default function ResetPasswordForm() {
                     label="New Password"
                     rules={[
                         { required: true, message: 'Please enter new password' },
-                        { min: 8, message: 'Password must be at least 6 characters' },
+                        { min: 8, message: 'Password must be at least 8 characters' },
                     ]}
                     hasFeedback
                 >
@@ -86,7 +86,7 @@ export default function ResetPasswordForm() {
                     hasFeedback
                     rules={[
                         { required: true, message: 'Please enter confirm password' },
-                        { min: 8, message: 'Password must be at least 6 characters' },
+                        { min: 8, message: 'Password must be at least 8 characters' },
                         ({ getFieldValue }) => ({
                             validator(_, value) {
                                 return !value || getFieldValue('newPassword') === value

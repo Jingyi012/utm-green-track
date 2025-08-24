@@ -1,7 +1,6 @@
 import {
   DashboardOutlined,
   FileTextOutlined,
-  UserOutlined,
   LogoutOutlined,
   SettingOutlined,
   InfoCircleOutlined,
@@ -11,7 +10,12 @@ import {
 import { MenuProps } from 'antd';
 import React from 'react';
 
-export const menuItems: MenuProps['items'] = [
+export type AppMenuItem = Exclude<MenuProps["items"], undefined>[number] & {
+  roles?: string[];
+  children?: AppMenuItem[];
+};
+
+export const menuItems: AppMenuItem[] = [
   {
     key: '/dashboard',
     icon: <DashboardOutlined />,
@@ -40,6 +44,7 @@ export const menuItems: MenuProps['items'] = [
     key: '/waste-records',
     icon: <UnorderedListOutlined />,
     label: 'Waste Records',
+    roles: ['Admin'],
     children: [
       {
         key: '/waste-records/approval',
@@ -55,6 +60,7 @@ export const menuItems: MenuProps['items'] = [
     key: '/users',
     icon: <UsergroupAddOutlined />,
     label: 'Users',
+    roles: ['Admin'],
     children: [
       {
         key: '/users/approval',
@@ -70,16 +76,7 @@ export const menuItems: MenuProps['items'] = [
     key: '/configurations',
     icon: <SettingOutlined />,
     label: 'Configurations',
-    children: [
-      {
-        key: '/configurations/general',
-        label: 'General Config',
-      },
-      {
-        key: '/configurations/disposal-waste',
-        label: 'Waste Types',
-      }
-    ]
+    roles: ['Admin'],
   },
   {
     key: '/waste-info',

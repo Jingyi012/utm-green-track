@@ -1,3 +1,4 @@
+import { UploadFile } from "antd";
 import { GeneralResponse, PagedResponse } from "../types/apiResponse";
 import { WasteRecord, WasteRecordFilter } from "../types/wasteRecord";
 import { CampusYearlySummaryResponse, MonthlyStatisticByYearResponse } from "../types/wasteSummary";
@@ -5,17 +6,53 @@ import api from "../utils/axios";
 
 const API_URL = '/api/waste-records';
 
-export async function createWasteRecord(body: {
-    campus: string;
-    disposalMethodId: string;
-    wasteTypeId: string;
-    wasteWeight: number;
-    location?: string;
-    activity?: string;
-    date: string;
-},
-    options?: { [key: string]: any }) {
-    return api.post<GeneralResponse<string>>(`${API_URL}`, body, { ...options });
+export async function createWasteRecords(
+    body: {
+        wasteRecords: {
+            campus: string;
+            disposalMethodId: string;
+            wasteTypeId: string;
+            wasteWeight: number;
+            location?: string;
+            activity?: string;
+            date: string;
+            attachments?: File[];
+        }[];
+    },
+    options?: { [key: string]: any }
+) {
+    const formData = new FormData();
+
+    // Build each record
+    body.wasteRecords.forEach((record, i) => {
+        formData.append(`WasteRecords[${i}].Campus`, record.campus);
+        formData.append(`WasteRecords[${i}].DisposalMethodId`, record.disposalMethodId);
+        formData.append(`WasteRecords[${i}].WasteTypeId`, record.wasteTypeId);
+        formData.append(`WasteRecords[${i}].WasteWeight`, record.wasteWeight.toString());
+        formData.append(`WasteRecords[${i}].Date`, record.date);
+
+        if (record.location) {
+            formData.append(`WasteRecords[${i}].Location`, record.location);
+        }
+
+        if (record.activity) {
+            formData.append(`WasteRecords[${i}].Activity`, record.activity);
+        }
+
+        // Append attachments for this record
+        if (record.attachments && record.attachments.length > 0) {
+            record.attachments.forEach((file) => {
+                formData.append(`WasteRecords[${i}].Attachments`, file);
+            });
+        }
+    });
+
+    return api.post<GeneralResponse<string[]>>(`${API_URL}/batch`, formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+        ...options,
+    });
 }
 
 export async function getWasteRecordsPaginated(params: WasteRecordFilter,
@@ -53,13 +90,13 @@ export async function deleteWasteRecord(id: string, options?: { [key: string]: a
 }
 
 export async function uploadAttachments(
-    fileList: File[],
+    fileList: UploadFile[],
     wasteRecordId: string,
     options?: { [key: string]: any },) {
     const formData = new FormData();
     formData.append('WasteRecordId', `${wasteRecordId}`);
     for (const file of fileList) {
-        formData.append('Files', file);
+        formData.append('Files', file.originFileObj!);
     }
 
     return api.post<GeneralResponse<string[]>>(`${API_URL}/attachments/upload`, formData, {

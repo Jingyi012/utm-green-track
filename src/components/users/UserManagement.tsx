@@ -13,8 +13,6 @@ import UserDetailsDrawerForm, { FormValueType } from "./UserDetailsDrawerForm";
 const UserManagement: React.FC = () => {
     const { positions, departments, roles, isLoading } = useProfileDropdownOptions();
     const [loading, setLoading] = useState<boolean>(false);
-    const [page, setPage] = useState<number>(1);
-    const [pageSize, setPagesize] = useState<number>(20);
     const [data, setData] = useState<UserDetails[]>([]);
     const [selectedUser, setSelectedUser] = useState<UserDetails>();
     const [modalOpen, setModalOpen] = useState<boolean>(false);
@@ -39,8 +37,6 @@ const UserManagement: React.FC = () => {
                 ...filter,
             });
             setData(res.data || []);
-            setPage(res.pageNumber);
-            setPagesize(res.pageSize);
             return {
                 data: res.data,
                 success: res.success,
@@ -94,8 +90,11 @@ const UserManagement: React.FC = () => {
     const columns: ProColumns<UserDetails>[] = [
         {
             title: "No.",
-            render: (_: any, __: any, index: number) =>
-                (page - 1) * pageSize + index + 1,
+            render: (_: any, __: any, index: number, action) => {
+                const current = action?.pageInfo?.current ?? 1;
+                const pageSize = action?.pageInfo?.pageSize ?? 10;
+                return (current - 1) * pageSize + index + 1;
+            },
             width: 60,
             align: "center",
             hideInSearch: true,
@@ -131,7 +130,7 @@ const UserManagement: React.FC = () => {
             render: (_, record) => record.position ?? "-",
         },
         {
-            title: "Department",
+            title: "Faculty/Department",
             dataIndex: "departmentId",
             align: "center",
             valueEnum: departments.reduce((acc, method) => {
@@ -164,8 +163,7 @@ const UserManagement: React.FC = () => {
                     </>
                 );
             },
-        }
-        ,
+        },
         {
             title: "Status",
             dataIndex: "status",
@@ -217,12 +215,6 @@ const UserManagement: React.FC = () => {
                 columns={columns}
                 dataSource={data}
                 pagination={{
-                    current: page,
-                    pageSize,
-                    onChange: (p, ps) => {
-                        setPage(p);
-                        setPagesize(ps);
-                    },
                 }}
                 request={(params: any, sort: Record<string, SortOrder>, filter: Record<string, (string | number)[] | null>) => {
                     return fetchData({
