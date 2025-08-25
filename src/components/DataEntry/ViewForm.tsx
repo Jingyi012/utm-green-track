@@ -3,51 +3,48 @@
 import {
     Button,
     Tooltip,
-    message,
     Card,
+    App,
 } from 'antd';
 import {
     FilePdfOutlined,
     FileExcelOutlined,
-    PaperClipOutlined,
 } from '@ant-design/icons';
-import { useState } from 'react';
-import { getWasteRecords, getWasteRecordsPaginated } from '@/lib/services/wasteRecord';
-import { exportExcelWasteRecord, exportPdfWasteRecord } from '@/lib/reportExports/wasteRecords';
-import { confirmAction } from '@/lib/utils/confirmAction';
-import { ProColumns, ProTable } from '@ant-design/pro-components';
-import { Campus, CampusLabels } from '@/lib/enum/campus';
-import { DisposalMethod, DisposalMethodLabels } from '@/lib/enum/disposalMethod';
-import { WasteType, WasteTypeLabels } from '@/lib/enum/wasteType';
-import { WasteRecord, WasteRecordFilterWithoutUid } from '@/lib/types/wasteRecord';
-import { WasteRecordStatus, wasteRecordStatusLabels } from '@/lib/enum/wasteRecordStatus';
+import { useRef, useState } from 'react';
+import { exportExcelWasteRecords, exportPdfWasteRecords, getWasteRecordsPaginated } from '@/lib/services/wasteRecord';
+import { ActionType, ModalForm, ProColumns, ProFormText, ProTable } from '@ant-design/pro-components';
+import { WasteRecord, WasteRecordFilter } from '@/lib/types/wasteRecord';
+import { WasteRecordStatus, wasteRecordStatusLabels } from '@/lib/enum/status';
 import { SortOrder } from 'antd/lib/table/interface';
+import { useWasteRecordDropdownOptions } from '@/hook/options';
+import { downloadFile } from '@/lib/utils/downloadFile';
+import { ExportModal } from './ExportModal';
+import { createRequest } from '@/lib/services/requestService';
+import { dateFormatter } from '@/lib/utils/formatter';
 
-const pageSize = 20;
-
-const WasteTable = () => {
-    const [page, setPage] = useState<number>(1);
+const ViewForm = () => {
+    const { message } = App.useApp();
+    const { campuses, disposalMethods } = useWasteRecordDropdownOptions();
     const [data, setData] = useState<WasteRecord[]>([]);
-    const [total, setTotal] = useState<number>(0);
+    const [selectedRecord, setSelectedRecord] = useState<WasteRecord | undefined>(undefined);
     const [loading, setLoading] = useState<boolean>(false);
     const [excelLoading, setExcelLoading] = useState<boolean>(false);
     const [pdfLoading, setPdfLoading] = useState<boolean>(false);
+    const actionRef = useRef<ActionType | undefined>(undefined);
 
-    const fetchData = async (filters: WasteRecordFilterWithoutUid) => {
+    const [modalOpen, setModalOpen] = useState<false | "excel" | "pdf">(false);
+
+    const [changeRequestModalOpen, setChangeRequestModalOpen] = useState<boolean>(false);
+
+    const fetchData = async (filters: WasteRecordFilter) => {
         setLoading(true);
         try {
-            const res = await getWasteRecordsPaginated({
-                pageNumber: filters.pageNumber ?? 1,
-                pageSize: filters.pageSize ?? 20,
-                ...filters,
-            });
+            const res = await getWasteRecordsPaginated(filters);
             setData(res.data);
-            setTotal(res.pagination.totalCount);
-            setPage(res.pagination.pageNumber);
             return {
                 data: res.data,
                 success: res.success,
-                total: res.pagination.totalCount
+                total: res.totalCount
             }
         } catch (err: any) {
             message.error(err.message || 'Failed to fetch records');
@@ -64,7 +61,11 @@ const WasteTable = () => {
     const columns: ProColumns[] = [
         {
             title: 'No.',
-            render: (_: any, __: any, index: number) => (page - 1) * pageSize + index + 1,
+            render: (_: any, __: any, index: number, action) => {
+                const current = action?.pageInfo?.current ?? 1;
+                const pageSize = action?.pageInfo?.pageSize ?? 10;
+                return (current - 1) * pageSize + index + 1;
+            },
             width: 60,
             align: 'center' as const,
             hideInSearch: true,
@@ -72,7 +73,7 @@ const WasteTable = () => {
         {
             title: 'Date',
             dataIndex: 'date',
-            render: (_: any, record: WasteRecord) => new Date(record.date).toLocaleDateString('en-GB'),
+            render: (_: any, record: WasteRecord) => dateFormatter(record.date),
             align: 'center' as const,
             hideInSearch: true,
         },
@@ -103,13 +104,11 @@ const WasteTable = () => {
         {
             title: 'UTM Campus',
             dataIndex: 'campus',
-            valueEnum: Object.fromEntries(
-                Object.entries(CampusLabels).map(([value, label]) => [
-                    value,
-                    { text: label },
-                ])
-            ),
-            render: (_: any, record: WasteRecord) => CampusLabels[record.campus as Campus] || record.campus,
+            valueEnum: campuses.reduce((acc, campus) => {
+                acc[campus.name] = { text: campus.name };
+                return acc;
+            }, {} as Record<string, { text: string }>),
+            render: (_: any, record: WasteRecord) => record.campus,
             align: 'center' as const
         },
         {
@@ -121,25 +120,27 @@ const WasteTable = () => {
         {
             title: 'Disposal Method',
             dataIndex: 'disposalMethod',
-            valueEnum: Object.fromEntries(
-                Object.entries(DisposalMethodLabels).map(([value, label]) => [
-                    value,
-                    { text: label },
-                ])
-            ),
-            render: (_: any, record: WasteRecord) => DisposalMethodLabels[record.disposalMethod as DisposalMethod] || record.disposalMethod,
+            valueEnum: disposalMethods.reduce((acc, method) => {
+                acc[method.name] = { text: method.name };
+                return acc;
+            }, {} as Record<string, { text: string }>),
+            render: (_: any, record: WasteRecord) => record.disposalMethod,
             align: 'center' as const
         },
         {
             title: 'Waste Type',
             dataIndex: 'wasteType',
-            valueEnum: Object.fromEntries(
-                Object.entries(WasteTypeLabels).map(([value, label]) => [
-                    value,
-                    { text: label },
-                ])
-            ),
-            render: (_: any, record: WasteRecord) => WasteTypeLabels[record.wasteType as WasteType] || record.wasteType,
+            valueEnum: Array.from(
+                new Set(
+                    disposalMethods.flatMap(method =>
+                        method.wasteTypes.map(waste => waste.name)
+                    )
+                )
+            ).reduce((acc, name) => {
+                acc[name] = { text: name };
+                return acc;
+            }, {} as Record<string, { text: string }>),
+            render: (_: any, record: WasteRecord) => record.wasteType,
             align: 'center' as const
         },
         {
@@ -151,6 +152,7 @@ const WasteTable = () => {
         {
             title: 'Attachment',
             dataIndex: 'attachments',
+            align: 'center' as const,
             render: (_: any, record: WasteRecord) => {
                 const attachments = Array.isArray(record.attachments) ? record.attachments : [];
 
@@ -158,8 +160,8 @@ const WasteTable = () => {
 
                 return attachments.map((file, index) => (
                     <Tooltip title="View Attachment" key={index}>
-                        <a href={file.url} target="_blank" rel="noopener noreferrer" style={{ marginRight: 8 }}>
-                            <PaperClipOutlined />
+                        <a href={file.filePath} target="_blank" rel="noopener noreferrer" style={{ marginRight: 8 }}>
+                            {file.fileName}
                         </a>
                     </Tooltip>
                 ));
@@ -184,114 +186,150 @@ const WasteTable = () => {
                 },
             },
             align: 'center' as const,
+        },
+        {
+            title: 'Action',
+            valueType: 'option',
+            align: 'center' as const,
+            render: (_: any, record: WasteRecord) => {
+                return (
+                    <>
+                        {record.status != WasteRecordStatus.Verified &&
+                            (<Button onClick={() => {
+                                setSelectedRecord(record);
+                                setChangeRequestModalOpen(true);
+                            }}>
+                                Request Changes
+                            </Button>
+                            )
+                        }
+                    </>
+                )
+            }
         }
     ];
 
-    const handleExportExcel = async () => {
-        const confirmed = await confirmAction({
-            title: 'Confirm Excel Export',
-            content: 'Are you sure you want to download the Excel file for these waste records?',
-        });
-        if (!confirmed) return;
+    const handleExportExcel = async (year: number, month: number) => {
 
         const hide = message.loading("Generating Excel...");
         try {
             setExcelLoading(true);
-            const response = await getWasteRecords({});
-            exportExcelWasteRecord(response.data);
+            const response = await exportExcelWasteRecords({ year, month });
+            const contentDisposition = response.headers['content-disposition'];
+            downloadFile(response.data, contentDisposition, "Waste_Records.xlsx");
         } catch (err: any) {
-            message.error(err.message || 'Failed to generate excel');
+            message.error('Failed to generate Excel');
         } finally {
             setExcelLoading(false);
             hide();
         }
     };
 
-    const handleExportPDF = async () => {
-        const confirmed = await confirmAction({
-            title: 'Confirm PDF Export',
-            content: 'Are you sure you want to download the PDF file for these waste records?',
-        });
-        if (!confirmed) return;
-
+    const handleExportPDF = async (year: number, month: number) => {
         const hide = message.loading("Generating Pdf...");
         try {
             setPdfLoading(true);
-            const response = await getWasteRecords({});
-            exportPdfWasteRecord(response.data);
+            const response = await exportPdfWasteRecords({ year, month });
+            const contentDisposition = response.headers['content-disposition'];
+            downloadFile(response.data, contentDisposition, "Waste_Records.pdf");
         } catch (err: any) {
-            message.error(err.message || 'Failed to generate pdf');
+            message.error('Failed to generate PDF');
         } finally {
             setPdfLoading(false);
             hide();
         }
     };
 
-    return (
-        <Card title={'View Form'}>
-            <ProTable
-                columns={columns}
-                dataSource={data}
-                loading={loading}
-                request={(params: any, sort: Record<string, SortOrder>, filter: Record<string, (string | number)[] | null>) => {
-                    return fetchData({
-                        pageNumber: params.current ?? 1,
-                        pageSize: params.pageSize ?? 20,
-                        campus: params?.campus,
-                        disposalMethod: params?.disposalMethod,
-                        wasteType: params?.wasteType,
-                        status: params?.status,
-                        fromDate: params?.fromDate,
-                        toDate: params?.toDate,
-                    });
-                }}
-                pagination={{
-                    showSizeChanger: true
-                }}
-                bordered
-                size="middle"
-                scroll={{ x: 'max-content' }}
-                rowKey="id"
-                options={false}
-                toolbar={{
-                    // search: (
-                    //     <Input
-                    //         placeholder="Search"
-                    //         prefix={<SearchOutlined />}
-                    //         value={search}
-                    //         onChange={(e) => {
-                    //             setSearch(e.target.value);
-                    //             setPage(1);
-                    //         }}
-                    //         style={{ width: 200 }}
-                    //     />
-                    // ),
-                    actions: [
-                        <Button
-                            key="excel"
-                            loading={excelLoading}
-                            icon={<FileExcelOutlined />}
-                            onClick={handleExportExcel}
-                        >
-                            Excel
-                        </Button>,
-                        <Button
-                            key="pdf"
-                            loading={pdfLoading}
-                            icon={<FilePdfOutlined />}
-                            danger
-                            onClick={handleExportPDF}
-                        >
-                            PDF
-                        </Button>,
-                    ],
-                }}
-                search={{
-                    labelWidth: 'auto',
-                }}
-            />
+    const handleChangeRequest = async (wasteRecordId: string | undefined, reqMessage: string) => {
+        const hide = message.loading("Sending request...", 0);
+        try {
+            const res = await createRequest({
+                wasteRecordId: wasteRecordId,
+                message: reqMessage,
+            });
+            if (res.success) {
+                if (actionRef.current) {
+                    actionRef.current.reload();
+                }
+                message.success("Request created successfully");
+                return true;
+            } else {
+                message.error("Failed to send request");
+                return false;
+            }
+        } catch (err) {
+            message.error("Failed to send request")
+        } finally {
+            hide();
+        }
+    };
 
-            <style jsx global>{`
+    return (
+        <>
+            <Card title={'View Form'}>
+                <ProTable
+                    columns={columns}
+                    dataSource={data}
+                    loading={loading}
+                    request={(params: any, sort: Record<string, SortOrder>, filter: Record<string, (string | number)[] | null>) => {
+                        return fetchData({
+                            pageNumber: params.current ?? 1,
+                            pageSize: params.pageSize ?? 20,
+                            campus: params?.campus,
+                            disposalMethod: params?.disposalMethod,
+                            wasteType: params?.wasteType,
+                            status: params?.status,
+                            fromDate: params?.fromDate,
+                            toDate: params?.toDate,
+                        });
+                    }}
+                    pagination={{
+                        showSizeChanger: true
+                    }}
+                    bordered
+                    size="middle"
+                    scroll={{ x: 'max-content' }}
+                    rowKey="id"
+                    options={false}
+                    toolbar={{
+                        // search: (
+                        //     <Input
+                        //         placeholder="Search"
+                        //         prefix={<SearchOutlined />}
+                        //         value={search}
+                        //         onChange={(e) => {
+                        //             setSearch(e.target.value);
+                        //             setPage(1);
+                        //         }}
+                        //         style={{ width: 200 }}
+                        //     />
+                        // ),
+                        actions: [
+                            <Button
+                                key="excel"
+                                loading={excelLoading}
+                                icon={<FileExcelOutlined />}
+                                onClick={() => setModalOpen("excel")}
+                            >
+                                Excel
+                            </Button>,
+                            <Button
+                                key="pdf"
+                                loading={pdfLoading}
+                                icon={<FilePdfOutlined />}
+                                danger
+                                onClick={() => setModalOpen("pdf")}
+                            >
+                                PDF
+                            </Button>,
+                        ],
+                    }}
+                    search={{
+                        labelWidth: 'auto',
+                    }}
+                />
+
+                <style jsx global>{`
                 .ant-table-thead > tr > th {
                     background-color: #d9ead3 !important;
                     text-align: center;
@@ -306,8 +344,53 @@ const WasteTable = () => {
                     font-family: monospace;
                 }
             `}</style>
-        </Card>
+            </Card>
+            <ExportModal
+                open={!!modalOpen}
+                type={modalOpen || "excel"}
+                onCancel={() => setModalOpen(false)}
+                onConfirm={(year: number, month: number) => {
+                    if (modalOpen === "excel") handleExportExcel(year, month);
+                    if (modalOpen === "pdf") handleExportPDF(year, month);
+                }}
+            />
+            <ModalForm
+                title="Request Changes"
+                open={changeRequestModalOpen}
+                modalProps={{
+                    destroyOnClose: true,
+                    onCancel: () => {
+                        setSelectedRecord(undefined);
+                        setChangeRequestModalOpen(false);
+                    },
+                }}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSelectedRecord(undefined);
+                        setChangeRequestModalOpen(false);
+                    }
+                }}
+                onFinish={async (values) => {
+                    const success = await handleChangeRequest(selectedRecord?.id, values.message);
+                    if (success) {
+                        if (actionRef.current) {
+                            actionRef.current.reload();
+                        }
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }}
+            >
+                <ProFormText
+                    label="Message"
+                    name="message"
+                    placeholder="Please enter message"
+                    rules={[{ required: true }]}
+                />
+            </ModalForm>
+        </>
     );
 };
 
-export default WasteTable;
+export default ViewForm;

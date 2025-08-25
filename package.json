@@ -10,47 +10,36 @@
   },
   "dependencies": {
     "@ant-design/charts": "^2.4.0",
+    "@ant-design/icons": "~5.6.1",
     "@ant-design/nextjs-registry": "^1.0.2",
     "@ant-design/pro-components": "^2.8.9",
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
-    "@next-auth/prisma-adapter": "^1.0.7",
-    "@prisma/client": "^6.12.0",
     "@react-pdf/renderer": "^4.3.0",
     "antd": "^5.26.1",
-    "bcrypt": "^6.0.0",
+    "axios": "^1.11.0",
     "file-saver": "^2.0.5",
-    "formidable-mini": "^0.3.0",
-    "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "next": "15.3.4",
-    "next-auth": "^4.24.11",
-    "nodemailer": "^6.10.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
+    "swr": "^2.3.6",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/bcrypt": "^6.0.0",
     "@types/file-saver": "^2.0.7",
-    "@types/formidable": "^3.4.5",
     "@types/node": "^20",
-    "@types/nodemailer": "^6.4.17",
     "@types/pdfkit": "^0.14.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
-    "prisma": "^6.12.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
-  },
-  "prisma": {
-		"seed": "tsx prisma/seed.ts"
-	}
+  }
 }

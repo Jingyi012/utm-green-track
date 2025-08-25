@@ -1,21 +1,22 @@
 'use client';
 import { changePassword } from '@/lib/services/auth';
-import { Button, Card, Col, Form, Input, message, Row, Select, Typography } from 'antd';
+import { App, Button, Card, Col, Form, Input, Row, Select, Typography } from 'antd';
 const { Title } = Typography;
 const { Option } = Select;
 
 const ChangePasswordForm = () => {
+    const { message } = App.useApp();
     const [form] = Form.useForm();
 
     const handleSubmit = async () => {
         try {
-            const { currentPassword, newPassword, confirmPassword } = await form.validateFields();
+            const { password, newPassword, confirmPassword } = await form.validateFields();
 
             if (newPassword !== confirmPassword) {
                 return message.error("Passwords don't match");
             }
 
-            await changePassword({ currentPassword, newPassword, confirmNewPassword: confirmPassword });
+            await changePassword({ password, newPassword, confirmNewPassword: confirmPassword });
 
             message.success('Password updated successfully');
             form.resetFields();
@@ -26,17 +27,16 @@ const ChangePasswordForm = () => {
 
     return (
         <>
-            <Title level={3}>Change Password</Title>
-            <Card>
+            <Card title={"Change Password"}>
                 <Form form={form} layout="vertical" style={{ maxWidth: '500px', margin: 'auto' }}>
                     <Row gutter={16}>
                         <Col xs={24}>
                             <Form.Item
-                                name="currentPassword"
+                                name="password"
                                 label="Current Password"
                                 rules={[
                                     { required: true, message: 'Please enter current password' },
-                                    { min: 6, message: 'Password must be at least 6 characters long' }
+                                    { min: 8, message: 'Password must be at least 8 characters long' }
                                 ]}
                             >
                                 <Input />
@@ -48,7 +48,7 @@ const ChangePasswordForm = () => {
                                 label="New Password"
                                 rules={[
                                     { required: true, message: 'Please enter new password' },
-                                    { min: 6, message: 'Password must be at least 6 characters long' },
+                                    { min: 8, message: 'Password must be at least 8 characters long' },
                                 ]}
                             >
                                 <Input.Password />

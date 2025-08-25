@@ -1,33 +1,6 @@
-export interface TotalSummary {
-    totalWasteGenerated: number;
-    totalWasteRecycled: number;
-    totalWasteToLandfill: number;
-    totalGHGReduction: number;
-    totalLandfillCostSavings: number;
-}
-
-export interface MonthlyDisposalSummary {
-    month: string | number;
-    disposalMethod: string;
-    wasteType: string;
-    totalWeight: number;
-}
-
-export interface MetaData {
-    year: number;
-    generatedAt: string;
-    dataSource: string;
-}
-
-export interface CampusYearSummaryResponse {
-    summary: TotalSummary;
-    monthlySummary: MonthlyDisposalSummary[];
-    metaData: MetaData;
-}
-
-// statistic
-export interface MonthlyDisposalWasteTypeData extends MonthlyDisposalSummary {
-    wasteType: string;
+export interface MonthlyWasteSummary {
+    month: number;
+    wasteTypeTotals: WasteTypeTotal[];
 }
 
 export interface WasteTypeTotal {
@@ -36,15 +9,28 @@ export interface WasteTypeTotal {
     totalWeight: number;
 }
 
-export interface DisposalCategoryTotal {
+export interface DisposalMethodTotal {
     disposalMethod: string;
     totalWeight: number;
 }
 
 export interface MonthlyStatisticByYearResponse {
     year: number;
-    monthlyData: MonthlyDisposalWasteTypeData[];
-    totals: WasteTypeTotal[];
-    categoryTotals: DisposalCategoryTotal[];
-    metaData: MetaData;
+    monthlyWasteSummary: MonthlyWasteSummary[];
+    wasteTypeTotals: WasteTypeTotal[];
+    disposalMethodTotals: DisposalMethodTotal[];
+}
+
+export interface TotalSummary {
+    totalWasteGenerated: number;
+    totalWasteRecycled: number;
+    totalWasteToLandfill: number;
+    totalGhgReduction: number;
+    totalLandfillCostSavings: number;
+}
+
+export interface CampusYearlySummaryResponse {
+    totalSummary: TotalSummary;
+    monthlyWasteSummary: MonthlyWasteSummary[];
+    wasteTypeTotals: WasteTypeTotal[];
 }

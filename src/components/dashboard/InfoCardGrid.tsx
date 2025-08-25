@@ -14,7 +14,7 @@ interface InfoCardGrid {
     totalWasteGenerated: number;
     totalWasteRecycled: number;
     totalWasteToLandfill: number;
-    totalGHGReduction: number;
+    totalGhgReduction: number;
     totalLandfillCostSavings: number;
 }
 
@@ -22,7 +22,7 @@ export default function InfoCardGrid({
     totalWasteGenerated,
     totalWasteRecycled,
     totalWasteToLandfill,
-    totalGHGReduction,
+    totalGhgReduction,
     totalLandfillCostSavings,
 }: InfoCardGrid) {
     const format = (num: number | undefined) => (num ?? 0).toFixed(2);
@@ -31,7 +31,7 @@ export default function InfoCardGrid({
         { icon: <FaFileAlt />, itemLabel: 'Total Waste Generated', value: `${format(totalWasteGenerated)} Tonnes` },
         { icon: <FaRecycle />, itemLabel: 'Total Waste Recycled', value: `${format(totalWasteRecycled)} Tonnes` },
         { icon: <FaTrashAlt />, itemLabel: 'Total Waste to Landfill', value: `${format(totalWasteToLandfill)} Tonnes` },
-        { icon: <FaLeaf />, itemLabel: 'Total GHG Reduction', value: `${format(totalGHGReduction)} kg CO₂e` },
+        { icon: <FaLeaf />, itemLabel: 'Total GHG Reduction', value: `${format(totalGhgReduction)} kg CO₂e` },
         { icon: <FaMoneyBillWave />, itemLabel: 'Landfill Cost Saving', value: `RM ${format(totalLandfillCostSavings)}` },
     ];
 

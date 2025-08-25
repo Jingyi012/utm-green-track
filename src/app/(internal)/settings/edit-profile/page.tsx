@@ -1,4 +1,3 @@
-'use client';
 import CustomBreadcrumb from "@/components/breadcrumb/CustomBreadcrumb";
 import EditProfileForm from "@/components/settings/EditProfileForm";
 

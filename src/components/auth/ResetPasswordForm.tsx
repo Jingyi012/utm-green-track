@@ -2,42 +2,41 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Form, Input, Button, Typography, message, Spin } from 'antd';
-import { validateResetToken, resetPassword } from '@/lib/services/auth';
+import { Form, Input, Button, Typography, App } from 'antd';
+import { resetPassword } from '@/lib/services/auth';
 import { Card } from 'antd/lib';
 
 const { Title, Text } = Typography;
 
 export default function ResetPasswordForm() {
+    const { message } = App.useApp();
     const [form] = Form.useForm();
-    const [validating, setValidating] = useState(true);
-    const [tokenValid, setTokenValid] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [token, setToken] = useState<string | null>(null);
+    const [email, setEmail] = useState<string | null>(null);
 
     const searchParams = useSearchParams();
     const router = useRouter();
-    const token = searchParams.get('token');
+    const tokenParam = searchParams.get('token');
+    const emailParam = searchParams.get('email');
 
     useEffect(() => {
-        if (!token) {
-            setValidating(false);
-            setTokenValid(false);
-            return;
-        }
+        if (tokenParam === null || emailParam === null) return;
 
-        (async () => {
-            try {
-                const res = await validateResetToken(token);
-                setTokenValid(res.success);
-            } catch (err) {
-                //message.error('Failed to validate token');
-            } finally {
-                setValidating(false);
-            }
-        })();
-    }, [token]);
+        if (tokenParam && emailParam) {
+            setToken(tokenParam);
+            setEmail(emailParam);
+        } else {
+            message.error('Invalid or missing reset token and email.');
+            router.replace('/login');
+        }
+    }, [tokenParam, emailParam]);
 
     const onFinish = async (values: any) => {
+        if (!token || !email) {
+            message.error('Missing reset token or email.');
+            return;
+        }
         if (values.newPassword !== values.confirmPassword) {
             message.error('Passwords do not match');
             return;
@@ -45,7 +44,11 @@ export default function ResetPasswordForm() {
 
         setSubmitting(true);
         try {
-            const res = await resetPassword(token!, values.newPassword);
+            const res = await resetPassword({
+                email,
+                token,
+                password: values.newPassword
+            });
             if (res.success) {
                 message.success('Password reset successful');
                 router.push('/login');
@@ -59,22 +62,8 @@ export default function ResetPasswordForm() {
         }
     };
 
-    if (!validating && !tokenValid) {
-        return (
-            <div className="p-6 text-center">
-                <Title level={4}>Invalid or Expired Link</Title>
-                <Text>The reset password link is not valid. Please request a new one.</Text>
-                <div className="mt-4">
-                    <Button type="primary" onClick={() => { router.push('/forgot-password') }} block>
-                        Request New Link
-                    </Button>
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <Card className="max-w-2xl mx-auto bg-white p-8 shadow rounded" loading={validating}>
+        <Card className="max-w-2xl mx-auto bg-white p-8 shadow rounded">
             <Title level={3} className="text-center text-primary">Reset Password</Title>
             <Text className="block text-center mb-4">Enter your new password below.</Text>
 
@@ -84,7 +73,7 @@ export default function ResetPasswordForm() {
                     label="New Password"
                     rules={[
                         { required: true, message: 'Please enter new password' },
-                        { min: 8, message: 'Password must be at least 6 characters' },
+                        { min: 8, message: 'Password must be at least 8 characters' },
                     ]}
                     hasFeedback
                 >
@@ -98,7 +87,7 @@ export default function ResetPasswordForm() {
                     hasFeedback
                     rules={[
                         { required: true, message: 'Please enter confirm password' },
-                        { min: 8, message: 'Password must be at least 6 characters' },
+                        { min: 8, message: 'Password must be at least 8 characters' },
                         ({ getFieldValue }) => ({
                             validator(_, value) {
                                 return !value || getFieldValue('newPassword') === value

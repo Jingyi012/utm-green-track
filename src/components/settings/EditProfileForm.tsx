@@ -1,51 +1,74 @@
 'use client';
 
-import { getProfile, updateProfile } from '@/lib/services/profile';
-import { User } from '@/lib/types/user';
+import { useProfileDropdownOptions } from '@/hook/options';
+import { getProfile, updateProfile } from '@/lib/services/user';
+import { UserDetails } from '@/lib/types/typing';
 import {
-    Button,
-    Card,
-    Col,
-    Form,
-    Input,
-    Row,
-    Select,
-    Typography,
-    message,
-} from 'antd';
-import { useEffect, useState } from 'react';
+    ProForm,
+    ProFormText,
+    ProFormSelect,
+    ProCard,
+} from '@ant-design/pro-components';
+import { App, Button, Card, Col, Row, Typography } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
 
 const { Title } = Typography;
-const { Option } = Select;
 
 const EditProfileForm = () => {
-    const [form] = Form.useForm();
+    const { message } = App.useApp();
+    const { positions, departments, roles } = useProfileDropdownOptions();
+    const [userData, setUserData] = useState<UserDetails>();
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [userData, setUserData] = useState<User>();
+    const [editMode, setEditMode] = useState(false);
+
+    const roleOptions = useMemo(() => {
+        if (!userData?.positionId) return [];
+        const position = positions.find(p => p.id === userData.positionId);
+        if (!position) return [];
+        return roles
+            .filter(r => r.category === position.name)
+            .map(r => ({
+                label: r.name,
+                value: r.id,
+            }));
+    }, [positions, roles, userData?.positionId]);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const profile = await getProfile();
                 setUserData(profile.data);
-                form.setFieldsValue(profile.data);
             } catch (error: any) {
                 message.error(error.message || 'Failed to load profile');
             } finally {
                 setLoading(false);
             }
         };
-
         fetchData();
-    }, [form]);
+    }, []);
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (values: any) => {
         try {
-            const values = await form.validateFields();
             setSubmitting(true);
-            await updateProfile(values);
-            message.success('Profile updated successfully');
+            const payload = {
+                userId: userData?.id,
+                name: values.name,
+                contactNumber: values.contactNumber,
+                staffMatricNo: values.staffMatricNo,
+                departmentId: values.departmentId,
+                positionId: values.positionId,
+                roleIds: values.role ? [values.role] : [],
+            };
+
+            const res = await updateProfile(payload);
+            if (res.success) {
+                message.success('Profile updated successfully');
+                setUserData({ ...userData!, ...values }); // sync UI
+                setEditMode(false);
+            } else {
+                message.error(res.message || 'Profile update failed');
+            }
         } catch (error: any) {
             message.error(error.message || 'Profile update failed');
         } finally {
@@ -55,106 +78,128 @@ const EditProfileForm = () => {
 
     return (
         <>
-            <Title level={3}>Account Information</Title>
-            <Card loading={loading}>
-                <Form form={form} layout="vertical">
-                    <Row gutter={16}>
-                        <Col xs={24} md={12}>
-                            <Form.Item
-                                name="email"
-                                label="Email"
-                                rules={[{ required: true, message: 'Please enter your email' }]}
-                            >
-                                <Input type="email" disabled />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={12}>
-                            <Form.Item
-                                name="department"
-                                label="Faculty/Department"
-                                rules={[{ required: true, message: 'Please select your faculty / department' }]}
-                            >
-                                <Select placeholder="-- Please Choose --">
-                                    <Option value="Malaysia-Japan Advanced Research Centre">Malaysia-Japan Advanced Research Centre</Option>
-                                </Select>
-                            </Form.Item>
-                        </Col>
-                    </Row>
+            <ProCard title={"Account Information"} loading={loading} extra={<>
+                {!editMode && (
+                    <Button type="primary" onClick={() => setEditMode(true)}>
+                        Edit Profile
+                    </Button>
+                )}
+            </>}>
+                {userData && (
+                    <ProForm
+                        initialValues={{
+                            email: userData.email,
+                            departmentId: userData.departmentId,
+                            positionId: userData.positionId,
+                            role: userData.roles[0],
+                            staffMatricNo: userData.staffMatricNo,
+                            name: userData.name,
+                            contactNumber: userData.contactNumber,
+                        }}
+                        onFinish={handleSubmit}
+                        disabled={!editMode}
+                        layout="vertical"
+                        submitter={{
+                            render: () =>
+                                editMode && (
+                                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                                        <Button
+                                            type="primary"
+                                            htmlType="submit"
+                                            style={{ width: '40%' }}
+                                            loading={submitting}
+                                            disabled={submitting}
+                                        >
+                                            {submitting ? 'Saving...' : 'Save Changes'}
+                                        </Button>
+                                        <Button
+                                            onClick={() => {
+                                                // reset to last saved state
+                                                setEditMode(false);
+                                            }}
+                                            disabled={submitting}
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                ),
+                        }}
+                    >
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <ProFormText
+                                    name="email"
+                                    label="Email"
+                                    disabled
+                                    rules={[{ required: true, message: 'Please enter your email' }]}
+                                />
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <ProFormSelect
+                                    name="departmentId"
+                                    label="Faculty/Department"
+                                    options={departments.map(r => ({ label: r.name, value: r.id }))}
+                                    rules={[{ required: true, message: 'Please select your faculty / department' }]}
+                                />
+                            </Col>
+                        </Row>
 
-                    <Row gutter={16}>
-                        <Col xs={24} md={12}>
-                            <Form.Item
-                                name="staffMatricNo"
-                                label="Staff / Matric No."
-                                rules={[{ required: true, message: 'Please enter staff / matric No.' }]}
-                            >
-                                <Input />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={12}>
-                            <Form.Item
-                                name="position"
-                                label="Position"
-                                rules={[{ required: true, message: 'Please select a position' }]}
-                            >
-                                <Select placeholder="-- Please Choose --">
-                                    <Option value="UTM Staff">UTM Staff</Option>
-                                </Select>
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={12}>
-                            <Form.Item
-                                name="name"
-                                label="Full Name"
-                                rules={[{ required: true, message: 'Enter your name' }]}
-                            >
-                                <Input />
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={12}>
-                            <Form.Item
-                                name="role"
-                                label="Role"
-                                rules={[{ required: true, message: 'Enter select role' }]}
-                            >
-                                <Select placeholder="-- Please Choose --">
-                                    <Option value="Academic Staff">Academic Staff</Option>
-                                    <Option value="Non-Academic Staff">Non-Academic Staff</Option>
-                                </Select>
-                            </Form.Item>
-                        </Col>
-                        <Col xs={24} md={12}>
-                            <Form.Item
-                                name="contactNo"
-                                label="Contact No."
-                                rules={[
-                                    { required: true, message: 'Enter your contact number' },
-                                    {
-                                        pattern: /^\+?\d{10,15}$/,
-                                        message: 'Enter a valid contact number (10–15 digits, optional +)',
-                                    },
-                                ]}
-                            >
-                                <Input type='tel' />
-                            </Form.Item>
-                        </Col>
-                    </Row>
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <ProFormText
+                                    name="staffMatricNo"
+                                    label="Staff / Matric No."
+                                    rules={[{ required: true, message: 'Please enter staff / matric No.' }]}
+                                />
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <ProFormSelect
+                                    name="positionId"
+                                    label="Position"
+                                    disabled
+                                    options={positions.map(r => ({ label: r.name, value: r.id }))}
+                                    rules={[{ required: true, message: 'Please select a position' }]}
+                                />
+                            </Col>
+                        </Row>
 
-                    <Row gutter={16} justify="center">
-                        <Col xs={24} style={{ display: 'flex', justifyContent: 'center' }}>
-                            <Button
-                                type="primary"
-                                onClick={handleSubmit}
-                                style={{ width: '50%' }}
-                                loading={submitting}
-                                disabled={submitting}
-                            >
-                                {submitting ? 'Saving...' : 'Save Changes'}
-                            </Button>
-                        </Col>
-                    </Row>
-                </Form>
-            </Card>
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <ProFormText
+                                    name="name"
+                                    label="Full Name"
+                                    rules={[{ required: true, message: 'Enter your name' }]}
+                                />
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <ProFormSelect
+                                    name="role"
+                                    label="Role"
+                                    options={roleOptions}
+                                    disabled
+                                    rules={[{ required: true, message: 'Please select a role' }]}
+                                />
+                            </Col>
+                        </Row>
+
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <ProFormText
+                                    name="contactNumber"
+                                    label="Contact No."
+                                    rules={[
+                                        { required: true, message: 'Enter your contact number' },
+                                        {
+                                            pattern: /^\+?\d{10,15}$/,
+                                            message: 'Enter a valid contact number (10-15 digits, optional +)',
+                                        },
+                                    ]}
+                                />
+                            </Col>
+                        </Row>
+                    </ProForm>
+                )}
+            </ProCard>
         </>
     );
 };

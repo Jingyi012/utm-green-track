@@ -1,4 +1,5 @@
-import { Modal } from 'antd';
+"use client"
+import { App } from 'antd';
 
 export function confirmAction({
     title,
@@ -11,8 +12,9 @@ export function confirmAction({
     okText?: string;
     cancelText?: string;
 }): Promise<boolean> {
+    const { modal } = App.useApp();
     return new Promise((resolve) => {
-        Modal.confirm({
+        modal.confirm({
             title,
             content,
             okText,

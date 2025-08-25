@@ -1,34 +1,41 @@
 'use client';
 
-import { Form, Input, Button, Card, Typography, message } from 'antd';
+import { Form, Input, Button, Card, Typography, message, App } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { apiLogin } from '@/lib/services/auth';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { Title } = Typography;
 
 export default function LoginForm() {
+    const { message } = App.useApp();
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const { login } = useAuth();
 
     const onFinish = async (values: any) => {
-        setLoading(true);
 
-        const res = await signIn('credentials', {
-            redirect: false,
-            email: values.email,
-            password: values.password,
-        });
+        try {
+            setLoading(true);
+            const res = await apiLogin({
+                email: values.email,
+                password: values.password
+            })
 
-        setLoading(false);
+            if (!res.success) {
+                message.error(res.message || "Login failed, please try again");
+            } else {
+                message.success('Login successful');
+                await login(res.data)
+                router.push('/dashboard');
+            }
+        } catch {
 
-        if (res?.error) {
-            message.error(res.error);
-        } else {
-            message.success('Login successful');
-            router.push('/dashboard');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -57,7 +64,8 @@ export default function LoginForm() {
                     <Form.Item
                         name="password"
                         label="Password"
-                        rules={[{ required: true, message: 'Please enter your password' }]}
+                        rules={[{ required: true, message: 'Please enter your password' },
+                        { min: 8, message: 'Password must be at least 8 characters' },]}
                     >
                         <Input.Password prefix={<LockOutlined />} placeholder="••••••••" />
                     </Form.Item>

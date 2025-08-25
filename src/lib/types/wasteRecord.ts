@@ -1,48 +1,57 @@
 import { UploadFile } from "antd"
-
-export type WasteRecord = {
-    id: number,
+export interface WasteRecord {
+    id: string,
+    campusId: string,
     campus: string,
-    location: string,
+    disposalMethodId: string,
+    disposalMethod: string,
+    wasteTypeId: string,
+    wasteType: string,
+    location?: string,
+    activity?: string,
+    wasteWeight: number,
+    status: number,
+    date: string,
+    attachments?: Attachment[],
+    userId: string,
+    user: string,
+    uploadedAttachments?: {
+        fileList: UploadFile[]
+    }
+}
+
+export interface DisposalMethod {
+    id: string;
+    name: string;
+}
+
+export interface Attachment {
+    id: string,
+    fileName: string,
+    filePath: string,
+}
+
+export interface WasteRecordInput {
+    key: string,
+    campus: string,
+    location?: string,
+    activity?: string,
     disposalMethod: string,
     wasteWeight: number,
     wasteType: string,
     status: string,
-    date: Date,
-    attachments?: Attachment,
-    createdAt: Date,
-    updatedAt: Date
-}
-
-export type Attachment = {
-    id: number,
-    url: string,
-    fileName: string,
-}
-
-export type WasteRecordInput = WasteRecord & {
-    key: string,
+    date: string,
     file: UploadFile[]
 }
 
-export type WasteRecordFilter = {
-    uid: number;
-    pageNumber?: number;
-    pageSize?: number;
+export interface WasteRecordFilter {
+    pageNumber: number;
+    pageSize: number;
     campus?: string;
-    disposalMethod?: string;
     wasteType?: string;
-    status?: string;
+    disposalMethod?: string;
     fromDate?: string;
     toDate?: string;
-}
-
-export type WasteRecordFilterWithoutUid = Omit<WasteRecordFilter, "uid">
-
-export interface WasteRecordIdResponse {
-    id: number;
-}
-
-export interface WasteRecordIdsResponse {
-    ids: number[];
+    status?: number;
+    isAdmin?: boolean;
 }

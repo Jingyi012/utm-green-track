@@ -1,15 +1,22 @@
 import {
   DashboardOutlined,
   FileTextOutlined,
-  UserOutlined,
   LogoutOutlined,
   SettingOutlined,
   InfoCircleOutlined,
+  UsergroupAddOutlined,
+  UnorderedListOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { MenuProps } from 'antd';
 import React from 'react';
 
-export const menuItems: MenuProps['items'] = [
+export type AppMenuItem = Exclude<MenuProps["items"], undefined>[number] & {
+  roles?: string[];
+  children?: AppMenuItem[];
+};
+
+export const menuItems: AppMenuItem[] = [
   {
     key: '/dashboard',
     icon: <DashboardOutlined />,
@@ -33,6 +40,50 @@ export const menuItems: MenuProps['items'] = [
         label: 'Statistic',
       }
     ]
+  },
+  {
+    key: '/waste-records',
+    icon: <UnorderedListOutlined />,
+    label: 'Waste Records',
+    roles: ['Admin'],
+    children: [
+      {
+        key: '/waste-records/approval',
+        label: 'Approval',
+      },
+      {
+        key: '/waste-records/management',
+        label: 'Management',
+      }
+    ]
+  },
+  {
+    key: '/users',
+    icon: <UsergroupAddOutlined />,
+    label: 'Users',
+    roles: ['Admin'],
+    children: [
+      {
+        key: '/users/approval',
+        label: 'Approval',
+      },
+      {
+        key: '/users/management',
+        label: 'Management',
+      }
+    ]
+  },
+  {
+    key: '/requests',
+    icon: <MessageOutlined />,
+    label: 'Requests',
+    roles: ['Admin'],
+  },
+  {
+    key: '/configurations',
+    icon: <SettingOutlined />,
+    label: 'Configurations',
+    roles: ['Admin'],
   },
   {
     key: '/waste-info',

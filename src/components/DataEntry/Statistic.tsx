@@ -7,19 +7,30 @@ import {
     Button,
     Space,
     Card,
-    message,
+    App,
 } from 'antd';
 import {
     FilePdfOutlined,
     FileExcelOutlined,
 } from '@ant-design/icons';
-import { getWasteStatisticByYear } from '@/lib/services/wasteRecord';
+import { exportExcelWasteStatistics, exportPdfWasteStatistics, getWasteStatisticByYear } from '@/lib/services/wasteRecord';
 import { formatNumber } from '@/lib/utils/formatter';
 import { confirmAction } from '@/lib/utils/confirmAction';
-import { exportExcelWasteStatistic, exportPDFWasteStatistic } from '@/lib/reportExports/wasteStatistics';
-import { WasteType, WasteTypeLabels } from '@/lib/enum/wasteType';
-import { DisposalMethod } from '@/lib/enum/disposalMethod';
 import { MonthlyStatisticByYearResponse } from '@/lib/types/wasteSummary';
+import { useWasteRecordDropdownOptions } from '@/hook/options';
+import { MONTH_LABELS_SHORT } from '@/lib/enum/monthName';
+import { DisposalMethodWithWasteType } from '@/lib/types/typing';
+import { ColumnsType } from 'antd/es/table';
+import { downloadFile } from '@/lib/utils/downloadFile';
+
+export interface StatisticRow {
+    month: string;
+    data: {
+        [disposalMethod: string]: {
+            [wasteType: string]: number;
+        };
+    };
+}
 
 const currentYear = new Date().getFullYear();
 const yearOptions = Array.from({ length: currentYear - 2023 + 1 }, (_, i) => ({
@@ -27,56 +38,83 @@ const yearOptions = Array.from({ length: currentYear - 2023 + 1 }, (_, i) => ({
     value: 2023 + i,
 })).reverse();
 
-const transformWasteData = (raw: MonthlyStatisticByYearResponse) => {
-    const monthMap: Record<string, any> = {};
+const transformWasteData = (rawData: MonthlyStatisticByYearResponse, disposalMethods: DisposalMethodWithWasteType[]) => {
+    const monthLabels = MONTH_LABELS_SHORT;
+    const allWasteMap: Record<string, string[]> = {};
 
-    const getMonthLabel = (month: number) =>
-        new Date(2025, month - 1).toLocaleString("default", { month: "short" });
-
-    for (const { month, disposalMethod, wasteType, totalWeight } of raw.monthlyData) {
-        const key = getMonthLabel(Number(month));
-        if (!monthMap[key]) monthMap[key] = { month: key };
-
-        if (!monthMap[key][disposalMethod]) monthMap[key][disposalMethod] = {};
-        monthMap[key][disposalMethod][wasteType] = totalWeight;
-    }
-
-    // Convert to array & fill missing months
-    const monthlyRows = Array.from({ length: 12 }, (_, i) => {
-        const m = i + 1;
-        const key = getMonthLabel(m);
-        return {
-            key: m,
-            month: key,
-            ...monthMap[key]
-        };
+    disposalMethods.forEach(({ name: disposalMethod, wasteTypes }) => {
+        allWasteMap[disposalMethod] = wasteTypes.map(wt => wt.name);
     });
 
-    // Build totals row (same structure as monthly rows)
-    const totalsRow: any = {
-        key: 'total',
-        month: 'Total',
-    };
-    for (const { disposalMethod, wasteType, totalWeight } of raw.totals) {
-        if (!totalsRow[disposalMethod]) totalsRow[disposalMethod] = {};
-        totalsRow[disposalMethod][wasteType] = totalWeight;
+    const tableData: StatisticRow[] = [];
+
+    for (let i = 0; i < 12; i++) {
+        const monthName = monthLabels[i];
+        const row: StatisticRow = {
+            month: monthName,
+            data: {},
+        };
+
+        // Initialize all disposal methods and waste types with 0
+        for (const [method, types] of Object.entries(allWasteMap)) {
+            row.data[method] = {};
+            types.forEach(type => {
+                row.data[method][type] = 0;
+            });
+        }
+
+        // Fill actual values if available
+        const summary = rawData.monthlyWasteSummary.find(m => m.month === i + 1);
+        if (summary) {
+            summary.wasteTypeTotals.forEach(({ disposalMethod, wasteType, totalWeight }) => {
+                row.data[disposalMethod][wasteType] = totalWeight;
+            });
+        }
+
+        tableData.push(row);
     }
+
+    // Build totals row (same structure as monthly rows)
+    const totalsRow: StatisticRow = {
+        month: "Total",
+        data: {},
+    };
+
+    // Initialize with 0
+    for (const [method, types] of Object.entries(allWasteMap)) {
+        totalsRow.data[method] = {};
+        types.forEach(type => {
+            totalsRow.data[method][type] = 0;
+        });
+    }
+
+    // Fill actual totals
+    rawData.wasteTypeTotals.forEach(({ disposalMethod, wasteType, totalWeight }) => {
+        totalsRow.data[disposalMethod][wasteType] = totalWeight;
+    });
 
     // Rebuild category total (for summary display)
     const categoryTotals: Record<string, number> = {};
-    for (const { disposalMethod, totalWeight } of raw.categoryTotals) {
+    Object.keys(allWasteMap).forEach(method => {
+        categoryTotals[method] = 0;
+    });
+
+    // Step 2: Fill actual totals from raw data
+    rawData.disposalMethodTotals.forEach(({ disposalMethod, totalWeight }) => {
         categoryTotals[disposalMethod] = totalWeight;
-    }
+    });
 
     return {
-        tableData: [...monthlyRows, totalsRow],
+        tableData: [...tableData, totalsRow],
         categoryTotals,
     };
 }
 
-const WasteManagementTable = () => {
+const WasteManagementTable: React.FC = () => {
+    const { message } = App.useApp();
+    const { disposalMethods, isLoading } = useWasteRecordDropdownOptions();
     const [year, setYear] = useState<number>(currentYear);
-    const [data, setData] = useState<{ raw: MonthlyStatisticByYearResponse; tableData: any, categoryTotals: any } | null>(null);
+    const [data, setData] = useState<{ rawData: MonthlyStatisticByYearResponse; tableData: StatisticRow[], categoryTotals: any } | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const [excelLoading, setExcelLoading] = useState<boolean>(false);
     const [pdfLoading, setPdfLoading] = useState<boolean>(false);
@@ -85,9 +123,9 @@ const WasteManagementTable = () => {
         setLoading(true);
         try {
             const res = await getWasteStatisticByYear(selectedYear);
-            const transformed = transformWasteData(res.data);
+            const transformed = transformWasteData(res.data, disposalMethods);
             setData({
-                raw: res.data,
+                rawData: res.data,
                 ...transformed
             });
         } catch (err: any) {
@@ -97,54 +135,40 @@ const WasteManagementTable = () => {
     };
 
     useEffect(() => {
-        fetchData(year);
-    }, [year]);
+        if (!isLoading && disposalMethods.length > 0) {
+            fetchData(year);
+        }
+    }, [year, disposalMethods, isLoading]);
 
-    const categoryTotals = data?.categoryTotals || {
-        landfilling: 0,
-        recycling: 0,
-        composting: 0,
-        energyRecovery: 0,
+    const generateColumns = (disposalMethods: DisposalMethodWithWasteType[]) => {
+        const columns: ColumnsType<StatisticRow> = [
+            {
+                title: "Month",
+                dataIndex: "month",
+                key: "month",
+                fixed: "left",
+            },
+        ];
+
+        disposalMethods.forEach(({ name: disposalMethod, wasteTypes }) => {
+            const children = wasteTypes.map(({ name: wasteType }) => ({
+                title: wasteType,
+                key: `${disposalMethod}-${wasteType}`,
+                render: (_: any, record: StatisticRow) =>
+                    formatNumber(record.data[disposalMethod]?.[wasteType]),
+            }));
+
+            columns.push({
+                title: disposalMethod,
+                key: disposalMethod,
+                children,
+            });
+        });
+
+        return columns;
     };
 
-    const renderCell = (value: any, _: any, index: number) => index === 12 ? <strong>{formatNumber(value)}</strong> : formatNumber(value);
-    const renderMonth = (value: any, _: any, index: number) => index === 12 ? <strong>{value}</strong> : value;
-
-    const columns = [
-        { title: 'Month', dataIndex: 'month', key: 'month', fixed: 'left' as const, width: 80, align: 'center' as const, render: renderMonth },
-        {
-            title: 'Landfilling', dataIndex: DisposalMethod.Landfilling, children: [
-                { title: WasteTypeLabels[WasteType.GeneralWaste], dataIndex: [DisposalMethod.Landfilling, WasteType.GeneralWaste], key: 'landfilling_GeneralWaste', align: 'center', render: renderCell },
-                { title: WasteTypeLabels[WasteType.BulkWaste], dataIndex: [DisposalMethod.Landfilling, WasteType.BulkWaste], key: 'landfilling_BulkWaste', align: 'center', render: renderCell },
-                { title: WasteTypeLabels[WasteType.LandscapeWaste], dataIndex: [DisposalMethod.Landfilling, WasteType.LandscapeWaste], key: 'landfilling_LandscapeWaste', align: 'center', render: renderCell },
-                { title: WasteTypeLabels[WasteType.RecyclableItem], dataIndex: [DisposalMethod.Landfilling, WasteType.RecyclableItem], key: 'landfilling_RecyclableItem', align: 'center', render: renderCell }
-            ]
-        },
-        {
-            title: 'Recycling', dataIndex: DisposalMethod.Recycling, children: [
-                { title: WasteTypeLabels[WasteType.Paper], dataIndex: [DisposalMethod.Recycling, WasteType.Paper], key: 'recycling_Paper', align: 'center', render: renderCell },
-                { title: WasteTypeLabels[WasteType.Plastic], dataIndex: [DisposalMethod.Recycling, WasteType.Plastic], key: 'recycling_Plastic', align: 'center', render: renderCell },
-                { title: WasteTypeLabels[WasteType.Metal], dataIndex: [DisposalMethod.Recycling, WasteType.Metal], key: 'recycling_Metal', align: 'center', render: renderCell },
-                { title: WasteTypeLabels[WasteType.Rubber], dataIndex: [DisposalMethod.Recycling, WasteType.Rubber], key: 'recycling_Rubber', align: 'center', render: renderCell },
-                { title: WasteTypeLabels[WasteType.Ewaste], dataIndex: [DisposalMethod.Recycling, WasteType.Ewaste], key: 'recycling_Ewaste', align: 'center', render: renderCell },
-                { title: WasteTypeLabels[WasteType.Textile], dataIndex: [DisposalMethod.Recycling, WasteType.Textile], key: 'recycling_Textile', align: 'center', render: renderCell },
-                { title: WasteTypeLabels[WasteType.UsedCookingOil], dataIndex: [DisposalMethod.Recycling, WasteType.UsedCookingOil], key: 'recycling_UsedCookingOil', align: 'center', render: renderCell }
-            ]
-        },
-        {
-            title: 'Composting', dataIndex: DisposalMethod.Composting, children: [
-                { title: WasteTypeLabels[WasteType.LandscapeWaste], dataIndex: [DisposalMethod.Composting, WasteType.LandscapeWaste], key: 'composting_LandscapeWaste', align: 'center', render: renderCell },
-                { title: WasteTypeLabels[WasteType.FoodKitchenWaste], dataIndex: [DisposalMethod.Composting, WasteType.FoodKitchenWaste], key: 'composting_FoodKitchenWaste', align: 'center', render: renderCell },
-                { title: WasteTypeLabels[WasteType.AnimalManure], dataIndex: [DisposalMethod.Composting, WasteType.AnimalManure], key: 'composting_AnimalManure', align: 'center', render: renderCell }
-            ]
-        },
-        {
-            title: 'Energy Recovery', dataIndex: DisposalMethod.EnergyRecovery, children: [
-                { title: WasteTypeLabels[WasteType.WoodWaste], dataIndex: [DisposalMethod.EnergyRecovery, WasteType.WoodWaste], key: 'energyRecovery_WoodWaste', align: 'center', render: renderCell },
-                { title: WasteTypeLabels[WasteType.FoodWaste], dataIndex: [DisposalMethod.EnergyRecovery, WasteType.FoodWaste], key: 'energyRecovery_FoodWaste', align: 'center', render: renderCell }
-            ]
-        }
-    ];
+    const columns = generateColumns(disposalMethods);
 
     const handleExportExcel = async () => {
         const confirmed = await confirmAction({
@@ -155,7 +179,10 @@ const WasteManagementTable = () => {
         const hide = message.loading("Generating Excel...");
         try {
             setExcelLoading(true);
-            await exportExcelWasteStatistic(data?.tableData || [], columns, year);
+
+            var response = await exportExcelWasteStatistics({ year })
+            const contentDisposition = response.headers['content-disposition'];
+            downloadFile(response.data, contentDisposition, `Waste_Statistic_${year}.xlsx`);
         } catch (err: any) {
             message.error(err.message || 'Failed to generate excel');
         } finally {
@@ -163,7 +190,6 @@ const WasteManagementTable = () => {
             hide();
         }
     };
-
 
     const handleExportPDF = async () => {
         const confirmed = await confirmAction({
@@ -174,7 +200,9 @@ const WasteManagementTable = () => {
         const hide = message.loading("Generating PDF...");
         try {
             setPdfLoading(true);
-            await exportPDFWasteStatistic(data?.tableData || [], columns, year);
+            var response = await exportPdfWasteStatistics({ year })
+            const contentDisposition = response.headers['content-disposition'];
+            downloadFile(response.data, contentDisposition, `Waste_Statistic_${year}.pdf`);
         } catch (err: any) {
             message.error(err.message || 'Failed to generate pdf');
         } finally {
@@ -184,7 +212,7 @@ const WasteManagementTable = () => {
     };
 
     return (
-        <Card title={'Statistic'} loading={loading}>
+        <Card title={'Statistic'} loading={loading || isLoading}>
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -210,13 +238,14 @@ const WasteManagementTable = () => {
                 {/* Table */}
 
                 <Table
+                    loading={isLoading || loading}
                     columns={columns}
                     dataSource={data?.tableData || []}
                     bordered
                     size="middle"
                     scroll={{ x: 'max-content' }}
                     pagination={false}
-                    rowKey="key"
+                    rowKey="month"
                 />
 
                 {/* Category Totals */}
@@ -229,20 +258,14 @@ const WasteManagementTable = () => {
                         padding: '16px',
                         borderRadius: '8px',
                         border: '1px solid #d9d9d9',
+                        overflow: 'auto',
                     }}
                 >
-                    <div style={{ textAlign: 'center' }}>
-                        <strong>Total Landfilling:</strong> {formatNumber(categoryTotals.landfilling)} KG
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                        <strong>Total Recycling:</strong> {formatNumber(categoryTotals.recycling)} KG
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                        <strong>Total Composting:</strong> {formatNumber(categoryTotals.composting)} KG
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                        <strong>Total ER:</strong> {formatNumber(categoryTotals.energyRecovery)} KG
-                    </div>
+                    {Object.entries(data?.categoryTotals ?? {}).map(([method, value]) => (
+                        <div key={method} style={{ textAlign: 'center' }}>
+                            <strong>Total {method}:</strong> {formatNumber(typeof value === 'number' ? value : 0)} KG
+                        </div>
+                    ))}
                 </div>
 
             </Space>

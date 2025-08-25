@@ -4,350 +4,404 @@ import {
     Card,
     Row,
     Col,
-    Select,
-    Input,
     Button,
     Table,
-    Upload,
     Typography,
-    Form,
-    message,
-    Modal,
+    Upload,
+    UploadFile,
+    App,
 } from 'antd';
-import FormItem from 'antd/es/form/FormItem';
-import { UploadOutlined, EditOutlined, DeleteOutlined, PaperClipOutlined } from '@ant-design/icons';
-import { useEffect, useState } from 'react';
-import { createWasteRecord, uploadAttachments } from '@/lib/services/wasteRecord';
+import {
+    ProForm,
+    ProFormSelect,
+    ProFormText,
+    ProFormDigit,
+} from '@ant-design/pro-components';
+import { EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons';
+import { useState } from 'react';
+import { createWasteRecords } from '@/lib/services/wasteRecord';
 import { WasteRecordInput } from '@/lib/types/wasteRecord';
-import { Campus, CampusLabels } from '@/lib/enum/campus';
-import { WasteType, WasteTypeLabels } from '@/lib/enum/wasteType';
-import { DisposalMethod, DisposalMethodLabels } from '@/lib/enum/disposalMethod';
+import { useWasteRecordDropdownOptions } from '@/hook/options';
+import { WasteTypeWithEmissionFactor } from '@/lib/types/typing';
+import EditFormModal from './EditFormModal';
 
 const { Title } = Typography;
 
 export default function WasteEntryForm() {
-    const [form] = Form.useForm();
-    const [editForm] = Form.useForm();
+    const [form] = ProForm.useForm();
+    const { message, modal } = App.useApp();
 
+    const { campuses, disposalMethods, isLoading } = useWasteRecordDropdownOptions();
     const [tableData, setTableData] = useState<WasteRecordInput[]>([]);
-    const [wasteTypeOptions, setWasteTypeOptions] = useState<any[]>([]);
-    const [editWasteTypeOptions, setEditWasteTypeOptions] = useState<any[]>([]);
     const [editingRecord, setEditingRecord] = useState<any | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedDisposalMethod, setSelectedDisposalMethod] = useState<string>();
+    const [wasteTypes, setWasteTypes] = useState<WasteTypeWithEmissionFactor[]>([]);
 
-    const disposalMethod = Form.useWatch("disposalMethod", form);
-    const editingMethod = Form.useWatch("disposalMethod", editForm);
-
-    const campusOptions = Object.values(Campus).map((campus) => ({
-        label: CampusLabels[campus],
-        value: campus,
-    }));
-
-    const locationOptions = [
-        { label: "BPA, JTNCP", value: "BPA, JTNCP" },
-    ];
-
-    const disposalMethodOptions = Object.values(DisposalMethod).map((method) => ({
-        label: DisposalMethodLabels[method],
-        value: method,
-    }));
-
-    const wasteTypeMap: Record<string, { label: string; value: WasteType }[]> = {
-        landfilling: [
-            { label: WasteTypeLabels[WasteType.GeneralWaste], value: WasteType.GeneralWaste },
-            { label: WasteTypeLabels[WasteType.BulkWaste], value: WasteType.BulkWaste },
-            { label: WasteTypeLabels[WasteType.LandscapeWaste], value: WasteType.LandscapeWaste },
-            { label: WasteTypeLabels[WasteType.RecyclableItem], value: WasteType.RecyclableItem },
-        ],
-        recycling: [
-            { label: WasteTypeLabels[WasteType.Paper], value: WasteType.Paper },
-            { label: WasteTypeLabels[WasteType.Plastic], value: WasteType.Plastic },
-            { label: WasteTypeLabels[WasteType.Metal], value: WasteType.Metal },
-            { label: WasteTypeLabels[WasteType.Rubber], value: WasteType.Rubber },
-            { label: WasteTypeLabels[WasteType.Ewaste], value: WasteType.Ewaste },
-            { label: WasteTypeLabels[WasteType.Textile], value: WasteType.Textile },
-            { label: WasteTypeLabels[WasteType.UsedCookingOil], value: WasteType.UsedCookingOil },
-        ],
-        composting: [
-            { label: WasteTypeLabels[WasteType.LandscapeWaste], value: WasteType.LandscapeWaste },
-            { label: WasteTypeLabels[WasteType.FoodKitchenWaste], value: WasteType.FoodKitchenWaste },
-            { label: WasteTypeLabels[WasteType.AnimalManure], value: WasteType.AnimalManure },
-        ],
-        energyRecovery: [
-            { label: WasteTypeLabels[WasteType.WoodWaste], value: WasteType.WoodWaste },
-            { label: WasteTypeLabels[WasteType.FoodWaste], value: WasteType.FoodWaste },
-        ],
+    const handleDisposalMethodChange = (value: string) => {
+        setSelectedDisposalMethod(value);
+        const selectedMethod = disposalMethods.find(dm => dm.id === value);
+        form.resetFields(["wasteType"]);
+        setWasteTypes(selectedMethod?.wasteTypes ?? []);
     };
 
-    useEffect(() => {
-        if (disposalMethod) {
-            setWasteTypeOptions(wasteTypeMap[disposalMethod] || []);
-            form.setFieldsValue({ wasteType: undefined });
+    const handleAdd = async () => {
+        try {
+            const values = await form.validateFields();
+            const newRow = {
+                key: `${Date.now()}`,
+                date: new Date().toLocaleDateString('en-GB'),
+                ...values,
+                wasteWeight: Number(values.wasteWeight),
+                file: values.file || [],
+            };
+            setTableData(prev => [...prev, newRow]);
+            form.resetFields();
+            setSelectedDisposalMethod(undefined);
+            setWasteTypes([]);
+        } catch (err) {
+            message.error('Please complete all required fields before adding.');
         }
-    }, [disposalMethod]);
-
-    useEffect(() => {
-        if (editingMethod) {
-            setEditWasteTypeOptions(wasteTypeMap[editingMethod] || []);
-
-            const currentType = editForm.getFieldValue('wasteType');
-            const validTypes = (wasteTypeMap[editingMethod] || []).map((opt) => opt.value);
-
-            if (!validTypes.includes(currentType)) {
-                editForm.setFieldsValue({ wasteType: undefined });
-            }
-        }
-    }, [editingMethod]);
-
-    const handleAdd = () => {
-        form.validateFields()
-            .then((values) => {
-                const newRow = {
-                    key: `${Date.now()}`,
-                    date: new Date().toLocaleDateString('en-GB'),
-                    ...values,
-                    wasteWeight: Number(values.wasteWeight),
-                    file: values.file || [],
-                };
-
-                setTableData(prev => [...prev, newRow]);
-                form.resetFields();
-            })
-            .catch((err) => {
-                message.error('Please complete all required fields before adding.');
-            });
     };
 
     const handleEdit = (record: any) => {
         setEditingRecord(record);
         setIsModalOpen(true);
-        editForm.setFieldsValue(record);
     };
 
-    const handleSaveEdit = (values: any) => {
+    const handleSaveEdit = (values: any, recordKey: string) => {
         setTableData((prev) =>
-            prev.map((item) =>
-                item.key === editingRecord.key ? { ...item, ...values } : item
-            )
+            prev.map((item) => (item.key === recordKey ? { ...item, ...values } : item))
         );
-        setIsModalOpen(false);
-        message.success('Row updated');
+        message.success('Row updated successfully');
     };
 
     const handleDelete = (key: string) => {
-        Modal.confirm({
+        modal.confirm({
             title: 'Confirm Delete',
             content: 'Are you sure you want to delete this entry?',
+            okText: 'Yes, Delete',
+            cancelText: 'Cancel',
             onOk: () => {
                 setTableData((prev) => prev.filter((item) => item.key !== key));
-                message.success('Row deleted');
+                message.success('Row deleted successfully');
             },
         });
     };
 
     const handleSubmit = async () => {
         if (tableData.length === 0) {
-            return message.warning('No data to submit. Please add at least one entry.');
+            return message.warning("No data to submit. Please add at least one entry.");
         }
 
-        Modal.confirm({
-            title: 'Confirm Submission',
-            content: 'Are you sure you want to submit all the waste records?',
-            okText: 'Yes, Submit',
-            cancelText: 'Cancel',
+        modal.confirm({
+            title: "Confirm Submission",
+            content: "Are you sure you want to submit all the waste records?",
+            okText: "Yes, Submit",
+            cancelText: "Cancel",
             onOk: async () => {
-                const hide = message.loading("Submitting records...");
+                const hide = message.loading("Submitting records...", 0);
 
                 try {
-                    for (const record of tableData) {
-                        try {
-                            // Create record
-                            const createResponse = await createWasteRecord({
-                                campus: record.campus,
-                                location: record.location,
-                                disposalMethod: record.disposalMethod,
-                                wasteType: record.wasteType,
-                                wasteWeight: record.wasteWeight,
-                                date: new Date().toISOString(),
-                            });
+                    // Transform tableData into request format
+                    const wasteRecords = tableData.map((record: any) => ({
+                        campus: record.campus,
+                        disposalMethodId: record.disposalMethod,
+                        wasteTypeId: record.wasteType,
+                        wasteWeight: record.wasteWeight,
+                        location: record.location,
+                        activity: record.activity,
+                        date: new Date().toISOString(),
+                        attachments: (record.file ?? [])
+                            .map((f: any) => f.originFileObj as File)
+                            .filter(Boolean),
+                    }));
 
-                            const createdId = createResponse.data.id;
-                            if (!createdId) throw new Error('Failed to obtain record ID');
+                    // Batch submit all records in one request
+                    const response = await createWasteRecords({
+                        wasteRecords,
+                    });
 
-                            // Upload attachment if exists
-                            const fileList: File[] = (record.file ?? [])
-                                .map((f: any) => f.originFileObj)
-                                .filter(Boolean);
-
-                            if (fileList.length > 0) {
-                                const uploadResponse = await uploadAttachments(fileList, createdId);
-                            }
-
-                        } catch (recordErr) {
-                            console.error(`Failed to submit record for ${record.wasteType}`, recordErr);
-                            message.warning(`Record failed: ${record.wasteType}`);
-                        }
+                    if (response && response.success) {
+                        message.success("All waste records submitted successfully");
+                        setTableData([]);
+                        form.resetFields();
+                        setSelectedDisposalMethod(undefined);
+                        setWasteTypes([]);
+                    } else {
+                        message.error(response.message || "Failed to submit waste records");
                     }
-
-                    hide();
-                    message.success('All waste records submitted successfully');
-                    setTableData([]);
-                    form.resetFields();
-
                 } catch (err: any) {
+                    console.error("Batch submission failed:", err);
+                    message.error(err.message || "Unexpected error occurred during submission");
+                } finally {
                     hide();
-                    message.error(err.message || 'Unexpected error occurred');
                 }
             },
         });
     };
 
     const columns = [
-        { title: 'No.', render: (_: any, __: any, index: number) => index + 1 },
-        { title: 'Date', dataIndex: 'date' },
-        { title: 'UTM Campus', dataIndex: 'campus', render: (value: Campus) => CampusLabels[value] || value, },
-        { title: 'Location', dataIndex: 'location' },
-        { title: 'Disposal Method', dataIndex: 'disposalMethod', render: (value: DisposalMethod) => DisposalMethodLabels[value] || value, },
-        { title: 'Waste Type', dataIndex: 'wasteType', render: (value: WasteType) => WasteTypeLabels[value] || value, },
-        { title: 'Waste Weight (kg)', dataIndex: 'wasteWeight' },
+        {
+            title: 'No.',
+            key: 'index',
+            render: (_: any, __: any, index: number) => index + 1,
+            width: 60,
+        },
+        {
+            title: 'Date',
+            dataIndex: 'date',
+            width: 100,
+        },
+        {
+            title: 'UTM Campus',
+            dataIndex: 'campus',
+            render: (campusName: string) => {
+                const campus = campuses.find(c => c.name === campusName);
+                return campus?.name ?? '-';
+            },
+            width: 120,
+        },
+        {
+            title: 'Location',
+            dataIndex: 'location',
+            width: 150,
+        },
+        {
+            title: 'Disposal Method',
+            dataIndex: 'disposalMethod',
+            render: (methodId: string) => {
+                const method = disposalMethods.find(d => d.id === methodId);
+                return method?.name ?? "-";
+            },
+            width: 150,
+        },
+        {
+            title: 'Waste Type',
+            dataIndex: 'wasteType',
+            render: (wasteTypeId: string, record: any) => {
+                const method = disposalMethods.find(d => d.id === record.disposalMethod);
+                const wasteType = method?.wasteTypes.find(w => w.id === wasteTypeId);
+                return wasteType?.name ?? "-";
+            },
+            width: 150,
+        },
+        {
+            title: 'Waste Weight (kg)',
+            dataIndex: 'wasteWeight',
+            width: 120,
+        },
         {
             title: 'Attachment',
             dataIndex: 'file',
-            render: (files: any[]) => files?.length > 0 ? `${files.length} file(s)` : 'None',
+            render: (files: UploadFile[]) =>
+                files?.length > 0
+                    ? files.map((file, index) => (
+                        <div key={index}>{file.name}</div>
+                    ))
+                    : 'None',
+            width: 200,
         },
         {
-            title: 'Remark',
+            title: 'Actions',
+            key: 'actions',
             render: (_: any, record: { key: string }) => (
                 <>
-                    <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-                    <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.key)} />
+                    <Button
+                        type="link"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
+                        title="Edit record"
+                    />
+                    <Button
+                        type="link"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleDelete(record.key)}
+                        title="Delete record"
+                    />
                 </>
             ),
+            width: 100,
+            fixed: 'right' as const,
         }
     ];
 
     return (
         <>
-            <Card>
-                <Form form={form} layout="vertical">
-                    <Title level={5}>Basic Info</Title>
+            <Card loading={isLoading} style={{ marginBottom: 24 }}>
+                <ProForm
+                    form={form}
+                    layout="vertical"
+                    submitter={false}
+                    onFinish={handleAdd}
+                >
+                    <Title level={5}>Basic Information</Title>
                     <Row gutter={16}>
                         <Col xs={24} md={12}>
-                            <FormItem name="campus" label="UTM Campus" rules={[{ required: true }]}>
-                                <Select placeholder="-- Please Choose --" options={campusOptions} />
-                            </FormItem>
+                            <ProFormSelect
+                                name="campus"
+                                label="UTM Campus"
+                                placeholder="Please select campus"
+                                rules={[{ required: true, message: 'Please select a campus' }]}
+                                options={campuses.map((campus) => ({
+                                    label: campus.name,
+                                    value: campus.name,
+                                }))}
+                                fieldProps={{
+                                    showSearch: true,
+                                    optionFilterProp: "label",
+                                }}
+                            />
                         </Col>
                         <Col xs={24} md={12}>
-                            <FormItem name="location" label="Location" rules={[{ required: true }]}>
-                                <Select placeholder="-- Please Choose --" options={locationOptions} />
-                            </FormItem>
+                            <ProFormText
+                                name="location"
+                                label="Location"
+                                placeholder="Please enter location"
+                                fieldProps={{
+                                    maxLength: 200,
+                                }}
+                            />
                         </Col>
                     </Row>
 
-                    <Title level={5}>Waste Info</Title>
+                    <Title level={5} style={{ marginTop: 12 }}>Waste Information</Title>
                     <Row gutter={16}>
                         <Col xs={24} md={12}>
-                            <FormItem name="disposalMethod" label="Disposal Method" rules={[{ required: true }]}>
-                                <Select placeholder="-- Please Choose --" options={disposalMethodOptions} />
-                            </FormItem>
+                            <ProFormSelect
+                                name="disposalMethod"
+                                label="Disposal Method"
+                                placeholder="Please select disposal method"
+                                rules={[{ required: true, message: 'Please select disposal method' }]}
+                                options={disposalMethods.map((method) => ({
+                                    label: method.name,
+                                    value: method.id,
+                                }))}
+                                fieldProps={{
+                                    onChange: handleDisposalMethodChange,
+                                    showSearch: true,
+                                    optionFilterProp: "label",
+                                }}
+                            />
                         </Col>
                         <Col xs={24} md={12}>
-                            <FormItem name="wasteType" label="Waste Type" rules={[{ required: true }]}>
-                                <Select placeholder="-- Please Choose --" options={wasteTypeOptions} />
-                            </FormItem>
+                            <ProFormSelect
+                                name="wasteType"
+                                label="Waste Type"
+                                placeholder="Please select waste type"
+                                rules={[{ required: true, message: 'Please select waste type' }]}
+                                options={wasteTypes.map(wt => ({
+                                    label: wt.name,
+                                    value: wt.id,
+                                }))}
+                                fieldProps={{
+                                    disabled: !selectedDisposalMethod,
+                                    showSearch: true,
+                                    optionFilterProp: "label",
+                                }}
+                            />
                         </Col>
                         <Col xs={24} md={12}>
-                            <FormItem name="wasteWeight" label="Waste Weight (kg)" rules={[{ required: true }]}>
-                                <Input placeholder="-- Please Enter --" type="number" />
-                            </FormItem>
+                            <ProFormDigit
+                                name="wasteWeight"
+                                label="Waste Weight (kg)"
+                                placeholder="Please enter waste weight"
+                                rules={[{
+                                    required: true,
+                                    message: 'Please enter waste weight'
+                                }]}
+                                fieldProps={{
+                                    min: 0,
+                                    step: 0.1,
+                                    precision: 2,
+                                }}
+                                min={0}
+                            />
                         </Col>
                         <Col xs={24} md={12}>
-                            <Form.Item
+                            <ProForm.Item
                                 name="file"
                                 label="Attachment"
+                                rules={[{ required: false }]}
                                 valuePropName="fileList"
-                                getValueFromEvent={e => Array.isArray(e) ? e : e?.fileList}
+                                getValueFromEvent={(e: { fileList: any; }) => {
+                                    if (Array.isArray(e)) {
+                                        return e;
+                                    }
+                                    return e?.fileList;
+                                }}
                             >
                                 <Upload
                                     beforeUpload={(file) => {
                                         const isLt5M = file.size / 1024 / 1024 < 5;
                                         if (!isLt5M) {
                                             message.error('File must be smaller than 5MB!');
+                                            return Upload.LIST_IGNORE;
                                         }
-                                        return isLt5M || Upload.LIST_IGNORE;
+                                        return false;
                                     }}
-                                    maxCount={1}
+                                    multiple
                                 >
-                                    <Button icon={<UploadOutlined />}>Add file</Button>
+                                    <Button icon={<UploadOutlined />}>Click to upload files</Button>
                                 </Upload>
-                            </Form.Item>
+                            </ProForm.Item>
                         </Col>
                     </Row>
 
-                    <Row gutter={16}>
+                    <Row gutter={16} style={{ marginTop: 24 }}>
                         <Col>
-                            <Button type="primary" onClick={handleAdd}>Add</Button>
+                            <Button type="primary" onClick={() => form.submit()}>
+                                Add to Table
+                            </Button>
                         </Col>
                         <Col>
-                            <Button onClick={() => form.resetFields()} danger>Reset</Button>
+                            <Button
+                                onClick={() => {
+                                    form.resetFields();
+                                    setSelectedDisposalMethod(undefined);
+                                    setWasteTypes([]);
+                                }}
+                                danger
+                            >
+                                Reset Form
+                            </Button>
                         </Col>
                     </Row>
-                </Form>
+                </ProForm>
             </Card>
 
-            <Card style={{ marginTop: 24 }}>
-                <Table dataSource={tableData} columns={columns} pagination={false} bordered />
-                <div className="flex justify-center mt-4">
-                    <Button type="primary" onClick={handleSubmit}>Submit</Button>
+            <Card>
+                <Table
+                    dataSource={tableData}
+                    columns={columns}
+                    pagination={false}
+                    bordered
+                    scroll={{ x: 1000 }}
+                    style={{ marginBottom: 16 }}
+                />
+                <div className="flex justify-center">
+                    <Button
+                        type="primary"
+                        onClick={handleSubmit}
+                        disabled={tableData.length === 0}
+                    >
+                        Submit All Records
+                    </Button>
                 </div>
             </Card>
 
-            <Modal
-                title="Edit Entry"
+            <EditFormModal
                 open={isModalOpen}
-                onCancel={() => setIsModalOpen(false)}
-                footer={null}
-            >
-                <Form layout="vertical" form={editForm} onFinish={handleSaveEdit}>
-                    <FormItem name="campus" label="UTM Campus" rules={[{ required: true }]}>
-                        <Select options={campusOptions} />
-                    </FormItem>
-                    <FormItem name="location" label="Location" rules={[{ required: true }]}>
-                        <Select options={locationOptions} />
-                    </FormItem>
-                    <FormItem name="disposalMethod" label="Disposal Method" rules={[{ required: true }]}>
-                        <Select options={disposalMethodOptions} />
-                    </FormItem>
-                    <FormItem name="wasteType" label="Waste Type" rules={[{ required: true }]}>
-                        <Select options={editWasteTypeOptions} />
-                    </FormItem>
-                    <FormItem name="wasteWeight" label="Waste Weight (kg)" rules={[{ required: true }]}>
-                        <Input type="number" />
-                    </FormItem>
-                    <FormItem
-                        name="file"
-                        label="Attachment"
-                        valuePropName="fileList"
-                        getValueFromEvent={e => Array.isArray(e) ? e : e?.fileList}
-                    >
-                        <Upload
-                            beforeUpload={(file) => {
-                                const isLt5M = file.size / 1024 / 1024 < 5;
-                                if (!isLt5M) {
-                                    message.error('File must be smaller than 5MB!');
-                                }
-                                return isLt5M || Upload.LIST_IGNORE;
-                            }}
-                            maxCount={1}
-                        >
-                            <Button icon={<UploadOutlined />}>Add files</Button>
-                        </Upload>
-                    </FormItem>
-                    <div className='flex justify-center'>
-                        <Button type="primary" htmlType="submit">Save</Button>
-                    </div>
-                </Form>
-            </Modal>
+                record={editingRecord}
+                campuses={campuses}
+                disposalMethods={disposalMethods}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingRecord(null);
+                }}
+                onSave={handleSaveEdit}
+            />
         </>
     );
 }
