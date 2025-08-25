@@ -101,7 +101,7 @@ const WasteRecordManagement: React.FC = () => {
             title: 'Confirm Deletion',
             content: 'Are you sure you want to delete this waste record?',
             okText: 'Yes',
-            cancelText: 'No',
+            cancelText: 'Cancel',
             onOk: async () => handleWasteRecordDelete(wasteRecord),
         });
     }

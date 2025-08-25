@@ -46,7 +46,7 @@ const EditProfileForm = () => {
             }
         };
         fetchData();
-    }, []);
+    });
 
     const handleSubmit = async (values: any) => {
         try {
@@ -104,15 +104,6 @@ const EditProfileForm = () => {
                                 editMode && (
                                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                                         <Button
-                                            type="primary"
-                                            htmlType="submit"
-                                            style={{ width: '40%' }}
-                                            loading={submitting}
-                                            disabled={submitting}
-                                        >
-                                            {submitting ? 'Saving...' : 'Save Changes'}
-                                        </Button>
-                                        <Button
                                             onClick={() => {
                                                 // reset to last saved state
                                                 setEditMode(false);
@@ -120,6 +111,14 @@ const EditProfileForm = () => {
                                             disabled={submitting}
                                         >
                                             Cancel
+                                        </Button>
+                                        <Button
+                                            type="primary"
+                                            htmlType="submit"
+                                            loading={submitting}
+                                            disabled={submitting}
+                                        >
+                                            {submitting ? 'Saving...' : 'Save Changes'}
                                         </Button>
                                     </div>
                                 ),

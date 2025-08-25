@@ -24,7 +24,7 @@ const processQueue = (error: any, token: string | null = null) => {
 // attach access token to requests
 api.interceptors.request.use(
     (config) => {
-        config.headers = config.headers ?? {};
+        config.headers = config.headers;
         const currentUser = localStorage.getItem('currentUser');
         if (currentUser) {
             const parseUser = JSON.parse(currentUser);
