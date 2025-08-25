@@ -20,7 +20,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
 
-    // 👇 get user & logout from context
     const { user, logout } = useAuth();
 
     const handleMenuClick: MenuProps['onClick'] = async ({ key }) => {
@@ -56,6 +55,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             });
     }
 
+    const findParentKey = (items: any[], path: string): string | undefined => {
+        for (const item of items) {
+            if (item.children?.some((child: any) => path.startsWith(child.key))) {
+                return item.key as string;
+            }
+        }
+        return undefined;
+    };
+
+    const parentKey = findParentKey(menuItems, pathname);
+
     return (
         <PageGuard>
             <Layout style={{ minHeight: '100vh' }}>
@@ -89,6 +99,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         mode="inline"
                         //defaultOpenKeys={['/data-entry', '/settings']}
                         selectedKeys={[pathname]}
+                        defaultOpenKeys={parentKey ? [parentKey] : []}
                         items={filterMenuByRole(menuItems, user?.roles)}
                         onClick={({ key }) => router.push(key)}
                         inlineCollapsed={collapsed}

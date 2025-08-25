@@ -5,12 +5,13 @@ import { UserStatus, userStatusLabels } from "@/lib/enum/status";
 import { getAllUsers, updateUser } from "@/lib/services/user";
 import { UserDetails } from "@/lib/types/typing";
 import { ActionType, ProColumns, ProTable } from "@ant-design/pro-components";
-import { Button, Tag, message } from "antd";
+import { App, Button, Tag } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useRef } from "react";
 import UserDetailsDrawerForm, { FormValueType } from "./UserDetailsDrawerForm";
 
 const UserManagement: React.FC = () => {
+    const { message } = App.useApp();
     const { positions, departments, roles, isLoading } = useProfileDropdownOptions();
     const [loading, setLoading] = useState<boolean>(false);
     const [data, setData] = useState<UserDetails[]>([]);

@@ -7,9 +7,9 @@ import {
     Button,
     Table,
     Typography,
-    message,
-    Modal,
     Upload,
+    UploadFile,
+    App,
 } from 'antd';
 import {
     ProForm,
@@ -23,12 +23,13 @@ import { createWasteRecords } from '@/lib/services/wasteRecord';
 import { WasteRecordInput } from '@/lib/types/wasteRecord';
 import { useWasteRecordDropdownOptions } from '@/hook/options';
 import { WasteTypeWithEmissionFactor } from '@/lib/types/typing';
+import EditFormModal from './EditFormModal';
 
 const { Title } = Typography;
 
 export default function WasteEntryForm() {
     const [form] = ProForm.useForm();
-    const [editForm] = ProForm.useForm();
+    const { message, modal } = App.useApp();
 
     const { campuses, disposalMethods, isLoading } = useWasteRecordDropdownOptions();
     const [tableData, setTableData] = useState<WasteRecordInput[]>([]);
@@ -40,8 +41,7 @@ export default function WasteEntryForm() {
     const handleDisposalMethodChange = (value: string) => {
         setSelectedDisposalMethod(value);
         const selectedMethod = disposalMethods.find(dm => dm.id === value);
-        form.setFieldValue('wasteType', null);
-        editForm.setFieldValue('wasteType', null);
+        form.resetFields(["wasteType"]);
         setWasteTypes(selectedMethod?.wasteTypes ?? []);
     };
 
@@ -67,27 +67,17 @@ export default function WasteEntryForm() {
     const handleEdit = (record: any) => {
         setEditingRecord(record);
         setIsModalOpen(true);
-        editForm.setFieldsValue(record);
-
-        // Set waste types for the editing record
-        const method = disposalMethods.find(dm => dm.id === record.disposalMethod);
-        setWasteTypes(method?.wasteTypes ?? []);
-        setSelectedDisposalMethod(record.disposalMethod);
     };
 
-    const handleSaveEdit = async (values: any) => {
+    const handleSaveEdit = (values: any, recordKey: string) => {
         setTableData((prev) =>
-            prev.map((item) =>
-                item.key === editingRecord.key ? { ...item, ...values } : item
-            )
+            prev.map((item) => (item.key === recordKey ? { ...item, ...values } : item))
         );
-        setIsModalOpen(false);
-        setEditingRecord(null);
         message.success('Row updated successfully');
     };
 
     const handleDelete = (key: string) => {
-        Modal.confirm({
+        modal.confirm({
             title: 'Confirm Delete',
             content: 'Are you sure you want to delete this entry?',
             okText: 'Yes, Delete',
@@ -104,7 +94,7 @@ export default function WasteEntryForm() {
             return message.warning("No data to submit. Please add at least one entry.");
         }
 
-        Modal.confirm({
+        modal.confirm({
             title: "Confirm Submission",
             content: "Are you sure you want to submit all the waste records?",
             okText: "Yes, Submit",
@@ -204,8 +194,13 @@ export default function WasteEntryForm() {
         {
             title: 'Attachment',
             dataIndex: 'file',
-            render: (files: any[]) => files?.length > 0 ? `${files.length} file(s)` : 'None',
-            width: 100,
+            render: (files: UploadFile[]) =>
+                files?.length > 0
+                    ? files.map((file, index) => (
+                        <div key={index}>{file.name}</div>
+                    ))
+                    : 'None',
+            width: 200,
         },
         {
             title: 'Actions',
@@ -396,123 +391,17 @@ export default function WasteEntryForm() {
                 </div>
             </Card>
 
-            <Modal
-                title="Edit Waste Record"
+            <EditFormModal
                 open={isModalOpen}
-                onCancel={() => {
+                record={editingRecord}
+                campuses={campuses}
+                disposalMethods={disposalMethods}
+                onClose={() => {
                     setIsModalOpen(false);
                     setEditingRecord(null);
                 }}
-                footer={null}
-                width={600}
-                destroyOnClose
-            >
-                <ProForm
-                    form={editForm}
-                    layout="vertical"
-                    submitter={false}
-                    onFinish={handleSaveEdit}
-                >
-                    <ProFormSelect
-                        name="campus"
-                        label="UTM Campus"
-                        placeholder="Please select campus"
-                        rules={[{ required: true, message: 'Please select a campus' }]}
-                        options={campuses.map((campus) => ({
-                            label: campus.name,
-                            value: campus.name,
-                        }))}
-                        fieldProps={{
-                            showSearch: true,
-                        }}
-                    />
-
-                    <ProFormText
-                        name="location"
-                        label="Location"
-                        placeholder="Please enter location"
-                    />
-
-                    <ProFormSelect
-                        name="disposalMethod"
-                        label="Disposal Method"
-                        placeholder="Please select disposal method"
-                        rules={[{ required: true, message: 'Please select disposal method' }]}
-                        options={disposalMethods.map((method) => ({
-                            label: method.name,
-                            value: method.id,
-                        }))}
-                        fieldProps={{
-                            onChange: handleDisposalMethodChange,
-                            showSearch: true,
-                        }}
-                    />
-
-                    <ProFormSelect
-                        name="wasteType"
-                        label="Waste Type"
-                        placeholder="Please select waste type"
-                        rules={[{ required: true, message: 'Please select waste type' }]}
-                        options={wasteTypes.map(wt => ({
-                            label: wt.name,
-                            value: wt.id,
-                        }))}
-                        fieldProps={{
-                            disabled: !selectedDisposalMethod,
-                            showSearch: true,
-                        }}
-                    />
-
-                    <ProFormDigit
-                        name="wasteWeight"
-                        label="Waste Weight (kg)"
-                        placeholder="Please enter waste weight"
-                        rules={[{ required: true, message: 'Please enter waste weight' }]}
-                        fieldProps={{
-                            min: 0,
-                            step: 0.1,
-                            precision: 2,
-                        }}
-                    />
-
-                    <ProForm.Item
-                        name="file"
-                        label="Attachment"
-                        rules={[{ required: false }]}
-                        valuePropName="fileList"
-                        getValueFromEvent={(e: { fileList: any; }) => {
-                            if (Array.isArray(e)) {
-                                return e;
-                            }
-                            return e?.fileList;
-                        }}
-                    >
-                        <Upload
-                            beforeUpload={(file) => {
-                                const isLt5M = file.size / 1024 / 1024 < 5;
-                                if (!isLt5M) {
-                                    message.error('File must be smaller than 5MB!');
-                                    return Upload.LIST_IGNORE;
-                                }
-                                return false;
-                            }}
-                            multiple
-                            maxCount={5}
-                        >
-                            <Button icon={<UploadOutlined />}>Click to upload files</Button>
-                        </Upload>
-                    </ProForm.Item>
-
-                    <div className="flex justify-center gap-4 mt-6">
-                        <Button onClick={() => setIsModalOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button type="primary" onClick={() => editForm.submit()}>
-                            Save Changes
-                        </Button>
-                    </div>
-                </ProForm>
-            </Modal>
+                onSave={handleSaveEdit}
+            />
         </>
     );
 }

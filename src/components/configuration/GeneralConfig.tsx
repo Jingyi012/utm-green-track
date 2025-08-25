@@ -3,10 +3,11 @@ import { getAllConfig, updateConfig } from "@/lib/services/config";
 import { Config } from "@/lib/types/typing";
 import { EditOutlined } from "@ant-design/icons";
 import { ActionType, ModalForm, ProColumns, ProFormText, ProTable } from "@ant-design/pro-components";
-import { Button, message } from "antd";
+import { App, Button } from "antd";
 import { useRef, useState } from "react";
 
 export const GeneralConfig: React.FC = () => {
+    const { message } = App.useApp();
     const [loading, setLoading] = useState<boolean>(false);
     const [configData, setConfigData] = useState<Config[]>([]);
     const [selectedConfig, setSelectedConfig] = useState<Config>();
@@ -105,6 +106,13 @@ export const GeneralConfig: React.FC = () => {
             title="Edit General Config"
             open={modalOpen}
             initialValues={selectedConfig || {}}
+            modalProps={{
+                destroyOnClose: true,
+                onCancel: () => {
+                    setSelectedConfig(undefined);
+                    setModalOpen(false)
+                },
+            }}
             onOpenChange={(open) => {
                 if (!open) {
                     setSelectedConfig(undefined);

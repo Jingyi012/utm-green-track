@@ -6,6 +6,7 @@ import {
   InfoCircleOutlined,
   UsergroupAddOutlined,
   UnorderedListOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { MenuProps } from 'antd';
 import React from 'react';
@@ -71,6 +72,12 @@ export const menuItems: AppMenuItem[] = [
         label: 'Management',
       }
     ]
+  },
+  {
+    key: '/requests',
+    icon: <MessageOutlined />,
+    label: 'Requests',
+    roles: ['Admin'],
   },
   {
     key: '/configurations',

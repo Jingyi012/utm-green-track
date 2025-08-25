@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Form, Input, Button, Typography, message, Spin } from 'antd';
+import { Form, Input, Button, Typography, App } from 'antd';
 import { resetPassword } from '@/lib/services/auth';
 import { Card } from 'antd/lib';
 
 const { Title, Text } = Typography;
 
 export default function ResetPasswordForm() {
+    const { message } = App.useApp();
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
     const [token, setToken] = useState<string | null>(null);

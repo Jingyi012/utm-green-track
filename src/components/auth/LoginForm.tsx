@@ -1,6 +1,6 @@
 'use client';
 
-import { Form, Input, Button, Card, Typography, message } from 'antd';
+import { Form, Input, Button, Card, Typography, message, App } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const { Title } = Typography;
 
 export default function LoginForm() {
+    const { message } = App.useApp();
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const { login } = useAuth();
@@ -51,10 +52,10 @@ export default function LoginForm() {
                         rules={[
                             { required: true, message: 'Please enter your email' },
                             { type: 'email', message: 'Invalid email address' },
-                            // {
-                            //     pattern: /^[a-zA-Z0-9._%+-]+@(utm\.my|graduate\.utm\.my)$/,
-                            //     message: 'Email must be @utm.my or @graduate.utm.my'
-                            // },
+                            {
+                                pattern: /^[a-zA-Z0-9._%+-]+@(utm\.my|graduate\.utm\.my)$/,
+                                message: 'Email must be @utm.my or @graduate.utm.my'
+                            },
                         ]}
                     >
                         <Input prefix={<UserOutlined />} placeholder="you@graduate.utm.my" />
@@ -63,7 +64,8 @@ export default function LoginForm() {
                     <Form.Item
                         name="password"
                         label="Password"
-                        rules={[{ required: true, message: 'Please enter your password' }]}
+                        rules={[{ required: true, message: 'Please enter your password' },
+                        { min: 8, message: 'Password must be at least 8 characters' },]}
                     >
                         <Input.Password prefix={<LockOutlined />} placeholder="••••••••" />
                     </Form.Item>

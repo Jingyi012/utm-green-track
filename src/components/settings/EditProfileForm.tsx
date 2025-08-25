@@ -9,12 +9,13 @@ import {
     ProFormSelect,
     ProCard,
 } from '@ant-design/pro-components';
-import { Button, Card, Col, Row, Typography, message } from 'antd';
+import { App, Button, Card, Col, Row, Typography } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 
 const { Title } = Typography;
 
 const EditProfileForm = () => {
+    const { message } = App.useApp();
     const { positions, departments, roles } = useProfileDropdownOptions();
     const [userData, setUserData] = useState<UserDetails>();
     const [loading, setLoading] = useState(true);

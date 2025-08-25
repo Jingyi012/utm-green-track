@@ -1,10 +1,11 @@
 'use client';
 import { changePassword } from '@/lib/services/auth';
-import { Button, Card, Col, Form, Input, message, Row, Select, Typography } from 'antd';
+import { App, Button, Card, Col, Form, Input, Row, Select, Typography } from 'antd';
 const { Title } = Typography;
 const { Option } = Select;
 
 const ChangePasswordForm = () => {
+    const { message } = App.useApp();
     const [form] = Form.useForm();
 
     const handleSubmit = async () => {

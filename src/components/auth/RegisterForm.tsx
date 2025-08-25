@@ -2,7 +2,7 @@
 
 import { registerUser } from '@/lib/services/auth';
 import { ProForm, ProFormText, ProFormSelect } from '@ant-design/pro-components';
-import { Button, Col, Modal, Row, Typography, message } from 'antd';
+import { App, Button, Col, Modal, Row, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProfileDropdownOptions } from '@/hook/options';
@@ -10,6 +10,7 @@ import { useProfileDropdownOptions } from '@/hook/options';
 const { Title } = Typography;
 
 export default function RegistrationForm() {
+    const { message } = App.useApp();
     const { positions, departments, roles } = useProfileDropdownOptions();
     const [loading, setLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -112,10 +113,10 @@ export default function RegistrationForm() {
                             rules={[
                                 { required: true, message: 'Please enter your email' },
                                 { type: 'email', message: 'Invalid email format' },
-                                // {
-                                //     pattern: /^[a-zA-Z0-9._%+-]+@(utm\.my|graduate\.utm\.my)$/,
-                                //     message: 'Email must be @utm.my or @graduate.utm.my'
-                                // },
+                                {
+                                    pattern: /^[a-zA-Z0-9._%+-]+@(utm\.my|graduate\.utm\.my)$/,
+                                    message: 'Email must be @utm.my or @graduate.utm.my'
+                                },
                             ]}
                         />
                     </Col>

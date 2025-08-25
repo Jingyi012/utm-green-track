@@ -8,3 +8,7 @@ export const toPascalCase = (str: string) =>
         .split(/[\s_]+/)
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join('');
+
+export const dateFormatter = (date: string) => {
+    return new Date(date).toLocaleDateString('en-GB')
+}

@@ -3,44 +3,44 @@
 import {
     Button,
     Tooltip,
-    message,
     Card,
+    App,
 } from 'antd';
 import {
     FilePdfOutlined,
     FileExcelOutlined,
-    PaperClipOutlined,
 } from '@ant-design/icons';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { exportExcelWasteRecords, exportPdfWasteRecords, getWasteRecordsPaginated } from '@/lib/services/wasteRecord';
-import { ProColumns, ProTable } from '@ant-design/pro-components';
+import { ActionType, ModalForm, ProColumns, ProFormText, ProTable } from '@ant-design/pro-components';
 import { WasteRecord, WasteRecordFilter } from '@/lib/types/wasteRecord';
 import { WasteRecordStatus, wasteRecordStatusLabels } from '@/lib/enum/status';
 import { SortOrder } from 'antd/lib/table/interface';
 import { useWasteRecordDropdownOptions } from '@/hook/options';
 import { downloadFile } from '@/lib/utils/downloadFile';
 import { ExportModal } from './ExportModal';
+import { createRequest } from '@/lib/services/requestService';
+import { dateFormatter } from '@/lib/utils/formatter';
 
 const ViewForm = () => {
+    const { message } = App.useApp();
     const { campuses, disposalMethods } = useWasteRecordDropdownOptions();
-    const [page, setPage] = useState<number>(1);
-    const [pageSize, setPagesize] = useState<number>(20);
     const [data, setData] = useState<WasteRecord[]>([]);
-    const [total, setTotal] = useState<number>(0);
+    const [selectedRecord, setSelectedRecord] = useState<WasteRecord | undefined>(undefined);
     const [loading, setLoading] = useState<boolean>(false);
     const [excelLoading, setExcelLoading] = useState<boolean>(false);
     const [pdfLoading, setPdfLoading] = useState<boolean>(false);
+    const actionRef = useRef<ActionType | undefined>(undefined);
 
     const [modalOpen, setModalOpen] = useState<false | "excel" | "pdf">(false);
+
+    const [changeRequestModalOpen, setChangeRequestModalOpen] = useState<boolean>(false);
 
     const fetchData = async (filters: WasteRecordFilter) => {
         setLoading(true);
         try {
             const res = await getWasteRecordsPaginated(filters);
             setData(res.data);
-            setTotal(res.totalCount);
-            setPage(res.pageNumber);
-            setPagesize(res.pageSize);
             return {
                 data: res.data,
                 success: res.success,
@@ -61,7 +61,11 @@ const ViewForm = () => {
     const columns: ProColumns[] = [
         {
             title: 'No.',
-            render: (_: any, __: any, index: number) => (page - 1) * pageSize + index + 1,
+            render: (_: any, __: any, index: number, action) => {
+                const current = action?.pageInfo?.current ?? 1;
+                const pageSize = action?.pageInfo?.pageSize ?? 10;
+                return (current - 1) * pageSize + index + 1;
+            },
             width: 60,
             align: 'center' as const,
             hideInSearch: true,
@@ -69,7 +73,7 @@ const ViewForm = () => {
         {
             title: 'Date',
             dataIndex: 'date',
-            render: (_: any, record: WasteRecord) => new Date(record.date).toLocaleDateString('en-GB'),
+            render: (_: any, record: WasteRecord) => dateFormatter(record.date),
             align: 'center' as const,
             hideInSearch: true,
         },
@@ -148,6 +152,7 @@ const ViewForm = () => {
         {
             title: 'Attachment',
             dataIndex: 'attachments',
+            align: 'center' as const,
             render: (_: any, record: WasteRecord) => {
                 const attachments = Array.isArray(record.attachments) ? record.attachments : [];
 
@@ -156,7 +161,7 @@ const ViewForm = () => {
                 return attachments.map((file, index) => (
                     <Tooltip title="View Attachment" key={index}>
                         <a href={file.filePath} target="_blank" rel="noopener noreferrer" style={{ marginRight: 8 }}>
-                            <PaperClipOutlined />
+                            {file.fileName}
                         </a>
                     </Tooltip>
                 ));
@@ -181,6 +186,26 @@ const ViewForm = () => {
                 },
             },
             align: 'center' as const,
+        },
+        {
+            title: 'Action',
+            valueType: 'option',
+            align: 'center' as const,
+            render: (_: any, record: WasteRecord) => {
+                return (
+                    <>
+                        {record.status != WasteRecordStatus.Verified &&
+                            (<Button onClick={() => {
+                                setSelectedRecord(record);
+                                setChangeRequestModalOpen(true);
+                            }}>
+                                Request Changes
+                            </Button>
+                            )
+                        }
+                    </>
+                )
+            }
         }
     ];
 
@@ -211,6 +236,30 @@ const ViewForm = () => {
             message.error('Failed to generate PDF');
         } finally {
             setPdfLoading(false);
+            hide();
+        }
+    };
+
+    const handleChangeRequest = async (wasteRecordId: string | undefined, reqMessage: string) => {
+        const hide = message.loading("Sending request...", 0);
+        try {
+            const res = await createRequest({
+                wasteRecordId: wasteRecordId,
+                message: reqMessage,
+            });
+            if (res.success) {
+                if (actionRef.current) {
+                    actionRef.current.reload();
+                }
+                message.success("Request created successfully");
+                return true;
+            } else {
+                message.error("Failed to send request");
+                return false;
+            }
+        } catch (err) {
+            message.error("Failed to send request")
+        } finally {
             hide();
         }
     };
@@ -305,6 +354,41 @@ const ViewForm = () => {
                     if (modalOpen === "pdf") handleExportPDF(year, month);
                 }}
             />
+            <ModalForm
+                title="Request Changes"
+                open={changeRequestModalOpen}
+                modalProps={{
+                    destroyOnClose: true,
+                    onCancel: () => {
+                        setSelectedRecord(undefined);
+                        setChangeRequestModalOpen(false);
+                    },
+                }}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSelectedRecord(undefined);
+                        setChangeRequestModalOpen(false);
+                    }
+                }}
+                onFinish={async (values) => {
+                    const success = await handleChangeRequest(selectedRecord?.id, values.message);
+                    if (success) {
+                        if (actionRef.current) {
+                            actionRef.current.reload();
+                        }
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }}
+            >
+                <ProFormText
+                    label="Message"
+                    name="message"
+                    placeholder="Please enter message"
+                    rules={[{ required: true }]}
+                />
+            </ModalForm>
         </>
     );
 };

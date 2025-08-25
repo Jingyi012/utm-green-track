@@ -1,12 +1,13 @@
 'use client';
 
 import { forgotPassword } from '@/lib/services/auth';
-import { Form, Input, Button, Typography, message } from 'antd';
+import { Form, Input, Button, Typography, App } from 'antd';
 import { useState } from 'react';
 
 const { Title, Text } = Typography;
 
 export default function ForgotPasswordForm() {
+    const { message } = App.useApp();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
 
@@ -38,7 +39,11 @@ export default function ForgotPasswordForm() {
                     label="Email Address"
                     rules={[
                         { required: true, message: 'Please enter your email address' },
-                        { type: 'email', message: 'Please enter a valid email address' }
+                        { type: 'email', message: 'Please enter a valid email address' },
+                        {
+                            pattern: /^[a-zA-Z0-9._%+-]+@(utm\.my|graduate\.utm\.my)$/,
+                            message: 'Email must be @utm.my or @graduate.utm.my'
+                        },
                     ]}
                 >
                     <Input placeholder="e.g. user@utm.my" />

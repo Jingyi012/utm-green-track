@@ -21,3 +21,15 @@ export const userStatusLabels: Record<UserStatus, string> = {
     [UserStatus.Approved]: "Approved",
     [UserStatus.Rejected]: "Rejected"
 };
+
+export enum RequestStatus {
+    Pending = 0,
+    Resolved = 1,
+    Rejected = 2
+}
+
+export const requestStatusLabels: Record<RequestStatus, string> = {
+    [RequestStatus.Pending]: "Pending",
+    [RequestStatus.Resolved]: "Resolved",
+    [RequestStatus.Rejected]: "Rejected"
+};

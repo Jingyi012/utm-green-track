@@ -10,8 +10,8 @@ export interface WasteRecord {
     location?: string,
     activity?: string,
     wasteWeight: number,
-    status: string,
-    date: Date,
+    status: number,
+    date: string,
     attachments?: Attachment[],
     userId: string,
     user: string,
@@ -53,4 +53,5 @@ export interface WasteRecordFilter {
     fromDate?: string;
     toDate?: string;
     status?: number;
+    isAdmin?: boolean;
 }

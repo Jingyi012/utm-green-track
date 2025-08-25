@@ -1,13 +1,12 @@
 'use client'
 import { useEffect, useState } from "react";
 import InfoCardGrid from "./InfoCardGrid";
-import { Card, Col, Divider, message, Row, Select, Skeleton, Splitter } from "antd";
+import { App, Card, Col, Divider, Row, Select, Skeleton, Splitter } from "antd";
 import { getCampusYearlySummary } from "@/lib/services/wasteRecord";
 import { Column, Pie } from "@ant-design/charts";
 import { MonthlyWasteSummary, TotalSummary } from "@/lib/types/wasteSummary";
 import { useWasteRecordDropdownOptions } from "@/hook/options";
 import { MONTH_LABELS_SHORT } from "@/lib/enum/monthName";
-import { DisposalMethodWithWasteType } from "@/lib/types/typing";
 import React from "react";
 
 export interface ChartDataItem {
@@ -92,6 +91,7 @@ function transformRecyclableWasteType(
 }
 
 const DashboardSection: React.FC = () => {
+    const { message } = App.useApp();
     const currentYear = new Date().getFullYear();
     const yearOptions = Array.from(
         { length: currentYear - 2023 + 1 },

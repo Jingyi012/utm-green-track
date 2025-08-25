@@ -1,3 +1,6 @@
+import { RequestStatus } from "../enum/status";
+import { WasteRecord } from "./wasteRecord";
+
 export interface WasteType {
     id: string;
     name: string;
@@ -80,4 +83,16 @@ export interface WasteRecordDropdownOptions {
     campuses: Campus[],
     disposalMethods: DisposalMethodWithWasteType[],
     isLoading?: boolean
+}
+
+export interface ChangeRequest {
+    id: string,
+    wasteRecordId?: string,
+    wasteRecord?: WasteRecord,
+    message: string,
+    status: RequestStatus,
+    userId: string,
+    user: string, // user name
+    matricNo: string,
+    createdAt: string
 }

@@ -47,7 +47,7 @@ export async function createWasteRecords(
         }
     });
 
-    return api.post<GeneralResponse<string[]>>(`${API_URL}/batch`, formData, {
+    return api.post<GeneralResponse<string[]>>(`${API_URL}`, formData, {
         headers: {
             "Content-Type": "multipart/form-data",
         },
@@ -76,7 +76,7 @@ export async function updateWasteRecord(id: string, body: {
     wasteWeight?: number;
     location?: string;
     activity?: string;
-    status?: string;
+    status?: number;
     date?: string;
 },
     options?: { [key: string]: any }) {

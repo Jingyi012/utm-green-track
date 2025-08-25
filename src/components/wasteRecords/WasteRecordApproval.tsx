@@ -4,13 +4,13 @@ import { useWasteRecordDropdownOptions } from "@/hook/options";
 import { wasteRecordStatusLabels, WasteRecordStatus } from "@/lib/enum/status";
 import { getWasteRecordsPaginated, updateWasteRecordApprovalStatus } from "@/lib/services/wasteRecord";
 import { WasteRecord, WasteRecordFilter } from "@/lib/types/wasteRecord";
-import { PaperClipOutlined } from "@ant-design/icons";
 import { ActionType, FooterToolbar, ProColumns, ProTable } from "@ant-design/pro-components";
-import { Button, Popconfirm, Tabs, Tooltip, message } from "antd";
+import { App, Button, Popconfirm, Tabs, Tooltip } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useEffect, useRef } from "react";
 
 const WasteRecordApproval: React.FC = () => {
+    const { message } = App.useApp();
     const { campuses, disposalMethods, isLoading } = useWasteRecordDropdownOptions();
     const [loading, setLoading] = useState<boolean>(false);
     const [page, setPage] = useState<number>(1);
@@ -48,13 +48,13 @@ const WasteRecordApproval: React.FC = () => {
     };
 
     // Batch or single approve/reject
-    const handleStatusUpdate = async (users: WasteRecord[], status: WasteRecordStatus) => {
-        if (!users.length) return;
+    const handleStatusUpdate = async (records: WasteRecord[], status: WasteRecordStatus) => {
+        if (!records.length) return;
         try {
-            const wasteRecordIds = users.map(u => u.id);
+            const wasteRecordIds = records.map(u => u.id);
             const res = await updateWasteRecordApprovalStatus({ wasteRecordIds, status });
             if (res.success) {
-                message.success(`User status updated to ${wasteRecordStatusLabels[status]}`);
+                message.success(`Waste record status updated to ${wasteRecordStatusLabels[status]}`);
             } else {
                 message.error(`Failed to update status to ${wasteRecordStatusLabels[status]}`);
             }
@@ -303,7 +303,8 @@ const WasteRecordApproval: React.FC = () => {
                         wasteType: params.wasteType,
                         status: statusFilter,
                         fromDate: params.fromDate,
-                        toDate: params.toDate
+                        toDate: params.toDate,
+                        isAdmin: true
                     });
                 }}
                 search={{

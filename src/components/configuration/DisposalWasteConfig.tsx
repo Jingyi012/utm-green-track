@@ -8,13 +8,14 @@ import {
     ProFormText,
     ProFormDigit,
 } from "@ant-design/pro-components";
-import { Button, Popconfirm, Space, message } from "antd";
+import { App, Button, Popconfirm, Space } from "antd";
 import { DisposalMethodWithWasteType, WasteType } from "@/lib/types/typing";
 import { createDisposalMethod, deleteDisposalMethod, getAllDisposalMethod, updateDisposalMethod } from "@/lib/services/disposalMethod";
 import { createWasteType, deleteWasteType, updateWasteType } from "@/lib/services/wasteType";
 import { DeleteOutlined, EditOutlined, PlusCircleOutlined } from "@ant-design/icons";
 
 export default function DisposalWasteConfig() {
+    const { message } = App.useApp();
     const [loading, setLoading] = useState<boolean>(false);
     const [data, setData] = useState<DisposalMethodWithWasteType[]>([]);
     const [selectedDisposalMethod, setSelectedDisposalMethod] = useState<DisposalMethodWithWasteType | null>(
@@ -236,6 +237,9 @@ export default function DisposalWasteConfig() {
             <ModalForm
                 title="Add Disposal Method"
                 trigger={<Button type="primary">+ Add Disposal Method</Button>}
+                modalProps={{
+                    destroyOnClose: true,
+                }}
                 onFinish={async (values) => {
                     await handleCreateDisposalMethod(values.name);
                     return true;
@@ -248,11 +252,17 @@ export default function DisposalWasteConfig() {
                 />
             </ModalForm>
 
-            {/* Edit Disposal Method */}
+            {/* Edit Disposal Method
             <ModalForm
                 title="Edit Disposal Method"
                 open={!!editingMethod}
                 initialValues={editingMethod || {}}
+                modalProps={{
+                    destroyOnClose: true,
+                    onCancel: () => {
+                        setEditingMethod(null);
+                    },
+                }}
                 onOpenChange={(open) => !open && setEditingMethod(null)}
                 onFinish={async (values) => {
                     if (editingMethod) {
@@ -267,13 +277,21 @@ export default function DisposalWasteConfig() {
                     label="Disposal Method Name"
                     rules={[{ required: true }]}
                 />
-            </ModalForm>
+            </ModalForm> */}
 
             {/* Add/Edit Waste Type */}
             <ModalForm
-                title={editingWaste ? "Edit Waste Type" : "Add Waste Type"}
+                title={editingWaste ? "Edit Waste Type" : `Add Waste Type for ${selectedDisposalMethod?.name}`}
                 open={wasteTypeModalFormOpen}
                 initialValues={editingWaste || {}}
+                modalProps={{
+                    destroyOnClose: true,
+                    onCancel: () => {
+                        setSelectedDisposalMethod(null);
+                        setEditingWaste(null);
+                        setWasteTypeModalFormOpen(false)
+                    },
+                }}
                 onOpenChange={(open) => {
                     if (!open) {
                         setSelectedDisposalMethod(null);

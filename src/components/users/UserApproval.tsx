@@ -5,11 +5,12 @@ import { UserStatus, userStatusLabels } from "@/lib/enum/status";
 import { getAllUsers, updateUserApprovalStatus } from "@/lib/services/user";
 import { UserDetails } from "@/lib/types/typing";
 import { ActionType, FooterToolbar, ProColumns, ProTable } from "@ant-design/pro-components";
-import { Button, Popconfirm, Select, Tabs, Tag, message } from "antd";
+import { App, Button, Popconfirm, Tabs, Tag } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useEffect, useRef } from "react";
 
 const UserApproval: React.FC = () => {
+    const { message } = App.useApp();
     const { positions, departments, roles, isLoading } = useProfileDropdownOptions();
     const [loading, setLoading] = useState<boolean>(false);
     const [page, setPage] = useState<number>(1);

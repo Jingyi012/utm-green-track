@@ -2,9 +2,8 @@
 
 import { useWasteRecordDropdownOptions } from "@/hook/options";
 import { WasteRecordStatus, wasteRecordStatusLabels } from "@/lib/enum/status";
-import { UserDetails } from "@/lib/types/typing";
 import { ActionType, ProColumns, ProTable } from "@ant-design/pro-components";
-import { Button, Modal, Tooltip, message } from "antd";
+import { App, Button, Tooltip } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useRef } from "react";
 import WasteRecordDrawerForm from "./WasteRecordDrawerForm";
@@ -12,6 +11,7 @@ import { WasteRecord, WasteRecordFilter } from "@/lib/types/wasteRecord";
 import { deleteAttachment, deleteWasteRecord, getWasteRecordsPaginated, updateWasteRecord, uploadAttachments } from "@/lib/services/wasteRecord";
 
 const WasteRecordManagement: React.FC = () => {
+    const { message, modal } = App.useApp();
     const { campuses, disposalMethods, isLoading } = useWasteRecordDropdownOptions();
     const [loading, setLoading] = useState<boolean>(false);
     const [page, setPage] = useState<number>(1);
@@ -97,7 +97,7 @@ const WasteRecordManagement: React.FC = () => {
     };
 
     const confirmDeletion = async (wasteRecord: WasteRecord) => {
-        Modal.confirm({
+        modal.confirm({
             title: 'Confirm Deletion',
             content: 'Are you sure you want to delete this waste record?',
             okText: 'Yes',
@@ -315,7 +315,8 @@ const WasteRecordManagement: React.FC = () => {
                         wasteType: params.wasteType,
                         status: params.status,
                         fromDate: params.fromDate,
-                        toDate: params.toDate
+                        toDate: params.toDate,
+                        isAdmin: true
                     });
                 }}
                 search={{

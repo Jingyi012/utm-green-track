@@ -3,10 +3,11 @@ import { createDepartment, deleteDepartment, getAllDepartment, updateDepartment 
 import { Department } from "@/lib/types/typing";
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { ActionType, ModalForm, ProColumns, ProFormText, ProTable } from "@ant-design/pro-components";
-import { Button, message, Popconfirm } from "antd";
+import { App, Button, Popconfirm } from "antd";
 import { useRef, useState } from "react";
 
 export const DepartmentConfig: React.FC = () => {
+    const { message } = App.useApp();
     const [loading, setLoading] = useState<boolean>(false);
     const [configData, setConfigData] = useState<Department[]>([]);
     const [selectedDepartment, setSelectedDepartment] = useState<Department>();
@@ -156,6 +157,7 @@ export const DepartmentConfig: React.FC = () => {
     return (<>
         <ProTable<Department>
             headerTitle={'Departments'}
+            key={"id"}
             loading={loading}
             actionRef={actionRef}
             dataSource={configData}
@@ -177,6 +179,9 @@ export const DepartmentConfig: React.FC = () => {
             title="Edit Department"
             open={modalOpen}
             initialValues={selectedDepartment || {}}
+            modalProps={{
+                destroyOnClose: true,
+            }}
             onOpenChange={(open) => {
                 if (!open) {
                     setSelectedDepartment(undefined);
@@ -210,6 +215,12 @@ export const DepartmentConfig: React.FC = () => {
         <ModalForm
             title="Add Department"
             open={addModalOpen}
+            modalProps={{
+                destroyOnClose: true,
+                onCancel: () => {
+                    setAddModalOpen(false)
+                },
+            }}
             onOpenChange={(open) => {
                 if (!open) {
                     setAddModalOpen(false)
