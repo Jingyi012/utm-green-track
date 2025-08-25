@@ -1,17 +1,21 @@
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
 import AuthLayout from "@/components/layout/AuthLayout";
+import { Spin } from "antd";
+import { Suspense } from "react";
 
 export default function ResetPasswordPage() {
     return (
-        <AuthLayout
-            title="Reset Your Password"
-            subtitle="Secure Account Recovery"
-            containerSize="small"
-            headerHeight="large"
-            footerMessage="Secure access to sustainable journey"
-            footerIcon="🔒"
-        >
-            <ResetPasswordForm />
-        </AuthLayout>
+        <Suspense fallback={<Spin />}>
+            <AuthLayout
+                title="Reset Your Password"
+                subtitle="Secure Account Recovery"
+                containerSize="small"
+                headerHeight="large"
+                footerMessage="Secure access to sustainable journey"
+                footerIcon="🔒"
+            >
+                <ResetPasswordForm />
+            </AuthLayout>
+        </Suspense>
     );
 }

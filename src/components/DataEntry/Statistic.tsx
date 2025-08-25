@@ -15,7 +15,7 @@ import {
 } from '@ant-design/icons';
 import { exportExcelWasteStatistics, exportPdfWasteStatistics, getWasteStatisticByYear } from '@/lib/services/wasteRecord';
 import { formatNumber } from '@/lib/utils/formatter';
-import { confirmAction } from '@/lib/utils/confirmAction';
+import { useConfirmAction } from '@/hook/confirmAction';
 import { MonthlyStatisticByYearResponse } from '@/lib/types/wasteSummary';
 import { useWasteRecordDropdownOptions } from '@/hook/options';
 import { MONTH_LABELS_SHORT } from '@/lib/enum/monthName';
@@ -112,6 +112,7 @@ const transformWasteData = (rawData: MonthlyStatisticByYearResponse, disposalMet
 
 const WasteManagementTable: React.FC = () => {
     const { message } = App.useApp();
+    const confirmAction = useConfirmAction();
     const { disposalMethods, isLoading } = useWasteRecordDropdownOptions();
     const [year, setYear] = useState<number>(currentYear);
     const [data, setData] = useState<{ rawData: MonthlyStatisticByYearResponse; tableData: StatisticRow[], categoryTotals: any } | null>(null);
