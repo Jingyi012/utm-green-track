@@ -97,7 +97,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <Menu
                         theme="light"
                         mode="inline"
-                        //defaultOpenKeys={['/data-entry', '/settings']}
                         selectedKeys={[pathname]}
                         defaultOpenKeys={parentKey ? [parentKey] : []}
                         items={filterMenuByRole(menuItems, user?.roles)}

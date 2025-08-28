@@ -7,6 +7,8 @@ import {
   UsergroupAddOutlined,
   UnorderedListOutlined,
   MessageOutlined,
+  BulbOutlined,
+  ToolOutlined,
 } from '@ant-design/icons';
 import { MenuProps } from 'antd';
 import React from 'react';
@@ -81,13 +83,13 @@ export const menuItems: AppMenuItem[] = [
   },
   {
     key: '/configurations',
-    icon: <SettingOutlined />,
+    icon: <ToolOutlined />,
     label: 'Configurations',
     roles: ['Admin'],
   },
   {
     key: '/waste-info',
-    icon: <InfoCircleOutlined />,
+    icon: <BulbOutlined />,
     label: 'Waste Info',
   },
   {
@@ -104,6 +106,11 @@ export const menuItems: AppMenuItem[] = [
         label: 'Change Password',
       }
     ]
+  },
+  {
+    key: '/about-us',
+    icon: <InfoCircleOutlined />,
+    label: 'About Us',
   },
 ];
 

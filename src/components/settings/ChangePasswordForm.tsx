@@ -39,7 +39,7 @@ const ChangePasswordForm = () => {
                                     { min: 8, message: 'Password must be at least 8 characters long' }
                                 ]}
                             >
-                                <Input />
+                                <Input placeholder="Please enter" />
                             </Form.Item>
                         </Col>
                         <Col xs={24}>
@@ -51,7 +51,7 @@ const ChangePasswordForm = () => {
                                     { min: 8, message: 'Password must be at least 8 characters long' },
                                 ]}
                             >
-                                <Input.Password />
+                                <Input.Password placeholder="Please enter" />
                             </Form.Item>
 
                         </Col>
@@ -72,7 +72,7 @@ const ChangePasswordForm = () => {
                                     }),
                                 ]}
                             >
-                                <Input.Password />
+                                <Input.Password placeholder="Please enter" />
                             </Form.Item>
 
                         </Col>

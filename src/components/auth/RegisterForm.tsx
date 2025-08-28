@@ -22,7 +22,7 @@ export default function RegistrationForm() {
     const handlePositionChange = (value: string) => {
         setSelectedPosition(value);
         // Clear roles when position changes
-        form.setFieldValue('role', undefined);
+        form.resetFields(['role']);
     };
 
     const roleOptions = useMemo(() => {
@@ -30,7 +30,7 @@ export default function RegistrationForm() {
         const position = positions.find(p => p.id === selectedPosition);
         if (!position) return [];
         return roles
-            .filter(r => r.category === position.name)
+            .filter(r => r.category === position.name && r.name != 'Admin')
             .map(r => ({
                 label: r.name,
                 value: r.name,

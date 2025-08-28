@@ -78,13 +78,17 @@ const EditProfileForm = () => {
 
     return (
         <>
-            <ProCard title={"Account Information"} loading={loading} extra={<>
-                {!editMode && (
-                    <Button type="primary" onClick={() => setEditMode(true)}>
-                        Edit Profile
-                    </Button>
-                )}
-            </>}>
+            <ProCard
+                title={"Account Information"}
+                headerBordered
+                loading={loading}
+                extra={<>
+                    {!editMode && (
+                        <Button type="primary" onClick={() => setEditMode(true)}>
+                            Edit Profile
+                        </Button>
+                    )}
+                </>}>
                 {userData && (
                     <ProForm
                         initialValues={{
