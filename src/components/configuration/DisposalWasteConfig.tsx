@@ -167,6 +167,7 @@ export default function DisposalWasteConfig() {
                     title={method.name}
                     loading={loading}
                     bordered
+                    collapsible
                     extra={
                         <Space>
                             {/* <Button size="small" onClick={() => setEditingMethod(method)}>

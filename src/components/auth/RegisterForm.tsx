@@ -22,7 +22,7 @@ export default function RegistrationForm() {
     const handlePositionChange = (value: string) => {
         setSelectedPosition(value);
         // Clear roles when position changes
-        form.setFieldValue('role', []);
+        form.setFieldValue('role', undefined);
     };
 
     const roleOptions = useMemo(() => {

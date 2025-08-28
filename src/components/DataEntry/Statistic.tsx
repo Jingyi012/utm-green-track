@@ -8,6 +8,9 @@ import {
     Space,
     Card,
     App,
+    Col,
+    Row,
+    Segmented,
 } from 'antd';
 import {
     FilePdfOutlined,
@@ -17,7 +20,7 @@ import { exportExcelWasteStatistics, exportPdfWasteStatistics, getWasteStatistic
 import { formatNumber } from '@/lib/utils/formatter';
 import { useConfirmAction } from '@/hook/confirmAction';
 import { MonthlyStatisticByYearResponse } from '@/lib/types/wasteSummary';
-import { useWasteRecordDropdownOptions } from '@/hook/options';
+import { useProfileDropdownOptions, useWasteRecordDropdownOptions } from '@/hook/options';
 import { MONTH_LABELS_SHORT } from '@/lib/enum/monthName';
 import { DisposalMethodWithWasteType } from '@/lib/types/typing';
 import { ColumnsType } from 'antd/es/table';
@@ -113,17 +116,26 @@ const transformWasteData = (rawData: MonthlyStatisticByYearResponse, disposalMet
 const WasteManagementTable: React.FC = () => {
     const { message } = App.useApp();
     const confirmAction = useConfirmAction();
-    const { disposalMethods, isLoading } = useWasteRecordDropdownOptions();
+    const { departments, isLoading: isDepartmentLoading } = useProfileDropdownOptions();
+    const { disposalMethods, campuses, isLoading } = useWasteRecordDropdownOptions();
     const [year, setYear] = useState<number>(currentYear);
     const [data, setData] = useState<{ rawData: MonthlyStatisticByYearResponse; tableData: StatisticRow[], categoryTotals: any } | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const [excelLoading, setExcelLoading] = useState<boolean>(false);
     const [pdfLoading, setPdfLoading] = useState<boolean>(false);
+    const [selectedCampus, setSelectedCampus] = useState<string | undefined>(undefined);
+    const [selectedDepartment, setSelectedDepartment] = useState<string | undefined>(undefined);
+    const [isPersonalView, setIsPersonalView] = useState<boolean>(true);
 
     const fetchData = async (selectedYear: number) => {
         setLoading(true);
         try {
-            const res = await getWasteStatisticByYear(selectedYear);
+            const res = await getWasteStatisticByYear({
+                year: selectedYear,
+                campus: selectedCampus,
+                departmentId: selectedDepartment,
+                isPersonalView: isPersonalView
+            });
             const transformed = transformWasteData(res.data, disposalMethods);
             setData({
                 rawData: res.data,
@@ -139,7 +151,13 @@ const WasteManagementTable: React.FC = () => {
         if (!isLoading && disposalMethods.length > 0) {
             fetchData(year);
         }
-    }, [year, disposalMethods, isLoading]);
+    }, [isLoading, disposalMethods]);
+
+    useEffect(() => {
+        if (disposalMethods.length > 0) {
+            fetchData(year);
+        }
+    }, [year, selectedCampus, selectedDepartment, isPersonalView]);
 
     const generateColumns = (disposalMethods: DisposalMethodWithWasteType[]) => {
         const columns: ColumnsType<StatisticRow> = [
@@ -181,7 +199,12 @@ const WasteManagementTable: React.FC = () => {
         try {
             setExcelLoading(true);
 
-            var response = await exportExcelWasteStatistics({ year })
+            var response = await exportExcelWasteStatistics({
+                year,
+                campus: selectedCampus,
+                departmentId: selectedDepartment,
+                isPersonalView: isPersonalView
+            });
             const contentDisposition = response.headers['content-disposition'];
             downloadFile(response.data, contentDisposition, `Waste_Statistic_${year}.xlsx`);
         } catch (err: any) {
@@ -201,7 +224,12 @@ const WasteManagementTable: React.FC = () => {
         const hide = message.loading("Generating PDF...");
         try {
             setPdfLoading(true);
-            var response = await exportPdfWasteStatistics({ year })
+            var response = await exportPdfWasteStatistics({
+                year,
+                campus: selectedCampus,
+                departmentId: selectedDepartment,
+                isPersonalView: isPersonalView
+            });
             const contentDisposition = response.headers['content-disposition'];
             downloadFile(response.data, contentDisposition, `Waste_Statistic_${year}.pdf`);
         } catch (err: any) {
@@ -213,33 +241,83 @@ const WasteManagementTable: React.FC = () => {
     };
 
     return (
-        <Card title={'Statistic'} loading={loading || isLoading}>
+        <Card title={'Statistic'} loading={isLoading || isDepartmentLoading}>
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
                 {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Space align="center">
-                        <span style={{ fontSize: '16px', fontWeight: 'bold' }}>Year:</span>
-                        <Select
-                            value={year}
-                            onChange={setYear}
-                            style={{ width: 120 }}
-                            options={yearOptions}
-                        />
-                    </Space>
-                    <Space>
-                        <Button loading={excelLoading} icon={<FileExcelOutlined />} onClick={handleExportExcel}>
-                            Excel
-                        </Button>
-                        <Button loading={pdfLoading} icon={<FilePdfOutlined />} danger onClick={handleExportPDF}>
-                            PDF
-                        </Button>
-                    </Space>
-                </div>
+                <Row gutter={[16, 16]} justify="space-between" align="middle">
+                    {/* Filters Section */}
+                    <Col flex="auto">
+                        <Space wrap size="middle">
+                            <Segmented
+                                value={isPersonalView}
+                                onChange={setIsPersonalView}
+                                options={[
+                                    { label: "Personal", value: true },
+                                    { label: "All", value: false },
+                                ]}
+                            />
 
+                            <Select
+                                value={year}
+                                onChange={setYear}
+                                style={{ width: 120 }}
+                                options={yearOptions}
+                                placeholder="Year"
+                            />
+
+                            <Select
+                                value={selectedCampus}
+                                onChange={setSelectedCampus}
+                                style={{ width: 160 }}
+                                placeholder="Campus"
+                                options={campuses.map((c) => ({
+                                    label: c.name,
+                                    value: c.name,
+                                }))}
+                                allowClear
+                            />
+
+                            <Select
+                                value={selectedDepartment}
+                                onChange={setSelectedDepartment}
+                                placeholder="Department"
+                                options={departments.map((d) => ({
+                                    label: d.name,
+                                    value: d.id,
+                                }))}
+                                style={{ minWidth: 350, width: 'auto' }}
+                                popupMatchSelectWidth
+                                showSearch
+                                allowClear
+                            />
+                        </Space>
+                    </Col>
+
+                    {/* Export Section */}
+                    <Col>
+                        <Space>
+                            <Button
+                                loading={excelLoading}
+                                icon={<FileExcelOutlined />}
+                                onClick={handleExportExcel}
+                            >
+                                Excel
+                            </Button>
+                            <Button
+                                loading={pdfLoading}
+                                icon={<FilePdfOutlined />}
+                                danger
+                                onClick={handleExportPDF}
+                            >
+                                PDF
+                            </Button>
+                        </Space>
+                    </Col>
+                </Row>
                 {/* Table */}
 
                 <Table
-                    loading={isLoading || loading}
+                    loading={isLoading || loading || isDepartmentLoading}
                     columns={columns}
                     dataSource={data?.tableData || []}
                     bordered

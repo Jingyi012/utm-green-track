@@ -113,11 +113,16 @@ export async function deleteAttachment(id: string, options?: { [key: string]: an
     });
 }
 
-export async function getWasteStatisticByYear(year: number,
+export async function getWasteStatisticByYear(params: {
+    year: number,
+    campus?: string
+    departmentId?: string,
+    isPersonalView?: boolean,
+},
     options?: { [key: string]: any },
 ) {
     return api.get<GeneralResponse<MonthlyStatisticByYearResponse>>(`${API_URL}/statistic`, {
-        params: { year },
+        params,
         ...options,
     });
 }
@@ -159,6 +164,9 @@ export async function exportPdfWasteRecords(params: {
 
 export async function exportExcelWasteStatistics(params: {
     year: number,
+    campus?: string
+    departmentId?: string,
+    isPersonalView?: boolean,
 },
     options?: { [key: string]: any },
 ) {
@@ -171,6 +179,9 @@ export async function exportExcelWasteStatistics(params: {
 
 export async function exportPdfWasteStatistics(params: {
     year: number,
+    campus?: string
+    departmentId?: string,
+    isPersonalView?: boolean,
 },
     options?: { [key: string]: any },
 ) {
