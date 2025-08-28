@@ -119,7 +119,7 @@ export default function AuthLayout({
                             <div className="absolute inset-0 bg-white rounded-full opacity-20 scale-110 group-hover:scale-125 transition-transform duration-300"></div>
                             <Image
                                 src="/images/logo2.png"
-                                alt="Green Tracking System Logo"
+                                alt="GreenTrack System Logo"
                                 height={currentLogoSize.height}
                                 width={currentLogoSize.width}
                                 className="object-contain relative z-10 drop-shadow-lg hover:scale-105 transition-transform duration-300"
@@ -174,7 +174,7 @@ export default function AuthLayout({
                     </div>
 
                     <div className="space-y-2 text-gray-600">
-                        <p className="font-medium">© {new Date().getFullYear()} UTM Green Tracking System</p>
+                        <p className="font-medium">© {new Date().getFullYear()} UTM GreenTrack System</p>
                         <p className="text-sm flex items-center justify-center space-x-2">
                             <span>{footerIcon}</span>
                             <span>{subtitle}</span>

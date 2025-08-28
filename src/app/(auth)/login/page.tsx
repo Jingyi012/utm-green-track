@@ -4,7 +4,7 @@ import AuthLayout from "@/components/layout/AuthLayout";
 export default function LoginPage() {
     return (
         <AuthLayout
-            title="UTM Green Tracking System"
+            title="UTM GreenTrack System"
             subtitle="Sustainable Campus Initiative"
             containerSize="small"
             headerHeight="large"
