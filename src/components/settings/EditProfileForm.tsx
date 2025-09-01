@@ -39,8 +39,8 @@ const EditProfileForm = () => {
             try {
                 const profile = await getProfile();
                 setUserData(profile.data);
-            } catch (error: any) {
-                message.error(error.message || 'Failed to load profile');
+            } catch (err: any) {
+                message.error(err?.response?.data?.message || 'Failed to load profile');
             } finally {
                 setLoading(false);
             }
@@ -69,8 +69,8 @@ const EditProfileForm = () => {
             } else {
                 message.error(res.message || 'Profile update failed');
             }
-        } catch (error: any) {
-            message.error(error.message || 'Profile update failed');
+        } catch (err: any) {
+            message.error(err?.response?.data?.message || 'Profile update failed');
         } finally {
             setSubmitting(false);
         }

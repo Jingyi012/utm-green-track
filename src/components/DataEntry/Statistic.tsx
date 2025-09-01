@@ -208,7 +208,7 @@ const WasteManagementTable: React.FC = () => {
             const contentDisposition = response.headers['content-disposition'];
             downloadFile(response.data, contentDisposition, `Waste_Statistic_${year}.xlsx`);
         } catch (err: any) {
-            message.error(err.message || 'Failed to generate excel');
+            message.error(err?.response?.data?.message || 'Failed to generate excel');
         } finally {
             setExcelLoading(false);
             hide();
@@ -233,7 +233,7 @@ const WasteManagementTable: React.FC = () => {
             const contentDisposition = response.headers['content-disposition'];
             downloadFile(response.data, contentDisposition, `Waste_Statistic_${year}.pdf`);
         } catch (err: any) {
-            message.error(err.message || 'Failed to generate pdf');
+            message.error(err?.response?.data?.message || 'Failed to generate pdf');
         } finally {
             setPdfLoading(false);
             hide();

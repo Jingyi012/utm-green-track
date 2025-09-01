@@ -17,8 +17,8 @@ export default function ForgotPasswordForm() {
             await forgotPassword(values.email);
             message.success(`Password reset link sent to ${values.email}`);
             form.resetFields();
-        } catch (error: any) {
-            message.error(error.message || 'Something went wrong');
+        } catch (err: any) {
+            message.error(err?.response?.data?.message || 'Something went wrong');
         } finally {
             setLoading(false);
         }

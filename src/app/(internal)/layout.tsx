@@ -90,7 +90,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <div className='h-[44px] m-[10px] flex justify-center items-center'>
                         <div className='flex justify-center items-center'>
                             <Image src="/images/logo2.png" alt="Logo" height={40} width={40} />
-                            <span style={{ fontWeight: 'bold', color: colorPrimary }}>UTM Green Track</span>
+                            <span className="ml-2 font-bold whitespace-nowrap" style={{ color: colorPrimary }}>UTM Green Track</span>
                         </div>
                     </div>
 

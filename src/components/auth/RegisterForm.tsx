@@ -50,8 +50,8 @@ export default function RegistrationForm() {
             } else {
                 message.error(res.message);
             }
-        } catch (error: any) {
-            message.error(error.message);
+        } catch (err: any) {
+            message.error(err?.response?.data?.message || 'Failed to register account, please try again later');
         } finally {
             setLoading(false);
         }

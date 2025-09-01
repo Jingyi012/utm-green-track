@@ -47,7 +47,7 @@ const ViewForm = () => {
                 total: res.totalCount
             }
         } catch (err: any) {
-            message.error(err.message || 'Failed to fetch records');
+            message.error(err?.response?.data?.message || 'Failed to fetch records');
             return {
                 data: [],
                 success: false,

@@ -55,8 +55,8 @@ export default function ResetPasswordForm() {
             } else {
                 message.error(res.message || 'Password reset failed');
             }
-        } catch (error: any) {
-            message.error(error.message || 'Password reset failed');
+        } catch (err: any) {
+            message.error(err?.response?.data?.message || 'Password reset failed');
         } finally {
             setSubmitting(false);
         }

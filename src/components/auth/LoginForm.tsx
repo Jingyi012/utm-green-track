@@ -32,8 +32,8 @@ export default function LoginForm() {
                 await login(res.data)
                 router.push('/dashboard');
             }
-        } catch {
-
+        } catch (err) {
+            message.error(err?.response?.data?.message || "Login failed, please try again");
         } finally {
             setLoading(false);
         }
