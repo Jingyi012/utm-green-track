@@ -9,6 +9,7 @@ import {
   MessageOutlined,
   BulbOutlined,
   ToolOutlined,
+  MailOutlined,
 } from '@ant-design/icons';
 import { MenuProps } from 'antd';
 import React from 'react';
@@ -106,6 +107,11 @@ export const menuItems: AppMenuItem[] = [
         label: 'Change Password',
       }
     ]
+  },
+  {
+    key: '/enquiry',
+    icon: <MailOutlined />,
+    label: 'Enquiry',
   },
   {
     key: '/about-us',

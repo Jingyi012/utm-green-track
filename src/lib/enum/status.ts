@@ -33,3 +33,13 @@ export const requestStatusLabels: Record<RequestStatus, string> = {
     [RequestStatus.Resolved]: "Resolved",
     [RequestStatus.Rejected]: "Rejected"
 };
+
+export enum EnquiryStatus {
+    Open = 0,
+    Closed = 1,
+}
+
+export const enquiryStatusLabels: Record<EnquiryStatus, string> = {
+    [EnquiryStatus.Open]: "Open",
+    [EnquiryStatus.Closed]: "Closed",
+};

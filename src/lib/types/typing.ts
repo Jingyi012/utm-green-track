@@ -96,3 +96,28 @@ export interface ChangeRequest {
     matricNo: string,
     createdAt: string
 }
+
+export interface Enquiry {
+    id: string,
+    subject: string,
+    userName: string,
+    status: number,
+    createdAt: string,
+}
+
+export interface EnquiryDetails extends Enquiry {
+    messages: EnquiryMessage[]
+}
+
+export interface EnquiryMessage {
+    id: string,
+    senderId: string,
+    senderName: string,
+    message: string,
+    createdAt: string
+}
+
+export interface EnquiryInput {
+    subject: string,
+    message: string
+}

@@ -12,3 +12,13 @@ export const toPascalCase = (str: string) =>
 export const dateFormatter = (date: string) => {
     return new Date(date).toLocaleDateString('en-GB')
 }
+
+export const dateTimeFormatter = (date: string | Date): string => {
+    const parsedDate = typeof date === 'string' ? new Date(date) : date;
+
+    if (isNaN(parsedDate.getTime())) {
+        return "-";
+    }
+
+    return parsedDate.toLocaleString();
+};
