@@ -79,12 +79,12 @@ export const GeneralConfig: React.FC = () => {
             render: (_: any, record: Config) => {
                 return (
                     <>
-                        <Button onClick={() => {
-                            setSelectedConfig(record);
-                            setModalOpen(true);
-                        }}>
-                            <EditOutlined />
-                        </Button>
+                        <Button
+                            icon={<EditOutlined />}
+                            onClick={() => {
+                                setSelectedConfig(record);
+                                setModalOpen(true);
+                            }} />
                     </>
                 )
             }
@@ -128,6 +128,11 @@ export const GeneralConfig: React.FC = () => {
                     return true;
                 }
                 return false;
+            }}
+            submitter={{
+                searchConfig: {
+                    submitText: 'Submit',
+                },
             }}
         >
             <ProFormText

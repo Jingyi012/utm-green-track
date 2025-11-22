@@ -3,6 +3,7 @@ import {
     ProFormSelect,
     ProFormText,
     DrawerForm,
+    ProFormTextArea,
 } from '@ant-design/pro-components';
 import { ProCard } from '@ant-design/pro-components';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -66,6 +67,8 @@ const UserDetailsDrawerForm: React.FC<UpdateFormDrawerProps> = ({
     useEffect(() => {
         setIsEditing(isEditMode)
     }, [isEditMode])
+
+    const watchStatus = Form.useWatch("status", form);
 
     return (
         <DrawerForm
@@ -182,7 +185,7 @@ const UserDetailsDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                     </Col>
                     <Col span={12}>
                         <ProFormSelect
-                            name={"roles"}
+                            name={"roleIds"}
                             label="Role"
                             rules={[{ required: true, message: 'Please select a role' }]}
                             placeholder="-- Please Choose --"
@@ -223,6 +226,25 @@ const UserDetailsDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                         />
                     </Col>
                 </Row>
+                {watchStatus === UserStatus.Rejected && (
+                    <Row gutter={16}>
+                        <Col span={24}>
+                            <ProFormTextArea
+                                name="rejectedReason"
+                                label="Rejected Reason"
+                                placeholder="Please enter reject reason"
+                                rules={[
+                                    {
+                                        required: true,
+                                        message: "Reject reason is required when status is Rejected",
+                                    },
+                                ]}
+                                disabled={!isEditing}
+                            />
+                        </Col>
+                    </Row>
+                )}
+
                 <ProFormText
                     name="id"
                     label="id"

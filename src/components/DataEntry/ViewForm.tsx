@@ -184,6 +184,10 @@ const ViewForm = () => {
                     text: wasteRecordStatusLabels[WasteRecordStatus.Rejected],
                     status: 'Error',
                 },
+                [WasteRecordStatus.RevisionRequired]: {
+                    text: wasteRecordStatusLabels[WasteRecordStatus.RevisionRequired],
+                    status: 'Warning',
+                },
             },
             align: 'center' as const,
         },
@@ -194,7 +198,7 @@ const ViewForm = () => {
             render: (_: any, record: WasteRecord) => {
                 return (
                     <>
-                        {record.status != WasteRecordStatus.Verified &&
+                        {record.status != WasteRecordStatus.Verified && record.status != WasteRecordStatus.RevisionRequired &&
                             (<Button onClick={() => {
                                 setSelectedRecord(record);
                                 setChangeRequestModalOpen(true);
@@ -273,14 +277,9 @@ const ViewForm = () => {
                     loading={loading}
                     request={(params: any, sort: Record<string, SortOrder>, filter: Record<string, (string | number)[] | null>) => {
                         return fetchData({
+                            ...params,
                             pageNumber: params.current ?? 1,
                             pageSize: params.pageSize ?? 20,
-                            campus: params?.campus,
-                            disposalMethod: params?.disposalMethod,
-                            wasteType: params?.wasteType,
-                            status: params?.status,
-                            fromDate: params?.fromDate,
-                            toDate: params?.toDate,
                         });
                     }}
                     pagination={{
@@ -292,18 +291,6 @@ const ViewForm = () => {
                     rowKey="id"
                     options={false}
                     toolbar={{
-                        // search: (
-                        //     <Input
-                        //         placeholder="Search"
-                        //         prefix={<SearchOutlined />}
-                        //         value={search}
-                        //         onChange={(e) => {
-                        //             setSearch(e.target.value);
-                        //             setPage(1);
-                        //         }}
-                        //         style={{ width: 200 }}
-                        //     />
-                        // ),
                         actions: [
                             <Button
                                 key="excel"
@@ -328,22 +315,6 @@ const ViewForm = () => {
                         labelWidth: 'auto',
                     }}
                 />
-
-                <style jsx global>{`
-                .ant-table-thead > tr > th {
-                    background-color: #d9ead3 !important;
-                    text-align: center;
-                }
-                .ant-table-cell {
-                    text-align: center;
-                }
-                .ant-pagination-total-text {
-                    float: right;
-                    margin-top: 8px;
-                    font-weight: 500;
-                    font-family: monospace;
-                }
-            `}</style>
             </Card>
             <ExportModal
                 open={!!modalOpen}
@@ -380,6 +351,11 @@ const ViewForm = () => {
                     } else {
                         return false;
                     }
+                }}
+                submitter={{
+                    searchConfig: {
+                        submitText: 'Submit',
+                    },
                 }}
             >
                 <ProFormText

@@ -16,6 +16,7 @@ interface AuthContextType {
     login: (data: User) => void;
     logout: () => void;
     hasRole: (role: string) => boolean;
+    isAdmin: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +47,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return user?.roles?.includes(role) ?? false;
     };
 
+    const isAdmin = user?.roles?.includes('Admin') ?? false;
+
     return (
         <AuthContext.Provider
             value={{
@@ -54,6 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 login,
                 logout,
                 hasRole,
+                isAdmin,
             }}
         >
             {children}

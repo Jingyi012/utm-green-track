@@ -1,4 +1,4 @@
-import AboutSection from "@/components/aboutUs/AboutSection";
+import HomeSection from "@/components/home/HomeSection";
 import CustomBreadcrumb from "@/components/breadcrumb/CustomBreadcrumb";
 
 export default function AboutUsPage() {
@@ -7,7 +7,7 @@ export default function AboutUsPage() {
             <CustomBreadcrumb items={[
                 { title: 'About Us' }
             ]} />
-            <AboutSection />
+            <HomeSection />
         </div>
     );
 }

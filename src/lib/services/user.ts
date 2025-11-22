@@ -43,6 +43,7 @@ export async function getAllUsers(params: {
 export async function updateUserApprovalStatus(body: {
     userIds: string[];
     status?: number;
+    rejectedReason?: string;
 },
     options?: { [key: string]: any }) {
     return api.post<GeneralResponse<number>>(`${API_URL}/approval`, body, { ...options });
@@ -61,4 +62,10 @@ export async function updateUser(body: {
 },
     options?: { [key: string]: any }) {
     return api.put<GeneralResponse<UserDetails>>(`${API_URL}`, body, { ...options });
+}
+
+export async function deleteUser(
+    userId: string,
+    options?: { [key: string]: any }) {
+    return api.delete<GeneralResponse<string>>(`${API_URL}/${userId}`, { ...options });
 }

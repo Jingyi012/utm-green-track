@@ -30,7 +30,7 @@ export default function LoginForm() {
             } else {
                 message.success('Login successful');
                 await login(res.data)
-                router.push('/dashboard');
+                router.push('/home');
             }
         } catch (err) {
             message.error(err?.response?.data?.message || "Login failed, please try again");

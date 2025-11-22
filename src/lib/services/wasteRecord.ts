@@ -1,6 +1,6 @@
 import { UploadFile } from "antd";
 import { GeneralResponse, PagedResponse } from "../types/apiResponse";
-import { WasteRecord, WasteRecordFilter } from "../types/wasteRecord";
+import { WasteRecord, WasteRecordFilter, WasteRecordInput } from "../types/wasteRecord";
 import { CampusYearlySummaryResponse, MonthlyStatisticByYearResponse } from "../types/wasteSummary";
 import api from "../utils/axios";
 
@@ -8,16 +8,7 @@ const API_URL = '/api/waste-records';
 
 export async function createWasteRecords(
     body: {
-        wasteRecords: {
-            campus: string;
-            disposalMethodId: string;
-            wasteTypeId: string;
-            wasteWeight: number;
-            location?: string;
-            activity?: string;
-            date: string;
-            attachments?: File[];
-        }[];
+        wasteRecords: WasteRecordInput[]
     },
     options?: { [key: string]: any }
 ) {
@@ -25,7 +16,8 @@ export async function createWasteRecords(
 
     // Build each record
     body.wasteRecords.forEach((record, i) => {
-        formData.append(`WasteRecords[${i}].Campus`, record.campus);
+        formData.append(`WasteRecords[${i}].CampusId`, record.campusId);
+        formData.append(`WasteRecords[${i}].DepartmentId`, record.departmentId);
         formData.append(`WasteRecords[${i}].DisposalMethodId`, record.disposalMethodId);
         formData.append(`WasteRecords[${i}].WasteTypeId`, record.wasteTypeId);
         formData.append(`WasteRecords[${i}].WasteWeight`, record.wasteWeight.toString());
@@ -35,8 +27,16 @@ export async function createWasteRecords(
             formData.append(`WasteRecords[${i}].Location`, record.location);
         }
 
-        if (record.activity) {
-            formData.append(`WasteRecords[${i}].Activity`, record.activity);
+        if (record.unit) {
+            formData.append(`WasteRecords[${i}].Unit`, record.unit);
+        }
+
+        if (record.program) {
+            formData.append(`WasteRecords[${i}].Program`, record.program);
+        }
+
+        if (record.programDate) {
+            formData.append(`WasteRecords[${i}].ProgramDate`, record.programDate);
         }
 
         // Append attachments for this record
@@ -63,6 +63,7 @@ export async function getWasteRecordsPaginated(params: WasteRecordFilter,
 export async function updateWasteRecordApprovalStatus(body: {
     wasteRecordIds: string[];
     status?: number;
+    comment?: string;
 },
     options?: { [key: string]: any }) {
     return api.post<GeneralResponse<number>>(`${API_URL}/approval`, body, { ...options });
@@ -78,6 +79,7 @@ export async function updateWasteRecord(id: string, body: {
     activity?: string;
     status?: number;
     date?: string;
+    comment?: string;
 },
     options?: { [key: string]: any }) {
     return api.put<GeneralResponse<string>>(`${API_URL}/${id}`, body, { ...options });
@@ -115,7 +117,7 @@ export async function deleteAttachment(id: string, options?: { [key: string]: an
 
 export async function getWasteStatisticByYear(params: {
     year: number,
-    campus?: string
+    campusId?: string
     departmentId?: string,
     isPersonalView?: boolean,
 },
@@ -127,11 +129,11 @@ export async function getWasteStatisticByYear(params: {
     });
 }
 
-export async function getCampusYearlySummary(campus: string, year: number,
+export async function getCampusYearlySummary(campusId: string, year: number,
     options?: { [key: string]: any },
 ): Promise<GeneralResponse<CampusYearlySummaryResponse>> {
     return api.get<GeneralResponse<CampusYearlySummaryResponse>>(`${API_URL}/yearly-summary`, {
-        params: { campus, year },
+        params: { campusId, year },
         ...options,
     });
 }
@@ -164,7 +166,7 @@ export async function exportPdfWasteRecords(params: {
 
 export async function exportExcelWasteStatistics(params: {
     year: number,
-    campus?: string
+    campusId?: string
     departmentId?: string,
     isPersonalView?: boolean,
 },
@@ -179,7 +181,7 @@ export async function exportExcelWasteStatistics(params: {
 
 export async function exportPdfWasteStatistics(params: {
     year: number,
-    campus?: string
+    campusId?: string
     departmentId?: string,
     isPersonalView?: boolean,
 },

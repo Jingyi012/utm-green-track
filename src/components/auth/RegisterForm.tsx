@@ -122,6 +122,24 @@ export default function RegistrationForm() {
                     </Col>
 
                     <Col xs={24} md={12}>
+                        <ProFormText
+                            name="staffMatricNo"
+                            label="Staff / Matric No."
+                            placeholder="e.g. A21MJ1234 / MJIIT7890"
+                            rules={[{ required: true, message: 'Please enter staff / matric No.' }]}
+                        />
+                    </Col>
+
+                    <Col xs={24} md={12}>
+                        <ProFormText
+                            name="contactNumber"
+                            label="Contact Number"
+                            placeholder="e.g. +60123456789"
+                            rules={[{ required: true, message: 'Please enter your contact number' }]}
+                        />
+                    </Col>
+
+                    <Col xs={24} md={12}>
                         <ProFormSelect
                             name="departmentId"
                             label="Faculty / Department / College"
@@ -137,10 +155,10 @@ export default function RegistrationForm() {
 
                     <Col xs={24} md={12}>
                         <ProFormText
-                            name="contactNumber"
-                            label="Contact Number"
-                            placeholder="e.g. +60123456789"
-                            rules={[{ required: true, message: 'Please enter your contact number' }]}
+                            name="unit"
+                            label="PTJ / Unit"
+                            placeholder="Enter your PTJ / unit"
+                            rules={[]}
                         />
                     </Col>
 
@@ -196,15 +214,6 @@ export default function RegistrationForm() {
                                     },
                                 }),
                             ]}
-                        />
-                    </Col>
-
-                    <Col xs={24} md={12}>
-                        <ProFormText
-                            name="staffMatricNo"
-                            label="Staff / Matric No."
-                            placeholder="e.g. A21MJ1234 / MJIIT7890"
-                            rules={[{ required: true, message: 'Please enter staff / matric No.' }]}
                         />
                     </Col>
                 </Row>

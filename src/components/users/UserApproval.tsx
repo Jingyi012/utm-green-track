@@ -4,23 +4,28 @@ import { useProfileDropdownOptions } from "@/hook/options";
 import { UserStatus, userStatusLabels } from "@/lib/enum/status";
 import { getAllUsers, updateUserApprovalStatus } from "@/lib/services/user";
 import { UserDetails } from "@/lib/types/typing";
-import { ActionType, FooterToolbar, ProColumns, ProTable } from "@ant-design/pro-components";
-import { App, Button, Popconfirm, Tabs, Tag } from "antd";
+import { ActionType, FooterToolbar, ModalForm, ProColumns, ProFormTextArea, ProTable } from "@ant-design/pro-components";
+import { App, Button, Tabs } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useEffect, useRef } from "react";
+import { getBaseUserColumns } from "./columns";
 
 const UserApproval: React.FC = () => {
     const { message } = App.useApp();
     const { positions, departments, roles, isLoading } = useProfileDropdownOptions();
     const [loading, setLoading] = useState<boolean>(false);
-    const [page, setPage] = useState<number>(1);
-    const [pageSize, setPagesize] = useState<number>(20);
-    const [data, setData] = useState<UserDetails[]>([]);
     const [statusFilter, setStatusFilter] = useState<UserStatus>(UserStatus.Pending);
     const [selectedRows, setSelectedRows] = useState<UserDetails[]>([]);
     const actionRef = useRef<ActionType | undefined>(undefined);
 
-    // Fetch users based on status, page, pageSize
+    const [rejectModalOpen, setRejectModalOpen] = useState(false);
+    const [rejectingUsers, setRejectingUsers] = useState<UserDetails[]>([]);
+
+    const openRejectModal = (users: UserDetails[]) => {
+        setRejectingUsers(users);
+        setRejectModalOpen(true);
+    };
+
     const fetchData = async (filter: {
         pageNumber: number,
         pageSize: number,
@@ -36,9 +41,6 @@ const UserApproval: React.FC = () => {
             const res = await getAllUsers({
                 ...filter,
             });
-            setData(res.data || []);
-            setPage(res.pageNumber);
-            setPagesize(res.pageSize);
             return {
                 data: res.data,
                 success: res.success,
@@ -46,7 +48,6 @@ const UserApproval: React.FC = () => {
             }
         } catch (err) {
             message.error("Failed to fetch users");
-            setData([]);
             return {
                 data: [],
                 success: false,
@@ -58,11 +59,15 @@ const UserApproval: React.FC = () => {
     };
 
     // Batch or single approve/reject
-    const handleStatusUpdate = async (users: UserDetails[], status: UserStatus) => {
+    const handleStatusUpdate = async (
+        users: UserDetails[],
+        status: UserStatus,
+        rejectedReason?: string
+    ) => {
         if (!users.length) return;
         try {
             const userIds = users.map(u => u.id);
-            const res = await updateUserApprovalStatus({ userIds, status });
+            const res = await updateUserApprovalStatus({ userIds, status, rejectedReason });
             if (res.success) {
                 message.success(`User status updated to ${userStatusLabels[status]}`);
             } else {
@@ -76,83 +81,7 @@ const UserApproval: React.FC = () => {
     };
 
     const columns: ProColumns<UserDetails>[] = [
-        {
-            title: "No.",
-            render: (_: any, __: any, index: number) =>
-                (page - 1) * pageSize + index + 1,
-            width: 60,
-            align: "center",
-            hideInSearch: true,
-        },
-        { title: "Name", dataIndex: "name", align: "center" },
-        { title: "Email", dataIndex: "email", align: "center" },
-        { title: "Contact", dataIndex: "contactNumber", align: "center" },
-        { title: "Staff / Matric No", dataIndex: "staffMatricNo", align: "center" },
-        {
-            title: "Position",
-            dataIndex: "positionId",
-            align: "center",
-            valueEnum: positions.reduce((acc, method) => {
-                acc[method.id] = { text: method.name };
-                return acc;
-            }, {} as Record<string, { text: string }>),
-            render: (_, record) => record.position ?? "-",
-        },
-        {
-            title: "Department",
-            dataIndex: "departmentId",
-            align: "center",
-            valueEnum: departments.reduce((acc, method) => {
-                acc[method.id] = { text: method.name };
-                return acc;
-            }, {} as Record<string, { text: string }>),
-            render: (_, record) => record.department ?? "-",
-        },
-        {
-            title: "Role",
-            dataIndex: "roles",
-            align: "center",
-            valueEnum: roles.reduce((acc, role) => {
-                acc[role.id] = { text: role.name };
-                return acc;
-            }, {} as Record<string, { text: string }>),
-            render: (_, record) => {
-                if (!record.roles || record.roles.length === 0) return "-";
-
-                return (
-                    <>
-                        {record.roles.map((roleId) => {
-                            const role = roles.find(r => r.id === roleId);
-                            return (
-                                <Tag key={roleId}>
-                                    {role ? role.name : roleId} {/* fallback if not found */}
-                                </Tag>
-                            );
-                        })}
-                    </>
-                );
-            },
-        },
-        {
-            title: "Status",
-            dataIndex: "status",
-            align: "center",
-            hideInSearch: true,
-            valueEnum: {
-                [UserStatus.Pending]: {
-                    text: userStatusLabels[UserStatus.Pending],
-                    status: "Default",
-                },
-                [UserStatus.Approved]: {
-                    text: userStatusLabels[UserStatus.Approved],
-                    status: "Success",
-                },
-                [UserStatus.Rejected]: {
-                    text: userStatusLabels[UserStatus.Rejected],
-                    status: "Error",
-                },
-            },
-        },
+        ...getBaseUserColumns({ positions, departments, roles }),
         {
             title: "Action",
             align: "center",
@@ -164,56 +93,52 @@ const UserApproval: React.FC = () => {
                             <Button
                                 type="link"
                                 onClick={() => handleStatusUpdate([record], UserStatus.Approved)}
-                                loading={loading}
-                            >
-                                Approve
-                            </Button>
-                            <Popconfirm
-                                title="Reject this user?"
-                                onConfirm={() => handleStatusUpdate([record], UserStatus.Rejected)}
-                            >
-                                <Button type="link" danger loading={loading}>
-                                    Reject
-                                </Button>
-                            </Popconfirm>
-                        </>
-                    );
-                }
-                else if (record.status === UserStatus.Approved) {
-                    return (
-                        <>
-                            <Popconfirm
-                                title="Reject this user?"
-                                onConfirm={() => handleStatusUpdate([record], UserStatus.Rejected)}
-                            >
-                                <Button type="link" danger loading={loading}>
-                                    Reject
-                                </Button>
-                            </Popconfirm>
-                        </>
-                    );
-                }
-                else if (record.status === UserStatus.Rejected) {
-                    return (
-                        <>
-                            <Button
-                                type="link"
-                                onClick={() => handleStatusUpdate([record], UserStatus.Approved)}
-                                loading={loading}
                             >
                                 Approve
                             </Button>
 
+                            <Button
+                                type="link"
+                                danger
+                                onClick={() => openRejectModal([record])}
+                            >
+                                Reject
+                            </Button>
                         </>
                     );
                 }
+
+                if (record.status === UserStatus.Approved) {
+                    return (
+                        <Button
+                            type="link"
+                            danger
+                            onClick={() => openRejectModal([record])}
+                        >
+                            Reject
+                        </Button>
+                    );
+                }
+
+                if (record.status === UserStatus.Rejected) {
+                    return (
+                        <Button
+                            type="link"
+                            onClick={() => handleStatusUpdate([record], UserStatus.Approved)}
+                        >
+                            Approve
+                        </Button>
+                    );
+                }
+
                 return "-";
-            },
-        },
+            }
+        }
+
     ];
 
     useEffect(() => {
-        actionRef.current?.reload();
+        actionRef.current?.reloadAndRest?.();
     }, [statusFilter])
 
     return (
@@ -223,7 +148,6 @@ const UserApproval: React.FC = () => {
                 onChange={(key) => {
                     setStatusFilter(parseInt(key) as UserStatus);
                     setSelectedRows([]);
-                    setPage(1);
                 }}
                 style={{ marginBottom: 16 }}
                 items={[
@@ -248,23 +172,14 @@ const UserApproval: React.FC = () => {
                 actionRef={actionRef}
                 loading={loading || isLoading}
                 columns={columns}
-                dataSource={data}
                 pagination={{
-                    current: page,
-                    pageSize,
-                    onChange: (p, ps) => {
-                        setPage(p);
-                        setPagesize(ps);
-                    },
+                    showSizeChanger: true
                 }}
                 request={(params: any, sort: Record<string, SortOrder>, filter: Record<string, (string | number)[] | null>) => {
                     return fetchData({
+                        ...params,
                         pageNumber: params.current ?? 1,
                         pageSize: params.pageSize ?? 20,
-                        email: params.email,
-                        contactNumber: params.contactNumber,
-                        departmentId: params?.departmentId,
-                        positionId: params?.positionId,
                         status: statusFilter,
                     });
                 }}
@@ -296,6 +211,35 @@ const UserApproval: React.FC = () => {
                     </Button>
                 </FooterToolbar>
             )}
+
+            <ModalForm
+                title="Reject User"
+                open={rejectModalOpen}
+                modalProps={{
+                    destroyOnClose: true,
+                    onCancel: () => setRejectModalOpen(false),
+                }}
+                onOpenChange={setRejectModalOpen}
+                onFinish={async (values) => {
+                    await handleStatusUpdate(rejectingUsers, UserStatus.Rejected, values.rejectedReason);
+                    return true;
+                }}
+                submitter={{
+                    searchConfig: {
+                        submitText: "Submit",
+                        resetText: "Cancel"
+                    }
+                }}
+            >
+                <ProFormTextArea
+                    name="rejectedReason"
+                    label="Reject Reason"
+                    placeholder="Enter reason for rejection"
+                    rules={[{ required: true, message: "Reject reason is required" }]}
+                    fieldProps={{ rows: 4 }}
+                />
+            </ModalForm>
+
         </>
     );
 };

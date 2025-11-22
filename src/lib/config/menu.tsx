@@ -10,6 +10,7 @@ import {
   BulbOutlined,
   ToolOutlined,
   MailOutlined,
+  HomeOutlined,
 } from '@ant-design/icons';
 import { MenuProps } from 'antd';
 import React from 'react';
@@ -21,6 +22,11 @@ export type AppMenuItem = Exclude<MenuProps["items"], undefined>[number] & {
 
 export const menuItems: AppMenuItem[] = [
   {
+    key: '/home',
+    icon: <HomeOutlined />,
+    label: 'Home',
+  },
+  {
     key: '/dashboard',
     icon: <DashboardOutlined />,
     label: 'Dashboard',
@@ -29,6 +35,7 @@ export const menuItems: AppMenuItem[] = [
     key: '/data-entry',
     icon: <FileTextOutlined />,
     label: 'Data Entry',
+    roles: ['Admin', 'Green Manager'],
     children: [
       {
         key: '/data-entry/new-form',
@@ -112,11 +119,6 @@ export const menuItems: AppMenuItem[] = [
     key: '/enquiry',
     icon: <MailOutlined />,
     label: 'Enquiry',
-  },
-  {
-    key: '/about-us',
-    icon: <InfoCircleOutlined />,
-    label: 'About Us',
   },
 ];
 

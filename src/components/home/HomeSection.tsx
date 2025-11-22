@@ -3,30 +3,36 @@ import React from 'react';
 import { Card, Row, Col, Typography } from 'antd';
 import {
     DashboardOutlined,
-    EditOutlined,
-    DatabaseOutlined,
+    FileTextOutlined,
+    BulbOutlined,
     SettingOutlined,
 } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
 
 const { Title, Paragraph } = Typography;
 
-export default function AboutSection() {
+export default function HomeSection() {
+    const router = useRouter();
     const features = [
         {
             icon: <DashboardOutlined style={{ fontSize: 32, color: '#52c41a' }} />,
             title: 'Dashboard',
+            path: '/dashboard',
         },
         {
-            icon: <EditOutlined style={{ fontSize: 32, color: '#1890ff' }} />,
+            icon: <FileTextOutlined style={{ fontSize: 32, color: '#1890ff' }} />,
             title: 'Data Entry',
+            path: '/data-entry/new-form',
         },
         {
-            icon: <DatabaseOutlined style={{ fontSize: 32, color: '#722ed1' }} />,
+            icon: <BulbOutlined style={{ fontSize: 32, color: '#722ed1' }} />,
             title: 'Waste Info',
+            path: '/waste-info',
         },
         {
             icon: <SettingOutlined style={{ fontSize: 32, color: '#fa8c16' }} />,
             title: 'Settings',
+            path: '/settings/edit-profile',
         },
     ];
 
@@ -48,7 +54,10 @@ export default function AboutSection() {
             <Row gutter={[16, 16]} justify="center" style={{ margin: '30px 0' }}>
                 {features.map((f, i) => (
                     <Col xs={24} sm={12} md={6} key={i}>
-                        <Card hoverable style={{ textAlign: 'center', borderRadius: 12 }}>
+                        <Card
+                            hoverable
+                            onClick={() => router.push(f.path)}
+                            style={{ textAlign: 'center', borderRadius: 12 }}>
                             {f.icon}
                             <div style={{ marginTop: 10, fontWeight: 500, fontSize: 18 }}>{f.title}</div>
                         </Card>

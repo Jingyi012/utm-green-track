@@ -1,20 +1,23 @@
 'use client';
 
-import { Modal, Button, Upload, App } from "antd";
+import { Modal, Button, Upload, App, Col, Row, Typography } from "antd";
 import {
     ProForm,
     ProFormSelect,
     ProFormText,
     ProFormDigit,
+    ProFormDateTimePicker,
 } from "@ant-design/pro-components";
 import { UploadOutlined } from "@ant-design/icons";
 import { WasteTypeWithEmissionFactor } from "@/lib/types/typing";
 import { useState, useEffect } from "react";
+const { Title } = Typography;
 
 type Props = {
     open: boolean;
     record: any | null;
     campuses: { id: string; name: string }[];
+    departments: { id: string; name: string }[];
     disposalMethods: {
         id: string;
         name: string;
@@ -28,6 +31,7 @@ export default function EditformModal({
     open,
     record,
     campuses,
+    departments,
     disposalMethods,
     onClose,
     onSave,
@@ -40,16 +44,16 @@ export default function EditformModal({
     useEffect(() => {
         if (record) {
             form.setFieldsValue(record);
-            const method = disposalMethods.find((dm) => dm.id === record.disposalMethod);
+            const method = disposalMethods.find((dm) => dm.id === record.disposalMethodId);
             setWasteTypes(method?.wasteTypes ?? []);
-            setSelectedDisposalMethod(record.disposalMethod);
+            setSelectedDisposalMethod(record.disposalMethodId);
         }
     }, [record, disposalMethods, form]);
 
     const handleDisposalMethodChange = (value: string) => {
         setSelectedDisposalMethod(value);
         const selectedMethod = disposalMethods.find((dm) => dm.id === value);
-        form.resetFields(["wasteType"]);
+        form.resetFields(["wasteTypeId"]);
         setWasteTypes(selectedMethod?.wasteTypes ?? []);
     };
 
@@ -74,91 +78,161 @@ export default function EditformModal({
                 submitter={false}
                 onFinish={handleFinish}
             >
-                <ProFormSelect
-                    name="campus"
-                    label="UTM Campus"
-                    placeholder="Please select campus"
-                    rules={[{ required: true, message: "Please select a campus" }]}
-                    options={campuses.map((campus) => ({
-                        label: campus.name,
-                        value: campus.name,
-                    }))}
-                    fieldProps={{
-                        showSearch: true,
-                    }}
-                />
+                <Title level={5}>Basic Information</Title>
+                <Row gutter={16}>
+                    <Col xs={24} md={12}>
+                        <ProFormSelect
+                            name="campusId"
+                            label="UTM Campus"
+                            placeholder="Please select campus"
+                            rules={[{ required: true, message: 'Please select a campus' }]}
+                            options={campuses.map((campus) => ({
+                                label: campus.name,
+                                value: campus.id,
+                            }))}
+                            fieldProps={{
+                                showSearch: true,
+                                optionFilterProp: "label",
+                            }}
+                        />
+                    </Col>
+                    <Col xs={24} md={12}>
+                        <ProFormSelect
+                            name="departmentId"
+                            label="Faculty / Department / College"
+                            placeholder="Select your department"
+                            options={departments.map((dept) => ({
+                                label: dept.name,
+                                value: dept.id,
+                            }))}
+                            rules={[{ required: true, message: 'Please select your faculty / department' }]}
+                            showSearch
+                        />
+                    </Col>
+                </Row>
+                <Row gutter={16}>
+                    <Col xs={24} md={12}>
+                        <ProFormText
+                            name="unit"
+                            label="PTJ / Unit"
+                            placeholder="Please enter PTJ / unit"
+                            rules={[{ required: true, message: 'Please enter PTJ / unit' }]}
+                        />
+                    </Col>
+                    <Col xs={24} md={12}>
+                        <ProFormText
+                            name="location"
+                            label="Location"
+                            placeholder="Please enter location"
+                            rules={[{ required: true, message: 'Please enter location' }]}
+                        />
+                    </Col>
+                </Row>
 
-                <ProFormText name="location" label="Location" placeholder="Please enter location" />
+                <Row gutter={16}>
+                    <Col xs={24} md={12}>
+                        <ProFormText
+                            name="program"
+                            label="Name of Program / Initiative (if any)"
+                            placeholder="Please enter program / initiative name"
+                            rules={[]}
+                        />
+                    </Col>
+                    <Col xs={24} md={12}>
+                        <ProFormDateTimePicker
+                            name="programDate"
+                            label="Date of Program / Initiative"
+                            placeholder="Please enter date of program / initiative"
+                            rules={[]}
+                        />
+                    </Col>
+                </Row>
 
-                <ProFormSelect
-                    name="disposalMethod"
-                    label="Disposal Method"
-                    placeholder="Please select disposal method"
-                    rules={[{ required: true, message: "Please select disposal method" }]}
-                    options={disposalMethods.map((method) => ({
-                        label: method.name,
-                        value: method.id,
-                    }))}
-                    fieldProps={{
-                        onChange: handleDisposalMethodChange,
-                        showSearch: true,
-                    }}
-                />
-
-                <ProFormSelect
-                    name="wasteType"
-                    label="Waste Type"
-                    placeholder="Please select waste type"
-                    rules={[{ required: true, message: "Please select waste type" }]}
-                    options={wasteTypes.map((wt) => ({
-                        label: wt.name,
-                        value: wt.id,
-                    }))}
-                    fieldProps={{
-                        disabled: !selectedDisposalMethod,
-                        showSearch: true,
-                    }}
-                />
-
-                <ProFormDigit
-                    name="wasteWeight"
-                    label="Waste Weight (kg)"
-                    placeholder="Please enter waste weight"
-                    rules={[{ required: true, message: "Please enter waste weight" }]}
-                    fieldProps={{
-                        min: 0,
-                        step: 0.1,
-                        precision: 2,
-                    }}
-                />
-
-                <ProForm.Item
-                    name="file"
-                    label="Attachment"
-                    rules={[{ required: false }]}
-                    valuePropName="fileList"
-                    getValueFromEvent={(e: { fileList: any; }) => {
-                        if (Array.isArray(e)) {
-                            return e;
-                        }
-                        return e?.fileList;
-                    }}
-                >
-                    <Upload
-                        beforeUpload={(file) => {
-                            const isLt5M = file.size / 1024 / 1024 < 5;
-                            if (!isLt5M) {
-                                message.error('File must be smaller than 5MB!');
-                                return Upload.LIST_IGNORE;
-                            }
-                            return false;
-                        }}
-                        multiple
-                        maxCount={5}
-                    >
-                        <Button icon={<UploadOutlined />}>Click to upload files</Button>
-                    </Upload>
-                </ProForm.Item>
+                <Title level={5} style={{ marginTop: 12 }}>Waste Information</Title>
+                <Row gutter={16}>
+                    <Col xs={24} md={12}>
+                        <ProFormSelect
+                            name="disposalMethodId"
+                            label="Disposal Method"
+                            placeholder="Please select disposal method"
+                            rules={[{ required: true, message: 'Please select disposal method' }]}
+                            options={disposalMethods.map((method) => ({
+                                label: method.name,
+                                value: method.id,
+                            }))}
+                            fieldProps={{
+                                onChange: handleDisposalMethodChange,
+                                showSearch: true,
+                                optionFilterProp: "label",
+                            }}
+                        />
+                    </Col>
+                    <Col xs={24} md={12}>
+                        <ProFormSelect
+                            name="wasteTypeId"
+                            label="Waste Type"
+                            placeholder="Please select waste type"
+                            rules={[{ required: true, message: 'Please select waste type' }]}
+                            options={wasteTypes.map(wt => ({
+                                label: wt.name,
+                                value: wt.id,
+                            }))}
+                            fieldProps={{
+                                disabled: !selectedDisposalMethod,
+                                showSearch: true,
+                                optionFilterProp: "label",
+                            }}
+                        />
+                    </Col>
+                    <Col xs={24} md={12}>
+                        <ProFormDigit
+                            name="wasteWeight"
+                            label="Waste Weight (kg)"
+                            placeholder="Please enter waste weight"
+                            rules={[{
+                                required: true,
+                                message: 'Please enter waste weight'
+                            }]}
+                            fieldProps={{
+                                min: 0,
+                                step: 0.1,
+                                precision: 2,
+                            }}
+                            min={0}
+                        />
+                    </Col>
+                    <Col xs={24} md={12}>
+                        <ProForm.Item
+                            name="attachments"
+                            label="Attachment"
+                            rules={[{
+                                required: true,
+                                message: 'Please upload attachment'
+                            }]}
+                            valuePropName="fileList"
+                            getValueFromEvent={(e: { fileList: any; }) => {
+                                if (Array.isArray(e)) {
+                                    return e;
+                                }
+                                return e?.fileList;
+                            }}
+                        >
+                            <Upload
+                                beforeUpload={(file) => {
+                                    const isLt5M = file.size / 1024 / 1024 < 5;
+                                    if (!isLt5M) {
+                                        message.error('File must be smaller than 5MB!');
+                                        return Upload.LIST_IGNORE;
+                                    }
+                                    return false;
+                                }}
+                                multiple
+                            >
+                                <Button icon={<UploadOutlined />}>Click to upload files</Button>
+                            </Upload>
+                        </ProForm.Item>
+                    </Col>
+                </Row>
 
                 <div className="flex justify-center gap-4 mt-6">
                     <Button onClick={onClose}>Cancel</Button>

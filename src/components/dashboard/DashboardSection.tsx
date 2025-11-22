@@ -142,8 +142,7 @@ const DashboardSection: React.FC = () => {
 
     useEffect(() => {
         if (campuses && campuses.length > 0) {
-            const defaultCampus = campuses.find((c) => c.name === "UTM Johor Bahru");
-            setSelectedCampus(defaultCampus?.name);
+            setSelectedCampus(campuses[0].id);
         }
     }, [campuses]);
 
@@ -152,6 +151,12 @@ const DashboardSection: React.FC = () => {
             fecthMonthlyData();
     }, [year, selectedCampus]);
 
+
+    const totals: Record<string, number> = monthlyChartData.reduce((acc, curr) => {
+        acc[curr.month] = (acc[curr.month] || 0) + curr.totalWeight;
+        return acc;
+    }, {});
+
     const config = {
         title: "UTM Solid Waste Generation Trends",
         data: monthlyChartData,
@@ -159,6 +164,12 @@ const DashboardSection: React.FC = () => {
         yField: 'totalWeight',
         stack: true,
         colorField: 'disposalMethod',
+        scale: {
+            color: {
+                domain: ['Landfilling', 'Recycling', 'Composting', 'Energy Recovery'],
+                range: ['#727272ff', '#2ffa14ff', '#ee752fff', '#1867ddff'],
+            }
+        },
         legend: {
             position: 'top',
         },
@@ -180,24 +191,59 @@ const DashboardSection: React.FC = () => {
         tooltip: {
             items: [
                 (datum: { totalWeight: number; }) => ({
-                    value: `${datum.totalWeight.toFixed(2)}`,
+                    value: `${datum.totalWeight.toFixed(2)
+                        }`,
                 }),
             ],
         },
+        annotations: Object.entries(totals).map(([month, total]) => ({
+            type: 'text',
+            data: [{ month, totalWeight: total }], // Fake data point for positioning
+            encode: { x: 'month', y: 'totalWeight' },
+            style: {
+                text: `${total.toFixed(2)}`,
+                textBaseline: 'bottom', // Sit on top of the bar
+                textAlign: 'center',
+                fontSize: 12,
+                fontWeight: 'bold',
+                fill: '#000', // Black text
+                dy: -2, // Move up slightly
+            },
+            tooltip: false, // Disable tooltip for this text
+        })),
     };
-
+    const totalSum = pieChartData.reduce((acc, curr) => acc + curr.totalWeight, 0);
     const pieConfig = {
         title: "Statistics of recyclable items by waste type",
         data: pieChartData,
         angleField: 'totalWeight',
         colorField: 'wasteType',
+        radius: 0.8,
+        innerRadius: 0.5,
         label: {
-            text: 'wasteType',
+            text: (d) => {
+                const percent = (d.totalWeight / totalSum) * 100;
+                return `${d.wasteType}\n${percent.toFixed(1)}%`;
+            },
             position: 'outside',
             style: {
                 fontWeight: 'bold',
             },
         },
+        annotations: [
+            {
+                type: 'text',
+                style: {
+                    text: `Total\n${totalSum.toFixed(2)} Tonnes`,
+                    x: '50%',
+                    y: '50%',
+                    textAlign: 'center',
+                    fontSize: 16,
+                    fontStyle: 'bold',
+                },
+                tooltip: false,
+            },
+        ],
         legend: {
             color: {
                 title: false,
@@ -207,7 +253,7 @@ const DashboardSection: React.FC = () => {
         },
         tooltip: {
             title: (datum: { disposalMethod: any; wasteType: any; }) => ({
-                value: `${datum.disposalMethod} - ${datum.wasteType}`,
+                value: `${datum.disposalMethod} - ${datum.wasteType} `,
             }),
             items: [
                 (datum: { totalWeight: number; }) => ({
@@ -229,7 +275,7 @@ const DashboardSection: React.FC = () => {
                         onChange={(value) => setSelectedCampus(value)}
                         options={(campuses).map((campus) => ({
                             label: campus.name,
-                            value: campus.name,
+                            value: campus.id,
                         }))}
                         style={{ width: '100%' }}
                     />

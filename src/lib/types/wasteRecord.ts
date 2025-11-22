@@ -3,21 +3,24 @@ export interface WasteRecord {
     id: string,
     campusId: string,
     campus: string,
+    departmentId: string,
+    department: string,
     disposalMethodId: string,
     disposalMethod: string,
     wasteTypeId: string,
     wasteType: string,
     location?: string,
-    activity?: string,
+    unit?: string,
+    program?: string,
+    programDate?: string,
     wasteWeight: number,
     status: number,
     date: string,
     attachments?: Attachment[],
     userId: string,
     user: string,
-    uploadedAttachments?: {
-        fileList: UploadFile[]
-    }
+    uploadedAttachments?: UploadFile[],
+    comment?: string,
 }
 
 export interface DisposalMethod {
@@ -33,23 +36,30 @@ export interface Attachment {
 
 export interface WasteRecordInput {
     key: string,
-    campus: string,
+    campusId: string,
+    departmentId: string,
     location?: string,
-    activity?: string,
-    disposalMethod: string,
+    unit?: string,
+    program?: string,
+    programDate?: string,
+    disposalMethodId: string,
     wasteWeight: number,
-    wasteType: string,
+    wasteTypeId: string,
     status: string,
     date: string,
-    file: UploadFile[]
+    attachments: File[]
 }
 
 export interface WasteRecordFilter {
     pageNumber: number;
     pageSize: number;
-    campus?: string;
-    wasteType?: string;
-    disposalMethod?: string;
+    campusId?: string;
+    departmentId?: string;
+    unit?: string;
+    program?: string;
+    location?: string;
+    wasteTypeId?: string;
+    disposalMethodId?: string;
     fromDate?: string;
     toDate?: string;
     status?: number;

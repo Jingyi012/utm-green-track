@@ -16,24 +16,34 @@ import {
     ProFormSelect,
     ProFormText,
     ProFormDigit,
+    ProFormDateTimePicker,
 } from '@ant-design/pro-components';
 import { EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { createWasteRecords } from '@/lib/services/wasteRecord';
 import { WasteRecordInput } from '@/lib/types/wasteRecord';
-import { useWasteRecordDropdownOptions } from '@/hook/options';
+import { useProfileDropdownOptions, useWasteRecordDropdownOptions } from '@/hook/options';
 import { WasteTypeWithEmissionFactor } from '@/lib/types/typing';
 import EditFormModal from './EditFormModal';
+import { useWasteEntryStore } from '@/lib/store/useWasteEntryStore';
+import { dateTimeFormatter } from '@/lib/utils/formatter';
 
 const { Title } = Typography;
 
 export default function WasteEntryForm() {
     const [form] = ProForm.useForm();
     const { message, modal } = App.useApp();
-
+    const { departments } = useProfileDropdownOptions();
     const { campuses, disposalMethods, isLoading } = useWasteRecordDropdownOptions();
-    const [tableData, setTableData] = useState<WasteRecordInput[]>([]);
-    const [editingRecord, setEditingRecord] = useState<any | null>(null);
+    const {
+        tableData,
+        addRecord,
+        updateRecord,
+        deleteRecord,
+        clearRecords,
+    } = useWasteEntryStore();
+
+    const [editingRecord, setEditingRecord] = useState<WasteRecordInput | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedDisposalMethod, setSelectedDisposalMethod] = useState<string>();
     const [wasteTypes, setWasteTypes] = useState<WasteTypeWithEmissionFactor[]>([]);
@@ -53,9 +63,9 @@ export default function WasteEntryForm() {
                 date: new Date().toLocaleDateString('en-GB'),
                 ...values,
                 wasteWeight: Number(values.wasteWeight),
-                file: values.file || [],
+                attachments: values.attachments || [],
             };
-            setTableData(prev => [...prev, newRow]);
+            addRecord(newRow);
             form.resetFields();
             setSelectedDisposalMethod(undefined);
             setWasteTypes([]);
@@ -70,9 +80,7 @@ export default function WasteEntryForm() {
     };
 
     const handleSaveEdit = (values: any, recordKey: string) => {
-        setTableData((prev) =>
-            prev.map((item) => (item.key === recordKey ? { ...item, ...values } : item))
-        );
+        updateRecord(recordKey, values);
         message.success('Row updated successfully');
     };
 
@@ -83,7 +91,7 @@ export default function WasteEntryForm() {
             okText: 'Yes, Delete',
             cancelText: 'Cancel',
             onOk: () => {
-                setTableData((prev) => prev.filter((item) => item.key !== key));
+                deleteRecord(key);
                 message.success('Row deleted successfully');
             },
         });
@@ -103,20 +111,13 @@ export default function WasteEntryForm() {
                 const hide = message.loading("Submitting records...", 0);
 
                 try {
-                    // Transform tableData into request format
-                    const wasteRecords = tableData.map((record: any) => ({
-                        campus: record.campus,
-                        disposalMethodId: record.disposalMethod,
-                        wasteTypeId: record.wasteType,
-                        wasteWeight: record.wasteWeight,
-                        location: record.location,
-                        activity: record.activity,
+                    const wasteRecords = tableData.map((record: WasteRecordInput) => ({
+                        ...record,
                         date: new Date().toISOString(),
-                        attachments: (record.file ?? [])
+                        attachments: (record.attachments ?? [])
                             .map((f: any) => f.originFileObj as File)
                             .filter(Boolean),
                     }));
-
                     // Batch submit all records in one request
                     const response = await createWasteRecords({
                         wasteRecords,
@@ -124,7 +125,7 @@ export default function WasteEntryForm() {
 
                     if (response && response.success) {
                         message.success("All waste records submitted successfully");
-                        setTableData([]);
+                        clearRecords();
                         form.resetFields();
                         setSelectedDisposalMethod(undefined);
                         setWasteTypes([]);
@@ -155,12 +156,26 @@ export default function WasteEntryForm() {
         },
         {
             title: 'UTM Campus',
-            dataIndex: 'campus',
-            render: (campusName: string) => {
-                const campus = campuses.find(c => c.name === campusName);
+            dataIndex: 'campusId',
+            render: (campusId: string) => {
+                const campus = campuses.find(c => c.id === campusId);
                 return campus?.name ?? '-';
             },
             width: 120,
+        },
+        {
+            title: 'Faculty / Department / College',
+            dataIndex: 'departmentId',
+            render: (departmentId: string) => {
+                const department = departments.find(d => d.id === departmentId);
+                return department?.name ?? "-";
+            },
+            width: 150,
+        },
+        {
+            title: 'PTJ / Unit',
+            dataIndex: 'unit',
+            width: 150,
         },
         {
             title: 'Location',
@@ -168,8 +183,21 @@ export default function WasteEntryForm() {
             width: 150,
         },
         {
+            title: 'Program Name',
+            dataIndex: 'program',
+            width: 150,
+        },
+        {
+            title: 'Name of Program / Initiative (if any)',
+            dataIndex: 'programDate',
+            width: 150,
+            render: (programDate: any) => {
+                return dateTimeFormatter(programDate);
+            }
+        },
+        {
             title: 'Disposal Method',
-            dataIndex: 'disposalMethod',
+            dataIndex: 'disposalMethodId',
             render: (methodId: string) => {
                 const method = disposalMethods.find(d => d.id === methodId);
                 return method?.name ?? "-";
@@ -178,9 +206,9 @@ export default function WasteEntryForm() {
         },
         {
             title: 'Waste Type',
-            dataIndex: 'wasteType',
+            dataIndex: 'wasteTypeId',
             render: (wasteTypeId: string, record: any) => {
-                const method = disposalMethods.find(d => d.id === record.disposalMethod);
+                const method = disposalMethods.find(d => d.id === record.disposalMethodId);
                 const wasteType = method?.wasteTypes.find(w => w.id === wasteTypeId);
                 return wasteType?.name ?? "-";
             },
@@ -193,12 +221,25 @@ export default function WasteEntryForm() {
         },
         {
             title: 'Attachment',
-            dataIndex: 'file',
-            render: (files: UploadFile[]) =>
-                files?.length > 0
-                    ? files.map((file, index) => (
-                        <div key={index}>{file.name}</div>
-                    ))
+            dataIndex: 'attachments',
+            render: (attachments: UploadFile[]) =>
+                attachments?.length > 0
+                    ? attachments.map((file, index) => {
+                        const blob = file.originFileObj;
+                        const url = blob ? URL.createObjectURL(blob) : null;
+
+                        return (
+                            <div key={index}>
+                                {url ? (
+                                    <a href={url} target="_blank" rel="noopener noreferrer">
+                                        {file.name}
+                                    </a>
+                                ) : (
+                                    file.name
+                                )}
+                            </div>
+                        );
+                    })
                     : 'None',
             width: 200,
         },
@@ -240,13 +281,13 @@ export default function WasteEntryForm() {
                     <Row gutter={16}>
                         <Col xs={24} md={12}>
                             <ProFormSelect
-                                name="campus"
+                                name="campusId"
                                 label="UTM Campus"
                                 placeholder="Please select campus"
                                 rules={[{ required: true, message: 'Please select a campus' }]}
                                 options={campuses.map((campus) => ({
                                     label: campus.name,
-                                    value: campus.name,
+                                    value: campus.id,
                                 }))}
                                 fieldProps={{
                                     showSearch: true,
@@ -255,13 +296,53 @@ export default function WasteEntryForm() {
                             />
                         </Col>
                         <Col xs={24} md={12}>
+                            <ProFormSelect
+                                name="departmentId"
+                                label="Faculty / Department / College"
+                                placeholder="Select your department"
+                                options={departments.map((dept) => ({
+                                    label: dept.name,
+                                    value: dept.id,
+                                }))}
+                                rules={[{ required: true, message: 'Please select your faculty / department' }]}
+                                showSearch
+                            />
+                        </Col>
+                    </Row>
+                    <Row gutter={16}>
+                        <Col xs={24} md={12}>
+                            <ProFormText
+                                name="unit"
+                                label="PTJ / Unit"
+                                placeholder="Please enter PTJ / unit"
+                                rules={[{ required: true, message: 'Please enter PTJ / unit' }]}
+                            />
+                        </Col>
+                        <Col xs={24} md={12}>
                             <ProFormText
                                 name="location"
                                 label="Location"
                                 placeholder="Please enter location"
-                                fieldProps={{
-                                    maxLength: 200,
-                                }}
+                                rules={[{ required: true, message: 'Please enter location' }]}
+                            />
+                        </Col>
+                    </Row>
+
+                    <Row gutter={16}>
+                        <Col xs={24} md={12}>
+                            <ProFormText
+                                name="program"
+                                label="Name of Program/Initiative (if any)"
+                                placeholder="Please enter program / initiative name"
+                                rules={[]}
+                            />
+                        </Col>
+                        <Col xs={24} md={12}>
+                            <ProFormDateTimePicker
+                                name="programDate"
+                                label="Date of Program/ Initiative"
+                                placeholder="Please enter date of program / initiative"
+                                rules={[]}
                             />
                         </Col>
                     </Row>
@@ -270,7 +351,7 @@ export default function WasteEntryForm() {
                     <Row gutter={16}>
                         <Col xs={24} md={12}>
                             <ProFormSelect
-                                name="disposalMethod"
+                                name="disposalMethodId"
                                 label="Disposal Method"
                                 placeholder="Please select disposal method"
                                 rules={[{ required: true, message: 'Please select disposal method' }]}
@@ -287,7 +368,7 @@ export default function WasteEntryForm() {
                         </Col>
                         <Col xs={24} md={12}>
                             <ProFormSelect
-                                name="wasteType"
+                                name="wasteTypeId"
                                 label="Waste Type"
                                 placeholder="Please select waste type"
                                 rules={[{ required: true, message: 'Please select waste type' }]}
@@ -321,9 +402,12 @@ export default function WasteEntryForm() {
                         </Col>
                         <Col xs={24} md={12}>
                             <ProForm.Item
-                                name="file"
+                                name="attachments"
                                 label="Attachment"
-                                rules={[{ required: false }]}
+                                rules={[{
+                                    required: true,
+                                    message: 'Please upload attachment'
+                                }]}
                                 valuePropName="fileList"
                                 getValueFromEvent={(e: { fileList: any; }) => {
                                     if (Array.isArray(e)) {
@@ -395,6 +479,7 @@ export default function WasteEntryForm() {
                 open={isModalOpen}
                 record={editingRecord}
                 campuses={campuses}
+                departments={departments}
                 disposalMethods={disposalMethods}
                 onClose={() => {
                     setIsModalOpen(false);

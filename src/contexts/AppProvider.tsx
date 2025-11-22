@@ -1,12 +1,25 @@
 'use client';
 
 import { App, ConfigProvider } from 'antd';
-import { ProConfigProvider, enUSIntl } from '@ant-design/pro-components';
+import { createIntl, ProConfigProvider } from '@ant-design/pro-components';
+import enUSIntl from '@ant-design/pro-provider/lib/locale/en_US';
 import enUS from "antd/locale/en_US";
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { AuthProvider } from './AuthContext';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
+    const myTranslationMap = {
+        ...enUSIntl,
+        tableForm: {
+            ...enUSIntl.tableForm,
+            search: 'Search',
+            submit: 'Submit',
+            reset: 'Reset',
+        },
+        // You can override other sections like 'moneySymbol', 'form', etc.
+    };
+    const customIntl = createIntl('en_US', myTranslationMap);
+
     return (
         <AntdRegistry>
             <ConfigProvider locale={enUS}
@@ -30,7 +43,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
                     }
                 }}
             >
-                <ProConfigProvider intl={enUSIntl}>
+                <ProConfigProvider intl={customIntl}>
                     <App>
                         <AuthProvider>
                             {children}

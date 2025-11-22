@@ -1,3 +1,10 @@
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 export function formatNumber(value: number | undefined | null): string {
     return (value ?? 0).toFixed(2);
 }
@@ -14,11 +21,11 @@ export const dateFormatter = (date: string) => {
 }
 
 export const dateTimeFormatter = (date: string | Date): string => {
-    const parsedDate = typeof date === 'string' ? new Date(date) : date;
+    const d = dayjs.tz(date, 'Asia/Kuala_Lumpur');
 
-    if (isNaN(parsedDate.getTime())) {
+    if (!d.isValid()) {
         return "-";
     }
 
-    return parsedDate.toLocaleString();
+    return d.format('DD MMM YYYY, h:mm A');
 };

@@ -1,24 +1,28 @@
 'use client';
 
-import { useWasteRecordDropdownOptions } from "@/hook/options";
+import { useProfileDropdownOptions, useWasteRecordDropdownOptions } from "@/hook/options";
 import { wasteRecordStatusLabels, WasteRecordStatus } from "@/lib/enum/status";
 import { getWasteRecordsPaginated, updateWasteRecordApprovalStatus } from "@/lib/services/wasteRecord";
 import { WasteRecord, WasteRecordFilter } from "@/lib/types/wasteRecord";
-import { ActionType, FooterToolbar, ProColumns, ProTable } from "@ant-design/pro-components";
-import { App, Button, Popconfirm, Tabs, Tooltip } from "antd";
+import { ActionType, FooterToolbar, ModalForm, ProColumns, ProFormTextArea, ProTable } from "@ant-design/pro-components";
+import { App, Button, Tabs } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useEffect, useRef } from "react";
+import { CommentButton } from "./CommentButton";
+import { getBaseColumns } from './columns';
 
 const WasteRecordApproval: React.FC = () => {
     const { message } = App.useApp();
+    const { departments } = useProfileDropdownOptions();
     const { campuses, disposalMethods, isLoading } = useWasteRecordDropdownOptions();
     const [loading, setLoading] = useState<boolean>(false);
-    const [page, setPage] = useState<number>(1);
-    const [pageSize, setPagesize] = useState<number>(20);
-    const [data, setData] = useState<WasteRecord[]>([]);
     const [statusFilter, setStatusFilter] = useState<WasteRecordStatus>(WasteRecordStatus.New);
     const [selectedRows, setSelectedRows] = useState<WasteRecord[]>([]);
     const actionRef = useRef<ActionType | undefined>(undefined);
+
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalStatus, setModalStatus] = useState<WasteRecordStatus | null>(null);
+    const [modalRecords, setModalRecords] = useState<WasteRecord[]>([]);
 
     const fetchData = async (filter: WasteRecordFilter) => {
         setLoading(true);
@@ -26,9 +30,6 @@ const WasteRecordApproval: React.FC = () => {
             const res = await getWasteRecordsPaginated({
                 ...filter,
             });
-            setData(res.data || []);
-            setPage(res.pageNumber);
-            setPagesize(res.pageSize);
             return {
                 data: res.data,
                 success: res.success,
@@ -36,7 +37,6 @@ const WasteRecordApproval: React.FC = () => {
             }
         } catch (err) {
             message.error("Failed to fetch waste records");
-            setData([]);
             return {
                 data: [],
                 success: false,
@@ -48,11 +48,11 @@ const WasteRecordApproval: React.FC = () => {
     };
 
     // Batch or single approve/reject
-    const handleStatusUpdate = async (records: WasteRecord[], status: WasteRecordStatus) => {
+    const handleStatusUpdate = async (records: WasteRecord[], status: WasteRecordStatus, comment?: string) => {
         if (!records.length) return;
         try {
             const wasteRecordIds = records.map(u => u.id);
-            const res = await updateWasteRecordApprovalStatus({ wasteRecordIds, status });
+            const res = await updateWasteRecordApprovalStatus({ wasteRecordIds, status, comment });
             if (res.success) {
                 message.success(`Waste record status updated to ${wasteRecordStatusLabels[status]}`);
             } else {
@@ -65,192 +65,120 @@ const WasteRecordApproval: React.FC = () => {
         }
     };
 
-    const columns: ProColumns[] = [
-        {
-            title: 'No.',
-            render: (_: any, __: any, index: number) => (page - 1) * pageSize + index + 1,
-            width: 60,
-            align: 'center' as const,
-            hideInSearch: true,
-        },
-        {
-            title: 'Date',
-            dataIndex: 'date',
-            render: (_: any, record: WasteRecord) => new Date(record.date).toLocaleDateString('en-GB'),
-            align: 'center' as const,
-            hideInSearch: true,
-        },
-        {
-            title: 'UTM Campus',
-            dataIndex: 'campus',
-            valueEnum: campuses.reduce((acc, campus) => {
-                acc[campus.name] = { text: campus.name };
-                return acc;
-            }, {} as Record<string, { text: string }>),
-            render: (_: any, record: WasteRecord) => record.campus,
-            align: 'center' as const
-        },
-        {
-            title: 'Location',
-            dataIndex: 'location',
-            align: 'center' as const,
-            hideInSearch: true,
-        },
-        {
-            title: 'Disposal Method',
-            dataIndex: 'disposalMethod',
-            valueEnum: disposalMethods.reduce((acc, method) => {
-                acc[method.name] = { text: method.name };
-                return acc;
-            }, {} as Record<string, { text: string }>),
-            render: (_: any, record: WasteRecord) => record.disposalMethod,
-            align: 'center' as const
-        },
-        {
-            title: 'Waste Type',
-            dataIndex: 'wasteType',
-            valueEnum: Array.from(
-                new Set(
-                    disposalMethods.flatMap(method =>
-                        method.wasteTypes.map(waste => waste.name)
-                    )
-                )
-            ).reduce((acc, name) => {
-                acc[name] = { text: name };
-                return acc;
-            }, {} as Record<string, { text: string }>),
-            render: (_: any, record: WasteRecord) => record.wasteType,
-            align: 'center' as const
-        },
-        {
-            title: 'Waste Weight (kg)',
-            dataIndex: 'wasteWeight',
-            align: 'center' as const,
-            hideInSearch: true,
-        },
-        {
-            title: 'Attachment',
-            dataIndex: 'attachments',
-            render: (_: any, record: WasteRecord) => {
-                const attachments = Array.isArray(record.attachments) ? record.attachments : [];
-
-                if (attachments.length === 0) return '-';
-
-                return attachments.map((file, index) => (
-                    <Tooltip title="View Attachment" key={index}>
-                        <a href={file.filePath} target="_blank" rel="noopener noreferrer" style={{ marginRight: 8 }}>
-                            {file.fileName}
-                        </a>
-                    </Tooltip>
-                ));
-            },
-            hideInSearch: true,
-        },
-        {
-            title: 'Status',
-            dataIndex: 'status',
-            hideInSearch: true,
-            valueEnum: {
-                [WasteRecordStatus.New]: {
-                    text: wasteRecordStatusLabels[WasteRecordStatus.New],
-                    status: 'Default',
-                },
-                [WasteRecordStatus.Verified]: {
-                    text: wasteRecordStatusLabels[WasteRecordStatus.Verified],
-                    status: 'Success',
-                },
-                [WasteRecordStatus.Rejected]: {
-                    text: wasteRecordStatusLabels[WasteRecordStatus.Rejected],
-                    status: 'Error',
-                },
-            },
-            align: 'center' as const,
-        },
-        {
-            title: 'Date Range',
-            dataIndex: 'date',
-            valueType: 'dateRange',
-            hideInTable: true,
-            fieldProps: {
-                format: 'YYYY-MM-DD',
-            },
-            search: {
-                transform: (value: any) => {
-                    if (value && value.length === 2) {
-                        const start = new Date(value[0]);
-                        const end = new Date(value[1]);
-                        end.setHours(23, 59, 59, 999);
-
-                        return {
-                            fromDate: start.toISOString(),
-                            toDate: end.toISOString(),
-                        };
-                    }
-                    return {};
-                }
-            }
-        },
+    const columns: ProColumns<WasteRecord>[] = [
+        ...getBaseColumns({ campuses, departments, disposalMethods }),
         {
             title: "Action",
             align: "center",
             hideInSearch: true,
             render: (_, record) => {
+                const openCommentModal = (status: WasteRecordStatus) => {
+                    setModalStatus(status);
+                    setModalRecords([record]);
+                    setModalOpen(true);
+                };
+
                 if (record.status === WasteRecordStatus.New) {
                     return (
                         <>
                             <Button
                                 type="link"
                                 onClick={() => handleStatusUpdate([record], WasteRecordStatus.Verified)}
-                                loading={loading}
                             >
                                 Verify
                             </Button>
-                            <Popconfirm
-                                title="Reject this record?"
-                                onConfirm={() => handleStatusUpdate([record], WasteRecordStatus.Rejected)}
+
+                            {/* Reject → needs comment */}
+                            <Button
+                                type="link"
+                                danger
+                                onClick={() => openCommentModal(WasteRecordStatus.Rejected)}
                             >
-                                <Button type="link" danger loading={loading}>
-                                    Reject
-                                </Button>
-                            </Popconfirm>
+                                Reject
+                            </Button>
+
+                            {/* Revision Required → needs comment */}
+                            <Button
+                                type="link"
+                                style={{ color: '#fa8c16' }}
+                                onClick={() => openCommentModal(WasteRecordStatus.RevisionRequired)}
+                            >
+                                Revision
+                            </Button>
                         </>
                     );
                 }
-                else if (record.status === WasteRecordStatus.Verified) {
+
+                if (record.status === WasteRecordStatus.Verified) {
                     return (
                         <>
-                            <Popconfirm
-                                title="Reject this record?"
-                                onConfirm={() => handleStatusUpdate([record], WasteRecordStatus.Rejected)}
+                            <Button
+                                type="link"
+                                style={{ color: '#fa8c16' }}
+                                onClick={() => openCommentModal(WasteRecordStatus.RevisionRequired)}
                             >
-                                <Button type="link" danger loading={loading}>
-                                    Reject
-                                </Button>
-                            </Popconfirm>
+                                Revision
+                            </Button>
+                            <Button
+                                type="link"
+                                danger
+                                onClick={() => openCommentModal(WasteRecordStatus.Rejected)}
+                            >
+                                Reject
+                            </Button>
                         </>
                     );
                 }
-                else if (record.status === WasteRecordStatus.Rejected) {
+
+                if (record.status === WasteRecordStatus.Rejected) {
                     return (
                         <>
                             <Button
                                 type="link"
                                 onClick={() => handleStatusUpdate([record], WasteRecordStatus.Verified)}
-                                loading={loading}
                             >
                                 Verify
                             </Button>
-
+                            <Button
+                                type="link"
+                                style={{ color: '#fa8c16' }}
+                                onClick={() => openCommentModal(WasteRecordStatus.RevisionRequired)}
+                            >
+                                Revision
+                            </Button>
+                            <CommentButton comment={record.comment} />
                         </>
                     );
                 }
+
+                if (record.status === WasteRecordStatus.RevisionRequired) {
+                    return (
+                        <>
+                            <Button
+                                type="link"
+                                onClick={() => handleStatusUpdate([record], WasteRecordStatus.Verified)}
+                            >
+                                Verify
+                            </Button>
+                            <Button
+                                type="link"
+                                danger
+                                onClick={() => openCommentModal(WasteRecordStatus.Rejected)}
+                            >
+                                Reject
+                            </Button>
+                            <CommentButton comment={record.comment} />
+                        </>
+                    );
+                }
+
                 return "-";
             },
         },
     ];
 
     useEffect(() => {
-        actionRef.current?.reload();
+        actionRef.current?.reloadAndRest?.();
     }, [statusFilter])
 
     return (
@@ -260,7 +188,6 @@ const WasteRecordApproval: React.FC = () => {
                 onChange={(key) => {
                     setStatusFilter(parseInt(key) as WasteRecordStatus);
                     setSelectedRows([]);
-                    setPage(1);
                 }}
                 style={{ marginBottom: 16 }}
                 items={[
@@ -276,6 +203,10 @@ const WasteRecordApproval: React.FC = () => {
                         key: WasteRecordStatus.Rejected.toString(),
                         label: wasteRecordStatusLabels[WasteRecordStatus.Rejected],
                     },
+                    {
+                        key: WasteRecordStatus.RevisionRequired.toString(),
+                        label: wasteRecordStatusLabels[WasteRecordStatus.RevisionRequired],
+                    },
                 ]}
             />
 
@@ -285,29 +216,18 @@ const WasteRecordApproval: React.FC = () => {
                 actionRef={actionRef}
                 loading={loading || isLoading}
                 columns={columns}
-                dataSource={data}
-                pagination={{
-                    current: page,
-                    pageSize,
-                    onChange: (p, ps) => {
-                        setPage(p);
-                        setPagesize(ps);
-                    },
-                }}
+                pagination={{ showSizeChanger: true }}
                 request={(params: any, sort: Record<string, SortOrder>, filter: Record<string, (string | number)[] | null>) => {
                     return fetchData({
+                        ...params,
                         pageNumber: params.current ?? 1,
                         pageSize: params.pageSize ?? 20,
-                        campus: params.campus,
-                        disposalMethod: params.disposalMethod,
-                        wasteType: params.wasteType,
                         status: statusFilter,
-                        fromDate: params.fromDate,
-                        toDate: params.toDate,
                         isAdmin: true
                     });
                 }}
                 search={{
+                    layout: 'vertical',
                     labelWidth: 'auto',
                 }}
                 rowSelection={
@@ -335,6 +255,36 @@ const WasteRecordApproval: React.FC = () => {
                     </Button>
                 </FooterToolbar>
             )}
+
+            <ModalForm
+                title={
+                    modalStatus === WasteRecordStatus.Rejected
+                        ? "Reject Record"
+                        : "Request Revision"
+                }
+                modalProps={{
+                    destroyOnClose: true,
+                }}
+                open={modalOpen}
+                onOpenChange={setModalOpen}
+                onFinish={async (values) => {
+                    await handleStatusUpdate(modalRecords, modalStatus!, values.comment);
+                    return true;
+                }}
+                submitter={{
+                    searchConfig: {
+                        submitText: 'Submit',
+                    },
+                }}
+            >
+                <ProFormTextArea
+                    name="comment"
+                    label="Comment"
+                    placeholder="Please enter a reason"
+                    rules={[{ required: true, message: "Comment is required" }]}
+                />
+            </ModalForm>
+
         </>
     );
 };

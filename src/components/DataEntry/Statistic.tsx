@@ -132,7 +132,7 @@ const WasteManagementTable: React.FC = () => {
         try {
             const res = await getWasteStatisticByYear({
                 year: selectedYear,
-                campus: selectedCampus,
+                campusId: selectedCampus,
                 departmentId: selectedDepartment,
                 isPersonalView: isPersonalView
             });
@@ -201,7 +201,7 @@ const WasteManagementTable: React.FC = () => {
 
             var response = await exportExcelWasteStatistics({
                 year,
-                campus: selectedCampus,
+                campusId: selectedCampus,
                 departmentId: selectedDepartment,
                 isPersonalView: isPersonalView
             });
@@ -226,7 +226,7 @@ const WasteManagementTable: React.FC = () => {
             setPdfLoading(true);
             var response = await exportPdfWasteStatistics({
                 year,
-                campus: selectedCampus,
+                campusId: selectedCampus,
                 departmentId: selectedDepartment,
                 isPersonalView: isPersonalView
             });
@@ -272,7 +272,7 @@ const WasteManagementTable: React.FC = () => {
                                 placeholder="Campus"
                                 options={campuses.map((c) => ({
                                     label: c.name,
-                                    value: c.name,
+                                    value: c.id,
                                 }))}
                                 allowClear
                             />

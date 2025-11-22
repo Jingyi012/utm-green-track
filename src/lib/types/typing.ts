@@ -40,9 +40,10 @@ export interface UserDetails {
     staffMatricNo: string;
     departmentId: string;
     department: string;
+    unit?: string
     positionId: string;
     position: string;
-    roles: string[]; //id list
+    roleIds: string[]; //id list
     status: number;
 }
 

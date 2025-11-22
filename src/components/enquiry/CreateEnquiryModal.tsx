@@ -29,6 +29,12 @@ export const CreateEnquiryModal: React.FC<CreateEnquiryModalProps> = ({
                 }
             }}
             onFinish={onSubmit}
+            submitter={{
+                searchConfig: {
+                    submitText: 'Submit',
+                },
+            }}
+
         >
             <ProFormText
                 label="Subject"

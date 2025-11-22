@@ -2,19 +2,20 @@
 
 import { useProfileDropdownOptions } from "@/hook/options";
 import { UserStatus, userStatusLabels } from "@/lib/enum/status";
-import { getAllUsers, updateUser } from "@/lib/services/user";
+import { deleteUser, getAllUsers, updateUser } from "@/lib/services/user";
 import { UserDetails } from "@/lib/types/typing";
 import { ActionType, ProColumns, ProTable } from "@ant-design/pro-components";
-import { App, Button, Tag } from "antd";
+import { App, Button, Popconfirm, Tag } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useRef } from "react";
 import UserDetailsDrawerForm, { FormValueType } from "./UserDetailsDrawerForm";
+import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { getBaseUserColumns } from "./columns";
 
 const UserManagement: React.FC = () => {
     const { message } = App.useApp();
     const { positions, departments, roles, isLoading } = useProfileDropdownOptions();
     const [loading, setLoading] = useState<boolean>(false);
-    const [data, setData] = useState<UserDetails[]>([]);
     const [selectedUser, setSelectedUser] = useState<UserDetails>();
     const [modalOpen, setModalOpen] = useState<boolean>(false);
     const [editMode, setEditMode] = useState<boolean>(false);
@@ -37,7 +38,6 @@ const UserManagement: React.FC = () => {
             const res = await getAllUsers({
                 ...filter,
             });
-            setData(res.data || []);
             return {
                 data: res.data,
                 success: res.success,
@@ -45,7 +45,6 @@ const UserManagement: React.FC = () => {
             }
         } catch (err) {
             message.error("Failed to fetch users");
-            setData([]);
             return {
                 data: [],
                 success: false,
@@ -68,7 +67,7 @@ const UserManagement: React.FC = () => {
                 staffMatricNo: user.staffMatricNo,
                 departmentId: user.departmentId,
                 positionId: user.positionId,
-                roleIds: user.roles,
+                roleIds: user.roleIds,
                 status: user.status
             });
 
@@ -88,102 +87,26 @@ const UserManagement: React.FC = () => {
         }
     }
 
-    const columns: ProColumns<UserDetails>[] = [
-        {
-            title: "No.",
-            render: (_: any, __: any, index: number, action) => {
-                const current = action?.pageInfo?.current ?? 1;
-                const pageSize = action?.pageInfo?.pageSize ?? 10;
-                return (current - 1) * pageSize + index + 1;
-            },
-            width: 60,
-            align: "center",
-            hideInSearch: true,
-        },
-        {
-            title: 'Name',
-            dataIndex: 'name', align: "center",
-            render: (dom, entity) => {
-                return (
-                    <a
-                        onClick={() => {
-                            setSelectedUser(entity);
-                            setModalOpen(true);
-                            setEditMode(false);
-                        }}
-                    >
-                        {dom}
-                    </a>
-                );
-            },
-        },
-        { title: "Email", dataIndex: "email", align: "center" },
-        { title: "Contact", dataIndex: "contactNumber", align: "center" },
-        { title: "Staff / Matric No", dataIndex: "staffMatricNo", align: "center" },
-        {
-            title: "Position",
-            dataIndex: "positionId",
-            align: "center",
-            valueEnum: positions.reduce((acc, method) => {
-                acc[method.id] = { text: method.name };
-                return acc;
-            }, {} as Record<string, { text: string }>),
-            render: (_, record) => record.position ?? "-",
-        },
-        {
-            title: "Faculty/Department",
-            dataIndex: "departmentId",
-            align: "center",
-            valueEnum: departments.reduce((acc, method) => {
-                acc[method.id] = { text: method.name };
-                return acc;
-            }, {} as Record<string, { text: string }>),
-            render: (_, record) => record.department ?? "-",
-        },
-        {
-            title: "Role",
-            dataIndex: "roles",
-            align: "center",
-            valueEnum: roles.reduce((acc, role) => {
-                acc[role.id] = { text: role.name };
-                return acc;
-            }, {} as Record<string, { text: string }>),
-            render: (_, record) => {
-                if (!record.roles || record.roles.length === 0) return "-";
+    const handleDeleteUser = async (userId: string) => {
+        try {
+            setLoading(true);
+            const res = await deleteUser(userId);
+            if (res.success) {
+                message.success("User deleted successfully");
+                return true;
+            }
+            else {
+                message.error(res.message || "Failed to delete user");
+                return false;
+            }
+        } catch (err) {
+            message.error(err?.response?.data?.message || "Failed to delete user");
+            return false;
+        }
+    }
 
-                return (
-                    <>
-                        {record.roles.map((roleId) => {
-                            const role = roles.find(r => r.id === roleId);
-                            return (
-                                <Tag key={roleId}>
-                                    {role ? role.name : roleId} {/* fallback if not found */}
-                                </Tag>
-                            );
-                        })}
-                    </>
-                );
-            },
-        },
-        {
-            title: "Status",
-            dataIndex: "status",
-            align: "center",
-            valueEnum: {
-                [UserStatus.Pending]: {
-                    text: userStatusLabels[UserStatus.Pending],
-                    status: "Default",
-                },
-                [UserStatus.Approved]: {
-                    text: userStatusLabels[UserStatus.Approved],
-                    status: "Success",
-                },
-                [UserStatus.Rejected]: {
-                    text: userStatusLabels[UserStatus.Rejected],
-                    status: "Error",
-                },
-            },
-        },
+    const columns: ProColumns<UserDetails>[] = [
+        ...getBaseUserColumns({ positions, departments, roles }),
         {
             title: "Action",
             align: "center",
@@ -192,15 +115,29 @@ const UserManagement: React.FC = () => {
                 return <>
                     <Button
                         type="link"
+                        icon={<EditOutlined />}
                         onClick={() => {
                             setSelectedUser(record);
                             setModalOpen(true);
                             setEditMode(true);
                         }}
                         loading={loading}
+                    />
+                    <Popconfirm
+                        title="Delete this user?"
+                        onConfirm={async () => {
+                            await handleDeleteUser(record.id);
+                            if (actionRef.current) {
+                                actionRef.current.reload();
+                            }
+                        }}
                     >
-                        Edit
-                    </Button>
+                        <Button
+                            type="link"
+                            danger
+                            icon={<DeleteOutlined />}
+                        />
+                    </Popconfirm>
                 </>
             }
         },
@@ -214,18 +151,13 @@ const UserManagement: React.FC = () => {
                 actionRef={actionRef}
                 loading={loading || isLoading}
                 columns={columns}
-                dataSource={data}
                 pagination={{
                 }}
                 request={(params: any, sort: Record<string, SortOrder>, filter: Record<string, (string | number)[] | null>) => {
                     return fetchData({
+                        ...params,
                         pageNumber: params.current ?? 1,
                         pageSize: params.pageSize ?? 20,
-                        email: params.email,
-                        contactNumber: params.contactNumber,
-                        departmentId: params?.department,
-                        positionId: params?.position,
-                        status: params?.status,
                     });
                 }}
                 search={{

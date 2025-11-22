@@ -126,14 +126,12 @@ export const DepartmentConfig: React.FC = () => {
             render: (_: any, record: Department) => {
                 return (
                     <>
-                        <Button
+                        <Button icon={<EditOutlined />}
                             style={{ marginRight: '20px' }}
                             onClick={() => {
                                 setSelectedDepartment(record);
                                 setModalOpen(true);
-                            }}>
-                            <EditOutlined />
-                        </Button>
+                            }} />
                         <Popconfirm
                             title="Delete this department?"
                             onConfirm={async () => {
@@ -143,9 +141,7 @@ export const DepartmentConfig: React.FC = () => {
                                 }
                             }}
                         >
-                            <Button danger>
-                                <DeleteOutlined />
-                            </Button>
+                            <Button danger icon={<DeleteOutlined />} />
                         </Popconfirm>
                     </>
                 )
@@ -198,6 +194,11 @@ export const DepartmentConfig: React.FC = () => {
                 }
                 return false;
             }}
+            submitter={{
+                searchConfig: {
+                    submitText: 'Submit',
+                },
+            }}
         >
             <ProFormText
                 label='Name'
@@ -235,6 +236,11 @@ export const DepartmentConfig: React.FC = () => {
                     return true;
                 }
                 return false;
+            }}
+            submitter={{
+                searchConfig: {
+                    submitText: 'Submit',
+                },
             }}
         >
             <ProFormText

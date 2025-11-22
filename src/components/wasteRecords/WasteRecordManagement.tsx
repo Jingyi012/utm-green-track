@@ -1,27 +1,38 @@
 'use client';
 
-import { useWasteRecordDropdownOptions } from "@/hook/options";
+import { useProfileDropdownOptions, useWasteRecordDropdownOptions } from "@/hook/options";
 import { WasteRecordStatus, wasteRecordStatusLabels } from "@/lib/enum/status";
-import { ActionType, ProColumns, ProTable } from "@ant-design/pro-components";
+import { ActionType, ModalForm, ProColumns, ProFormText, ProTable } from "@ant-design/pro-components";
 import { App, Button, Tooltip } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useRef } from "react";
 import WasteRecordDrawerForm from "./WasteRecordDrawerForm";
 import { WasteRecord, WasteRecordFilter } from "@/lib/types/wasteRecord";
-import { deleteAttachment, deleteWasteRecord, getWasteRecordsPaginated, updateWasteRecord, uploadAttachments } from "@/lib/services/wasteRecord";
+import { deleteAttachment, deleteWasteRecord, exportExcelWasteRecords, exportPdfWasteRecords, getWasteRecordsPaginated, updateWasteRecord, uploadAttachments } from "@/lib/services/wasteRecord";
+import { useAuth } from "@/contexts/AuthContext";
+import { createRequest } from "@/lib/services/requestService";
+import { downloadFile } from "@/lib/utils/downloadFile";
+import { DeleteOutlined, EditOutlined, FileExcelOutlined, FilePdfOutlined } from "@ant-design/icons";
+import { ExportModal } from "../DataEntry/ExportModal";
+import { getBaseColumns } from './columns';
 
 const WasteRecordManagement: React.FC = () => {
     const { message, modal } = App.useApp();
+    const { hasRole } = useAuth();
+    const { departments } = useProfileDropdownOptions();
     const { campuses, disposalMethods, isLoading } = useWasteRecordDropdownOptions();
     const [loading, setLoading] = useState<boolean>(false);
-    const [page, setPage] = useState<number>(1);
-    const [pageSize, setPagesize] = useState<number>(20);
-    const [data, setData] = useState<WasteRecord[]>([]);
+    const [excelLoading, setExcelLoading] = useState<boolean>(false);
+    const [pdfLoading, setPdfLoading] = useState<boolean>(false);
     const [selectedRecord, setSelectedRecord] = useState<WasteRecord>();
-    const [modalOpen, setModalOpen] = useState<boolean>(false);
+    const [modalDrawerOpen, setModalDrawerOpen] = useState<boolean>(false);
     const [editMode, setEditMode] = useState<boolean>(false);
 
     const actionRef = useRef<ActionType | undefined>(undefined);
+    const isAdmin = hasRole('Admin');
+    const [modalOpen, setModalOpen] = useState<false | "excel" | "pdf">(false);
+
+    const [changeRequestModalOpen, setChangeRequestModalOpen] = useState<boolean>(false);
 
     const fetchData = async (filter: WasteRecordFilter) => {
         setLoading(true);
@@ -29,9 +40,6 @@ const WasteRecordManagement: React.FC = () => {
             const res = await getWasteRecordsPaginated({
                 ...filter,
             });
-            setData(res.data || []);
-            setPage(res.pageNumber);
-            setPagesize(res.pageSize);
             return {
                 data: res.data,
                 success: res.success,
@@ -39,7 +47,6 @@ const WasteRecordManagement: React.FC = () => {
             }
         } catch (err) {
             message.error("Failed to fetch waste records");
-            setData([]);
             return {
                 data: [],
                 success: false,
@@ -53,7 +60,7 @@ const WasteRecordManagement: React.FC = () => {
     const handleWasteRecordUpdate = async (wasteRecord: WasteRecord) => {
         try {
             setLoading(true);
-            const fileList = wasteRecord.uploadedAttachments?.fileList ?? [];
+            const fileList = wasteRecord.uploadedAttachments ?? [];
 
             const newAttachments = fileList.filter(f => f.originFileObj);
 
@@ -63,14 +70,13 @@ const WasteRecordManagement: React.FC = () => {
 
             const fileToRemove = initialAttachmentIds.filter(id => !currentIds.includes(id));
 
+            // if is not admin user submit update record, change status from required revision to new
+            if (!isAdmin) {
+                wasteRecord.status = WasteRecordStatus.New
+            }
             const res = await updateWasteRecord(wasteRecord.id, {
+                ...wasteRecord,
                 id: wasteRecord.id,
-                campus: wasteRecord.campus,
-                disposalMethodId: wasteRecord.disposalMethodId,
-                wasteTypeId: wasteRecord.wasteTypeId,
-                wasteWeight: wasteRecord.wasteWeight,
-                location: wasteRecord.location,
-                status: wasteRecord.status,
             });
 
             if (!res.success) {
@@ -126,167 +132,107 @@ const WasteRecordManagement: React.FC = () => {
         }
     }
 
-    const columns: ProColumns<WasteRecord>[] = [
-        {
-            title: 'No.',
-            render: (_: any, __: any, index: number) => (page - 1) * pageSize + index + 1,
-            width: 60,
-            align: 'center' as const,
-            hideInSearch: true,
-        },
-        {
-            title: 'Date',
-            dataIndex: 'date',
-            render: (_: any, record: WasteRecord) => new Date(record.date).toLocaleDateString('en-GB'),
-            align: 'center' as const,
-            hideInSearch: true,
-        },
-        {
-            title: 'UTM Campus',
-            dataIndex: 'campus',
-            valueEnum: campuses.reduce((acc, campus) => {
-                acc[campus.name] = { text: campus.name };
-                return acc;
-            }, {} as Record<string, { text: string }>),
-            render: (_: any, record: WasteRecord) => record.campus,
-            align: 'center' as const
-        },
-        {
-            title: 'Location',
-            dataIndex: 'location',
-            align: 'center' as const,
-            hideInSearch: true,
-        },
-        {
-            title: 'Disposal Method',
-            dataIndex: 'disposalMethod',
-            valueEnum: disposalMethods.reduce((acc, method) => {
-                acc[method.name] = { text: method.name };
-                return acc;
-            }, {} as Record<string, { text: string }>),
-            render: (_: any, record: WasteRecord) => record.disposalMethod,
-            align: 'center' as const
-        },
-        {
-            title: 'Waste Type',
-            dataIndex: 'wasteType',
-            valueEnum: Array.from(
-                new Set(
-                    disposalMethods.flatMap(method =>
-                        method.wasteTypes.map(waste => waste.name)
-                    )
-                )
-            ).reduce((acc, name) => {
-                acc[name] = { text: name };
-                return acc;
-            }, {} as Record<string, { text: string }>),
-            render: (_: any, record: WasteRecord) => record.wasteType,
-            align: 'center' as const
-        },
-        {
-            title: 'Waste Weight (kg)',
-            dataIndex: 'wasteWeight',
-            align: 'center' as const,
-            hideInSearch: true,
-        },
-        {
-            title: 'Attachment',
-            dataIndex: 'attachments',
-            render: (_: any, record: WasteRecord) => {
-                const attachments = Array.isArray(record.attachments) ? record.attachments : [];
+    const handleExportExcel = async (year: number, month: number) => {
 
-                if (attachments.length === 0) return '-';
+        const hide = message.loading("Generating Excel...");
+        try {
+            setExcelLoading(true);
+            const response = await exportExcelWasteRecords({ year, month });
+            const contentDisposition = response.headers['content-disposition'];
+            downloadFile(response.data, contentDisposition, "Waste_Records.xlsx");
+        } catch (err: any) {
+            message.error('Failed to generate Excel');
+        } finally {
+            setExcelLoading(false);
+            hide();
+        }
+    };
 
-                return (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        {attachments.map((file, index) => (
-                            <Tooltip title="View Attachment" key={index}>
-                                <a
-                                    href={file.filePath}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    {file.fileName}
-                                </a>
-                            </Tooltip>
-                        ))}
-                    </div>
-                );
-            },
-            hideInSearch: true,
-        },
-        {
-            title: 'Status',
-            dataIndex: 'status',
-            hideInSearch: true,
-            valueEnum: {
-                [WasteRecordStatus.New]: {
-                    text: wasteRecordStatusLabels[WasteRecordStatus.New],
-                    status: 'Default',
-                },
-                [WasteRecordStatus.Verified]: {
-                    text: wasteRecordStatusLabels[WasteRecordStatus.Verified],
-                    status: 'Success',
-                },
-                [WasteRecordStatus.Rejected]: {
-                    text: wasteRecordStatusLabels[WasteRecordStatus.Rejected],
-                    status: 'Error',
-                },
-            },
-            align: 'center' as const,
-        },
-        {
-            title: 'Date Range',
-            dataIndex: 'date',
-            valueType: 'dateRange',
-            hideInTable: true,
-            fieldProps: {
-                format: 'YYYY-MM-DD',
-            },
-            search: {
-                transform: (value: any) => {
-                    if (value && value.length === 2) {
-                        const start = new Date(value[0]);
-                        const end = new Date(value[1]);
-                        end.setHours(23, 59, 59, 999);
+    const handleExportPDF = async (year: number, month: number) => {
+        const hide = message.loading("Generating Pdf...");
+        try {
+            setPdfLoading(true);
+            const response = await exportPdfWasteRecords({ year, month });
+            const contentDisposition = response.headers['content-disposition'];
+            downloadFile(response.data, contentDisposition, "Waste_Records.pdf");
+        } catch (err: any) {
+            message.error('Failed to generate PDF');
+        } finally {
+            setPdfLoading(false);
+            hide();
+        }
+    };
 
-                        return {
-                            fromDate: start.toISOString(),
-                            toDate: end.toISOString(),
-                        };
-                    }
-                    return {};
+    const handleChangeRequest = async (wasteRecordId: string | undefined, reqMessage: string) => {
+        const hide = message.loading("Sending request...", 0);
+        try {
+            const res = await createRequest({
+                wasteRecordId: wasteRecordId,
+                message: reqMessage,
+            });
+            if (res.success) {
+                if (actionRef.current) {
+                    actionRef.current.reload();
                 }
+                message.success("Request created successfully");
+                return true;
+            } else {
+                message.error("Failed to send request");
+                return false;
             }
-        },
+        } catch (err) {
+            message.error("Failed to send request")
+        } finally {
+            hide();
+        }
+    };
+
+    const columns: ProColumns<WasteRecord>[] = [
+        ...getBaseColumns({ campuses, departments, disposalMethods }),
         {
             title: "Action",
             align: "center",
             hideInSearch: true,
             render: (_, record) => {
                 return <>
-                    <Button
-                        type="link"
-                        onClick={() => {
-                            setSelectedRecord(record);
-                            setModalOpen(true);
-                            setEditMode(true);
-                        }}
-                    >
-                        Edit
-                    </Button>
-                    <Button
-                        type="link"
-                        danger
-                        onClick={() => {
-                            confirmDeletion(record);
-                        }}
-                    >
-                        Delete
-                    </Button>
+                    {
+                        (isAdmin || record.status == WasteRecordStatus.RevisionRequired) && (
+                            <>
+                                <Button
+                                    type="link"
+                                    icon={<EditOutlined />}
+                                    onClick={() => {
+                                        setSelectedRecord(record);
+                                        setModalDrawerOpen(true);
+                                        setEditMode(true);
+                                    }}
+                                />
+                                <Button
+                                    type="link"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    onClick={() => {
+                                        confirmDeletion(record);
+                                    }}
+                                />
+                            </>
+                        )
+                    }
+                    {!isAdmin && record.status != WasteRecordStatus.Verified && record.status != WasteRecordStatus.RevisionRequired &&
+                        (
+                            <Button
+                                type="link"
+                                onClick={() => {
+                                    setSelectedRecord(record);
+                                    setChangeRequestModalOpen(true);
+                                }}>
+                                Request Changes
+                            </Button>
+                        )
+                    }
                 </>
             }
-        },
+        }
     ];
 
     return (
@@ -297,38 +243,50 @@ const WasteRecordManagement: React.FC = () => {
                 actionRef={actionRef}
                 loading={loading || isLoading}
                 columns={columns}
-                dataSource={data}
                 pagination={{
-                    current: page,
-                    pageSize,
-                    onChange: (p, ps) => {
-                        setPage(p);
-                        setPagesize(ps);
-                    },
+                    showSizeChanger: true
                 }}
                 request={(params: any, sort: Record<string, SortOrder>, filter: Record<string, (string | number)[] | null>) => {
                     return fetchData({
+                        ...params,
                         pageNumber: params.current ?? 1,
                         pageSize: params.pageSize ?? 20,
-                        campus: params.campus,
-                        disposalMethod: params.disposalMethod,
-                        wasteType: params.wasteType,
-                        status: params.status,
-                        fromDate: params.fromDate,
-                        toDate: params.toDate,
-                        isAdmin: true
+                        isAdmin: isAdmin
                     });
                 }}
+                toolbar={{
+                    actions: [
+                        <Button
+                            key="excel"
+                            loading={excelLoading}
+                            icon={<FileExcelOutlined />}
+                            onClick={() => setModalOpen("excel")}
+                        >
+                            Excel
+                        </Button>,
+                        <Button
+                            key="pdf"
+                            loading={pdfLoading}
+                            icon={<FilePdfOutlined />}
+                            danger
+                            onClick={() => setModalOpen("pdf")}
+                        >
+                            PDF
+                        </Button>,
+                    ],
+                }}
                 search={{
+                    layout: 'vertical',
                     labelWidth: 'auto',
                 }}
             />
 
             <WasteRecordDrawerForm
                 campuses={campuses}
+                departments={departments}
                 disposalMethods={disposalMethods}
                 onCancel={() => {
-                    setModalOpen(false);
+                    setModalDrawerOpen(false);
                     setEditMode(false);
                     setTimeout(() => setSelectedRecord(undefined), 300);
                 }
@@ -343,11 +301,61 @@ const WasteRecordManagement: React.FC = () => {
                     }
                     return false;
                 }}
-                visible={modalOpen}
+                visible={modalDrawerOpen}
                 initialValues={selectedRecord || {}}
                 isEditMode={editMode}
                 handleDelete={async () => confirmDeletion(selectedRecord!)}
             />
+
+            <ExportModal
+                open={!!modalOpen}
+                type={modalOpen || "excel"}
+                onCancel={() => setModalOpen(false)}
+                onConfirm={(year: number, month: number) => {
+                    if (modalOpen === "excel") handleExportExcel(year, month);
+                    if (modalOpen === "pdf") handleExportPDF(year, month);
+                }}
+            />
+            <ModalForm
+                title="Request Changes"
+                open={changeRequestModalOpen}
+                modalProps={{
+                    destroyOnClose: true,
+                    onCancel: () => {
+                        setSelectedRecord(undefined);
+                        setChangeRequestModalOpen(false);
+                    },
+                }}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSelectedRecord(undefined);
+                        setChangeRequestModalOpen(false);
+                    }
+                }}
+                onFinish={async (values) => {
+                    const success = await handleChangeRequest(selectedRecord?.id, values.message);
+                    if (success) {
+                        if (actionRef.current) {
+                            actionRef.current.reload();
+                        }
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }}
+                submitter={{
+                    searchConfig: {
+                        submitText: 'Submit',
+                    },
+                }}
+            >
+                <ProFormText
+                    label="Message"
+                    name="message"
+                    placeholder="Please enter message"
+                    rules={[{ required: true }]}
+                />
+            </ModalForm>
         </>
     );
 };

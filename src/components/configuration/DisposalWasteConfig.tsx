@@ -210,22 +210,18 @@ export default function DisposalWasteConfig() {
                                 render: (_, record) => [
                                     <Button
                                         key="edit"
-                                        type="link"
                                         onClick={() => {
                                             setEditingWaste(record);
                                             setWasteTypeModalFormOpen(true);
                                         }}
-                                    >
-                                        <EditOutlined />
-                                    </Button>,
+                                        icon={<EditOutlined />}
+                                    />,
                                     <Popconfirm
                                         key="delete"
                                         title="Delete this waste type?"
                                         onConfirm={() => handleDeleteWasteType(record.id)}
                                     >
-                                        <Button type="link" danger>
-                                            <DeleteOutlined />
-                                        </Button>
+                                        <Button danger icon={<DeleteOutlined />} />
                                     </Popconfirm>,
                                 ],
                             },
@@ -245,6 +241,11 @@ export default function DisposalWasteConfig() {
                     await handleCreateDisposalMethod(values.name);
                     return true;
                 }}
+                submitter={{
+                    searchConfig: {
+                        submitText: 'Submit',
+                    },
+                }}
             >
                 <ProFormText
                     name="name"
@@ -252,33 +253,6 @@ export default function DisposalWasteConfig() {
                     rules={[{ required: true }]}
                 />
             </ModalForm>
-
-            {/* Edit Disposal Method
-            <ModalForm
-                title="Edit Disposal Method"
-                open={!!editingMethod}
-                initialValues={editingMethod || {}}
-                modalProps={{
-                    destroyOnClose: true,
-                    onCancel: () => {
-                        setEditingMethod(null);
-                    },
-                }}
-                onOpenChange={(open) => !open && setEditingMethod(null)}
-                onFinish={async (values) => {
-                    if (editingMethod) {
-                        await handleUpdateDisposalMethod(editingMethod.id, values.name);
-                    }
-                    setEditingMethod(null);
-                    return true;
-                }}
-            >
-                <ProFormText
-                    name="name"
-                    label="Disposal Method Name"
-                    rules={[{ required: true }]}
-                />
-            </ModalForm> */}
 
             {/* Add/Edit Waste Type */}
             <ModalForm
@@ -320,6 +294,11 @@ export default function DisposalWasteConfig() {
                     setEditingWaste(null);
                     setWasteTypeModalFormOpen(false);
                     return true;
+                }}
+                submitter={{
+                    searchConfig: {
+                        submitText: 'Submit',
+                    },
                 }}
             >
                 <ProFormText

@@ -1,5 +1,5 @@
 import CustomBreadcrumb from "@/components/breadcrumb/CustomBreadcrumb";
-import ViewForm from "@/components/DataEntry/ViewForm";
+import WasteRecordManagement from "@/components/wasteRecords/WasteRecordManagement";
 
 export default function ViewFormPage() {
     return (
@@ -8,7 +8,7 @@ export default function ViewFormPage() {
                 { title: 'Data Entry' },
                 { title: 'View Form' }
             ]} />
-            <ViewForm />
+            <WasteRecordManagement />
         </div>
     );
 }

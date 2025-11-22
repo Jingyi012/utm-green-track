@@ -1,13 +1,15 @@
 export enum WasteRecordStatus {
     New = 0,
     Verified = 1,
-    Rejected = 2
+    Rejected = 2,
+    RevisionRequired = 3
 }
 
 export const wasteRecordStatusLabels: Record<WasteRecordStatus, string> = {
     [WasteRecordStatus.New]: "New",
     [WasteRecordStatus.Verified]: "Verified",
-    [WasteRecordStatus.Rejected]: "Rejected"
+    [WasteRecordStatus.Rejected]: "Rejected",
+    [WasteRecordStatus.RevisionRequired]: "Revision Required",
 };
 
 export enum UserStatus {
@@ -24,13 +26,13 @@ export const userStatusLabels: Record<UserStatus, string> = {
 
 export enum RequestStatus {
     Pending = 0,
-    Resolved = 1,
+    Approved = 1,
     Rejected = 2
 }
 
 export const requestStatusLabels: Record<RequestStatus, string> = {
     [RequestStatus.Pending]: "Pending",
-    [RequestStatus.Resolved]: "Resolved",
+    [RequestStatus.Approved]: "Approved",
     [RequestStatus.Rejected]: "Rejected"
 };
 
