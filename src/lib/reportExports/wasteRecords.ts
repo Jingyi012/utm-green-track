@@ -5,7 +5,6 @@ import autoTable from 'jspdf-autotable';
 import { DisposalMethod, DisposalMethodLabels } from '../enum/disposalMethod';
 import { WasteType, WasteTypeLabels } from '../enum/wasteType';
 import { WasteRecordStatus, wasteRecordStatusLabels } from '../enum/status';
-import { Campus, CampusLabels } from '../enum/campus';
 
 export function exportExcelWasteRecord(records: any[], filename = 'WasteRecords.xlsx') {
     if (!records || records.length === 0) {
@@ -20,7 +19,7 @@ export function exportExcelWasteRecord(records: any[], filename = 'WasteRecords.
     const rows = records.map((r, i) => [
         i + 1,
         new Date(r.date).toLocaleDateString("en-GB"),
-        CampusLabels[r.campus as Campus] ?? r.campus,
+        r.campus,
         r.location ?? "-",
         DisposalMethodLabels[r.disposalMethod as DisposalMethod] ?? r.disposalMethod,
         WasteTypeLabels[r.wasteType as WasteType] ?? r.wasteType,
@@ -67,7 +66,7 @@ export function exportPdfWasteRecord(records: any[], filename = 'WasteRecords.pd
     const body = records.map((r, i) => [
         i + 1,
         new Date(r.date).toLocaleDateString("en-GB"),
-        CampusLabels[r.campus as Campus] ?? r.campus,
+        r.campus,
         r.location ?? "-",
         DisposalMethodLabels[r.disposalMethod as DisposalMethod] ?? r.disposalMethod,
         WasteTypeLabels[r.wasteType as WasteType] ?? r.wasteType,
