@@ -69,3 +69,21 @@ export async function deleteUser(
     options?: { [key: string]: any }) {
     return api.delete<GeneralResponse<string>>(`${API_URL}/${userId}`, { ...options });
 }
+
+export async function exportExcelUsers(
+    options?: { [key: string]: any },
+) {
+    return api.get(`${API_URL}/export/excel`, {
+        responseType: "blob",
+        ...options,
+    });
+}
+
+export async function exportPdfUsers(
+    options?: { [key: string]: any },
+) {
+    return api.get(`${API_URL}/export/pdf`, {
+        responseType: "blob",
+        ...options,
+    });
+}

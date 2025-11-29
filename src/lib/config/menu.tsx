@@ -11,13 +11,18 @@ import {
   ToolOutlined,
   MailOutlined,
   HomeOutlined,
+  BellOutlined,
 } from '@ant-design/icons';
 import { MenuProps } from 'antd';
 import React from 'react';
 
 export type AppMenuItem = Exclude<MenuProps["items"], undefined>[number] & {
+  key: string;
+  icon?: React.ReactNode;
+  label: React.ReactNode;
   roles?: string[];
   children?: AppMenuItem[];
+  hideInMenu?: boolean;
 };
 
 export const menuItems: AppMenuItem[] = [
@@ -119,6 +124,12 @@ export const menuItems: AppMenuItem[] = [
     key: '/enquiry',
     icon: <MailOutlined />,
     label: 'Enquiry',
+  },
+  {
+    key: '/notifications',
+    icon: <BellOutlined />,
+    label: 'Notifications',
+    hideInMenu: true
   },
 ];
 

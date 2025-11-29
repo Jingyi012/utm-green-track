@@ -20,7 +20,7 @@ function findItemAndEffectiveRoles(items: any[], key: string, inheritedRoles?: s
 }
 
 export default function PageGuard({ children }: { children: React.ReactNode }) {
-    const { roles } = useAuth();
+    const { roles, user } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const [authorized, setAuthorized] = useState(false);

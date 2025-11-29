@@ -1,53 +1,68 @@
 'use client';
 
-import { Card, Col, Row, Typography } from 'antd';
+import { Card, Col, Row, Typography, Button } from 'antd';
 import type { ReactNode } from 'react';
 
 const { Text, Title } = Typography;
 
 type InfoCardProps = {
-    icon: ReactNode;        // Pass a React icon element here
-    itemLabel: string;      // e.g. "Total Notes"
-    value: string | number; // e.g. "128"
+    icon: ReactNode;
+    itemLabel: string;
+    value: string | number;
     unit: string;
+    showMore?: boolean;
+    onShowMore?: () => void;
 };
 
-export default function InfoCard({ icon, itemLabel, value, unit }: InfoCardProps) {
+export default function InfoCard({ icon, itemLabel, value, unit, showMore, onShowMore }: InfoCardProps) {
     const isPrefixUnit = unit === 'RM';
 
     return (
         <Card style={{ width: '100%' }}>
-            <Row align="middle" gutter={16}>
+            <Row gutter={16} align="middle">
                 <Col>
-                    <div style={{
-                        width: 50,
-                        height: 50,
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        borderRadius: 8,
-                    }}>
+                    <div
+                        style={{
+                            width: 50,
+                            height: 50,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            borderRadius: 8,
+                        }}
+                    >
                         {icon}
                     </div>
                 </Col>
-                <Col flex="auto">
+
+                <Col flex="auto" style={{ position: 'relative' }}>
                     <Text type="secondary" style={{ fontSize: 15 }}>
                         {itemLabel}
                     </Text>
-                    <br />
+
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                        {isPrefixUnit && (
-                            <Text style={{ fontSize: 14 }}>{unit}</Text>
-                        )}
+                        {isPrefixUnit && <Text style={{ fontSize: 14 }}>{unit}</Text>}
                         <Title level={3} style={{ margin: 0 }}>
                             {value}
                         </Title>
-                        {!isPrefixUnit && (
-                            <Text style={{ fontSize: 16 }}>{unit}</Text>
+                        {!isPrefixUnit && <Text style={{ fontSize: 16 }}>{unit}</Text>}
+                    </div>
+
+                    <div style={{ position: 'absolute', height: 20, textAlign: 'right', marginTop: 8, right: '5px', bottom: '-10px' }}>
+                        {showMore ? (
+                            <Button
+                                type="link"
+                                size="small"
+                                style={{ padding: 0 }}
+                                onClick={onShowMore}
+                            >
+                                Show More
+                            </Button>
+                        ) : (
+                            <div />
                         )}
                     </div>
                 </Col>
-
             </Row>
         </Card>
     );

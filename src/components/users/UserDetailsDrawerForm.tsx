@@ -100,7 +100,7 @@ const UserDetailsDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                     : false
             }
             drawerProps={{
-                destroyOnClose: true,
+                destroyOnHidden: true,
                 extra: (
                     <>
                         <Button

@@ -8,22 +8,28 @@ import {
     SettingOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { Title, Paragraph } = Typography;
 
 export default function HomeSection() {
     const router = useRouter();
+    const { hasRole } = useAuth();
     const features = [
         {
             icon: <DashboardOutlined style={{ fontSize: 32, color: '#52c41a' }} />,
             title: 'Dashboard',
             path: '/dashboard',
         },
-        {
-            icon: <FileTextOutlined style={{ fontSize: 32, color: '#1890ff' }} />,
-            title: 'Data Entry',
-            path: '/data-entry/new-form',
-        },
+        ...((hasRole('Green Manager') || hasRole('Admin'))
+            ? [
+                {
+                    icon: <FileTextOutlined style={{ fontSize: 32, color: '#1890ff' }} />,
+                    title: 'Data Entry',
+                    path: '/data-entry/new-form',
+                },
+            ]
+            : []),
         {
             icon: <BulbOutlined style={{ fontSize: 32, color: '#722ed1' }} />,
             title: 'Waste Info',

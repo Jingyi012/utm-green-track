@@ -1,16 +1,16 @@
 'use client';
 
 import { useProfileDropdownOptions } from "@/hook/options";
-import { UserStatus, userStatusLabels } from "@/lib/enum/status";
-import { deleteUser, getAllUsers, updateUser } from "@/lib/services/user";
+import { deleteUser, exportExcelUsers, exportPdfUsers, getAllUsers, updateUser } from "@/lib/services/user";
 import { UserDetails } from "@/lib/types/typing";
 import { ActionType, ProColumns, ProTable } from "@ant-design/pro-components";
-import { App, Button, Popconfirm, Tag } from "antd";
+import { App, Button, Modal, Popconfirm, Tag } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useRef } from "react";
 import UserDetailsDrawerForm, { FormValueType } from "./UserDetailsDrawerForm";
-import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, FileExcelOutlined, FilePdfOutlined } from "@ant-design/icons";
 import { getBaseUserColumns } from "./columns";
+import { downloadFile } from "@/lib/utils/downloadFile";
 
 const UserManagement: React.FC = () => {
     const { message } = App.useApp();
@@ -19,6 +19,8 @@ const UserManagement: React.FC = () => {
     const [selectedUser, setSelectedUser] = useState<UserDetails>();
     const [modalOpen, setModalOpen] = useState<boolean>(false);
     const [editMode, setEditMode] = useState<boolean>(false);
+    const [excelLoading, setExcelLoading] = useState<boolean>(false);
+    const [pdfLoading, setPdfLoading] = useState<boolean>(false);
 
     const actionRef = useRef<ActionType | undefined>(undefined);
 
@@ -143,6 +145,37 @@ const UserManagement: React.FC = () => {
         },
     ];
 
+    const handleExportExcel = async () => {
+
+        const hide = message.loading("Generating Excel...");
+        try {
+            setExcelLoading(true);
+            const response = await exportExcelUsers();
+            const contentDisposition = response.headers['content-disposition'];
+            downloadFile(response.data, contentDisposition, "User_Records.xlsx");
+        } catch (err: any) {
+            message.error('Failed to generate Excel');
+        } finally {
+            setExcelLoading(false);
+            hide();
+        }
+    };
+
+    const handleExportPDF = async () => {
+        const hide = message.loading("Generating Pdf...");
+        try {
+            setPdfLoading(true);
+            const response = await exportPdfUsers();
+            const contentDisposition = response.headers['content-disposition'];
+            downloadFile(response.data, contentDisposition, "User_Records.pdf");
+        } catch (err: any) {
+            message.error('Failed to generate PDF');
+        } finally {
+            setPdfLoading(false);
+            hide();
+        }
+    };
+
     return (
         <>
             <ProTable<UserDetails>
@@ -160,6 +193,45 @@ const UserManagement: React.FC = () => {
                         pageSize: params.pageSize ?? 20,
                     });
                 }}
+                toolbar={{
+                    actions: [
+                        <Button
+                            key="excel"
+                            loading={excelLoading}
+                            icon={<FileExcelOutlined />}
+                            onClick={() => {
+                                Modal.confirm({
+                                    title: "Export to Excel",
+                                    content: "Are you sure you want to export all user as Excel?",
+                                    okText: "Yes, Export",
+                                    cancelText: "Cancel",
+                                    onOk: handleExportExcel,
+                                });
+                            }}
+                        >
+                            Excel
+                        </Button>,
+
+                        <Button
+                            key="pdf"
+                            loading={pdfLoading}
+                            icon={<FilePdfOutlined />}
+                            danger
+                            onClick={() => {
+                                Modal.confirm({
+                                    title: "Export to PDF",
+                                    content: "Are you sure you want to export all user as PDF?",
+                                    okText: "Yes, Export",
+                                    cancelText: "Cancel",
+                                    onOk: handleExportPDF,
+                                });
+                            }}
+                        >
+                            PDF
+                        </Button>,
+                    ],
+                }}
+
                 search={{
                     labelWidth: 'auto',
                 }}

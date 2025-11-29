@@ -4,7 +4,7 @@ import InfoCardGrid from "./InfoCardGrid";
 import { App, Card, Col, Divider, Row, Select, Skeleton, Splitter } from "antd";
 import { getCampusYearlySummary } from "@/lib/services/wasteRecord";
 import { Column, Pie } from "@ant-design/charts";
-import { MonthlyWasteSummary, TotalSummary } from "@/lib/types/wasteSummary";
+import { CampusYearlySummaryResponse, MonthlyWasteSummary, TotalSummary } from "@/lib/types/wasteSummary";
 import { useWasteRecordDropdownOptions } from "@/hook/options";
 import { MONTH_LABELS_SHORT } from "@/lib/enum/monthName";
 import React from "react";
@@ -109,8 +109,9 @@ const DashboardSection: React.FC = () => {
         totalWasteRecycled: 0,
         totalWasteToLandfill: 0,
         totalGhgReduction: 0,
-        totalLandfillCostSavings: 0
+        totalLandfillCostSavings: 0,
     });
+    const [campusYearlySummary, setCampusYearlySummary] = useState<CampusYearlySummaryResponse>();
     const [monthlyChartData, setMonthlyChartData] = useState<ChartDataItem[]>([]);
     const [pieChartData, setPieChartData] = useState<PieChartData[]>([]);
     const [sizes, setSizes] = React.useState<(number | string)[]>(['60%', '40%']);
@@ -120,16 +121,28 @@ const DashboardSection: React.FC = () => {
             setChartLoading(true);
 
             const response = await getCampusYearlySummary(selectedCampus!, year);
-
-            if (response.data.totalSummary) {
-                setSummary(response.data.totalSummary);
+            if (!response?.success || !response?.data) {
+                return;
             }
 
-            if (response.data.monthlyWasteSummary) {
+            const { totalSummary, monthlyWasteSummary } = response.data;
+
+            setCampusYearlySummary(response.data);
+
+            if (totalSummary) {
+                setSummary(totalSummary);
+            }
+
+            if (monthlyWasteSummary?.length) {
                 const disposalMethodNames = disposalMethods.map(method => method.name);
-                const chartData = transformMonthlyChartData(response.data.monthlyWasteSummary, disposalMethodNames);
+
+                const chartData = transformMonthlyChartData(
+                    monthlyWasteSummary,
+                    disposalMethodNames
+                );
                 setMonthlyChartData(chartData);
-                const pieChart = transformRecyclableWasteType(response.data.monthlyWasteSummary);
+
+                const pieChart = transformRecyclableWasteType(monthlyWasteSummary);
                 setPieChartData(pieChart);
             }
 
@@ -293,7 +306,7 @@ const DashboardSection: React.FC = () => {
             </Row>
             <br />
             <Skeleton loading={chartLoading}>
-                <InfoCardGrid {...summary} />
+                <InfoCardGrid {...summary} wasteTypeTotals={campusYearlySummary?.wasteTypeTotals} />
                 <br />
                 <Divider />
                 <Splitter

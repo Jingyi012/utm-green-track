@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import PageGuard from '@/components/routes/PageGuard';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationBell } from '@/components/notification/NotificationBell';
 
 const { Header, Sider, Content } = Layout;
 
@@ -36,6 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     function filterMenuByRole(items: AppMenuItem[], userRoles?: string[]): AppMenuItem[] {
         return items
             .filter(item => {
+                if (item.hideInMenu) return false;
                 if (!item.roles || !userRoles) return true;
                 return item.roles.some(role => userRoles.includes(role));
             })
@@ -109,44 +111,52 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <Layout>
                     <Header
                         style={{
-                            padding: '0',
+                            padding: 0,
                             background: 'linear-gradient(135deg, #15803d 0%, #16a34a 50%, #059669 100%)',
                             display: 'flex',
-                            justifyContent: "space-between",
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
                             position: 'sticky',
                             top: 0,
-                            zIndex: '1000'
+                            zIndex: 1000,
                         }}
                     >
+                        {/* Left: Menu Button */}
                         <Button
                             type="text"
                             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
                             onClick={() => setCollapsed(!collapsed)}
                             style={{
                                 color: 'white',
-                                fontSize: '16px',
+                                fontSize: 16,
                                 width: 64,
                                 height: 64,
                             }}
                         />
 
-                        <Dropdown
-                            menu={{ items: profileMenuItems, onClick: handleMenuClick }}
-                            trigger={['click']}
-                            placement="bottomRight"
-                        >
-                            <div className="flex items-center gap-2 cursor-pointer mr-[24px]">
-                                <div className="flex flex-col items-end mr-2">
-                                    <span className="text-white text-xs leading-none">Welcome</span>
-                                    <span className="text-white font-medium leading-snug">
-                                        {user?.userName || 'User'}
-                                    </span>
+                        {/* Right: Profile + Notifications */}
+                        <div className="flex items-center gap-4">
+                            <NotificationBell />
+                            <Dropdown
+                                menu={{ items: profileMenuItems, onClick: handleMenuClick }}
+                                trigger={['click']}
+                                placement="bottomRight"
+                            >
+                                <div className="flex items-center gap-2 cursor-pointer mr-8">
+
+                                    <Avatar size="large" style={{ backgroundColor: '#0f6448ff' }}>
+                                        {initials}
+                                    </Avatar>
+                                    <div className="flex flex-col items-start ml-2">
+                                        <span className="text-white text-xs leading-none">Welcome</span>
+                                        <span className="text-white font-medium leading-snug">
+                                            {user?.userName || 'User'}
+                                        </span>
+                                    </div>
                                 </div>
-                                <Avatar size="large" style={{ backgroundColor: '#0f6448ff' }}>
-                                    {initials}
-                                </Avatar>
-                            </div>
-                        </Dropdown>
+                            </Dropdown>
+
+                        </div>
                     </Header>
 
                     {/* Content */}

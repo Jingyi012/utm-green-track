@@ -1,3 +1,4 @@
+import { NotificationType } from "../enum/notification";
 import { RequestStatus } from "../enum/status";
 import { WasteRecord } from "./wasteRecord";
 
@@ -121,4 +122,14 @@ export interface EnquiryMessage {
 export interface EnquiryInput {
     subject: string,
     message: string
+}
+
+export interface Notification {
+    id: string;
+    type: NotificationType
+    title: string;
+    message: string;
+    url?: string;
+    createdAt: Date;
+    isRead: boolean;
 }
