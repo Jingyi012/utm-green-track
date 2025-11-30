@@ -1,5 +1,6 @@
 'use client';
 import { changePassword } from '@/lib/services/auth';
+import { PageContainer } from '@ant-design/pro-components';
 import { App, Button, Card, Col, Form, Input, Row, Select, Typography } from 'antd';
 const { Title } = Typography;
 const { Option } = Select;
@@ -26,7 +27,7 @@ const ChangePasswordForm = () => {
     };
 
     return (
-        <>
+        <PageContainer title={false}>
             <Card title={"Change Password"}>
                 <Form form={form} layout="vertical" style={{ maxWidth: '500px', margin: 'auto' }}>
                     <Row gutter={16}>
@@ -89,7 +90,7 @@ const ChangePasswordForm = () => {
 
                 </Form>
             </Card>
-        </>
+        </PageContainer>
     );
 };
 

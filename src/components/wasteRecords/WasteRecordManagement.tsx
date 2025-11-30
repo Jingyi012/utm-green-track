@@ -2,7 +2,7 @@
 
 import { useProfileDropdownOptions, useWasteRecordDropdownOptions } from "@/hook/options";
 import { WasteRecordStatus, wasteRecordStatusLabels } from "@/lib/enum/status";
-import { ActionType, ModalForm, ProColumns, ProFormText, ProTable } from "@ant-design/pro-components";
+import { ActionType, ModalForm, PageContainer, ProColumns, ProFormText, ProTable } from "@ant-design/pro-components";
 import { App, Button, Tooltip } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useRef } from "react";
@@ -16,7 +16,11 @@ import { DeleteOutlined, EditOutlined, FileExcelOutlined, FilePdfOutlined } from
 import { ExportModal } from "../DataEntry/ExportModal";
 import { getBaseColumns } from './columns';
 
-const WasteRecordManagement: React.FC = () => {
+interface WasteRecordManagementProps {
+    isViewForm?: boolean;
+}
+
+const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewForm = false }) => {
     const { message, modal } = App.useApp();
     const { hasRole } = useAuth();
     const { departments } = useProfileDropdownOptions();
@@ -236,7 +240,9 @@ const WasteRecordManagement: React.FC = () => {
     ];
 
     return (
-        <>
+        <PageContainer
+            title={!isViewForm ? 'Waste Record Management' : "View Form"}
+        >
             <ProTable<WasteRecord>
                 rowKey="id"
                 headerTitle="Waste Record List"
@@ -356,7 +362,7 @@ const WasteRecordManagement: React.FC = () => {
                     rules={[{ required: true }]}
                 />
             </ModalForm>
-        </>
+        </PageContainer>
     );
 };
 

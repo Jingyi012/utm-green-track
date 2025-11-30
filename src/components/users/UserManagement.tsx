@@ -3,7 +3,7 @@
 import { useProfileDropdownOptions } from "@/hook/options";
 import { deleteUser, exportExcelUsers, exportPdfUsers, getAllUsers, updateUser } from "@/lib/services/user";
 import { UserDetails } from "@/lib/types/typing";
-import { ActionType, ProColumns, ProTable } from "@ant-design/pro-components";
+import { ActionType, PageContainer, ProColumns, ProTable } from "@ant-design/pro-components";
 import { App, Button, Modal, Popconfirm, Tag } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useRef } from "react";
@@ -177,7 +177,7 @@ const UserManagement: React.FC = () => {
     };
 
     return (
-        <>
+        <PageContainer title={'User Management'}>
             <ProTable<UserDetails>
                 rowKey="id"
                 headerTitle="User List"
@@ -261,7 +261,7 @@ const UserManagement: React.FC = () => {
                 initialValues={selectedUser || {}}
                 isEditMode={editMode}
             />
-        </>
+        </PageContainer>
     );
 };
 

@@ -4,7 +4,7 @@ import { useProfileDropdownOptions } from "@/hook/options";
 import { UserStatus, userStatusLabels } from "@/lib/enum/status";
 import { getAllUsers, updateUserApprovalStatus } from "@/lib/services/user";
 import { UserDetails } from "@/lib/types/typing";
-import { ActionType, FooterToolbar, ModalForm, ProColumns, ProFormTextArea, ProTable } from "@ant-design/pro-components";
+import { ActionType, FooterToolbar, ModalForm, PageContainer, ProColumns, ProFormTextArea, ProTable } from "@ant-design/pro-components";
 import { App, Button, Tabs } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useEffect, useRef } from "react";
@@ -142,29 +142,28 @@ const UserApproval: React.FC = () => {
     }, [statusFilter])
 
     return (
-        <>
-            <Tabs
-                activeKey={statusFilter.toString()}
-                onChange={(key) => {
-                    setStatusFilter(parseInt(key) as UserStatus);
-                    setSelectedRows([]);
-                }}
-                style={{ marginBottom: 16 }}
-                items={[
-                    {
-                        key: UserStatus.Pending.toString(),
-                        label: userStatusLabels[UserStatus.Pending],
-                    },
-                    {
-                        key: UserStatus.Approved.toString(),
-                        label: userStatusLabels[UserStatus.Approved],
-                    },
-                    {
-                        key: UserStatus.Rejected.toString(),
-                        label: userStatusLabels[UserStatus.Rejected],
-                    },
-                ]}
-            />
+        <PageContainer
+            title={'User Approval Management'}
+            loading={isLoading}
+            tabList={[
+                {
+                    key: UserStatus.Pending.toString(),
+                    tab: userStatusLabels[UserStatus.Pending],
+                },
+                {
+                    key: UserStatus.Approved.toString(),
+                    tab: userStatusLabels[UserStatus.Approved],
+                },
+                {
+                    key: UserStatus.Rejected.toString(),
+                    tab: userStatusLabels[UserStatus.Rejected],
+                },
+            ]}
+            onTabChange={(key) => {
+                setStatusFilter(parseInt(key) as UserStatus);
+                setSelectedRows([]);
+            }}
+        >
 
             <ProTable<UserDetails>
                 rowKey="id"
@@ -240,7 +239,7 @@ const UserApproval: React.FC = () => {
                 />
             </ModalForm>
 
-        </>
+        </PageContainer>
     );
 };
 

@@ -3,13 +3,15 @@
 import { useProfileDropdownOptions } from '@/hook/options';
 import { getProfile, updateProfile } from '@/lib/services/user';
 import { UserDetails } from '@/lib/types/typing';
+import { EditOutlined } from '@ant-design/icons';
 
 import {
     ProForm,
     ProFormText,
     ProFormSelect,
     ProCard,
-    ProDescriptions
+    ProDescriptions,
+    PageContainer
 } from '@ant-design/pro-components';
 
 import { App, Button, Col, Row } from 'antd';
@@ -80,141 +82,146 @@ const EditProfileForm = () => {
     };
 
     return (
-        <ProCard
-            title="Account Information"
-            headerBordered
-            loading={loading}
-            extra={
-                !editMode && (
-                    <Button type="primary" onClick={() => setEditMode(true)}>
-                        Edit Profile
-                    </Button>
-                )
-            }
-        >
-            {/* VIEW MODE */}
-            {!editMode && userData && (
-                <ProDescriptions
-                    column={2}
-                    bordered
-                    size="default"
-                    dataSource={{
-                        ...userData,
-                        role: userData.roleIds?.[0] || '-',
-                    }}
-                >
-                    <ProDescriptions.Item label="Full Name">{userData.name}</ProDescriptions.Item>
-                    <ProDescriptions.Item label="UTM Email">{userData.email}</ProDescriptions.Item>
-                    <ProDescriptions.Item label="Staff / Matric No.">
-                        {userData.staffMatricNo}
-                    </ProDescriptions.Item>
-                    <ProDescriptions.Item label="Contact Number">
-                        {userData.contactNumber}
-                    </ProDescriptions.Item>
-                    <ProDescriptions.Item label="Department">
-                        {
-                            departments.find(d => d.id === userData.departmentId)?.name ??
-                            userData.departmentId
-                        }
-                    </ProDescriptions.Item>
-                    <ProDescriptions.Item label="PTJ / Unit">
-                        {userData.unit ?? '-'}
-                    </ProDescriptions.Item>
-                    <ProDescriptions.Item label="Position">
-                        {positions.find(p => p.id === userData.positionId)?.name}
-                    </ProDescriptions.Item>
-                    <ProDescriptions.Item label="Role">
-                        {roles.find(r => r.id === userData.roleIds[0])?.name}
-                    </ProDescriptions.Item>
-                </ProDescriptions>
-            )}
+        <PageContainer title={false}>
+            <ProCard
+                title="Account Information"
+                headerBordered
+                loading={loading}
+                extra={
+                    !editMode && (
+                        <Button type="primary" onClick={() => setEditMode(true)}>
+                            <EditOutlined />Edit Profile
+                        </Button>
+                    )
+                }
+            >
+                {/* VIEW MODE */}
+                {!editMode && userData && (
+                    <ProDescriptions
+                        column={2}
+                        bordered
+                        size="default"
+                        dataSource={{
+                            ...userData,
+                            role: userData.roleIds?.[0] || '-',
+                        }}
+                    >
+                        <ProDescriptions.Item label="Full Name">{userData.name}</ProDescriptions.Item>
+                        <ProDescriptions.Item label="UTM Email">{userData.email}</ProDescriptions.Item>
+                        <ProDescriptions.Item label="Staff / Matric No.">
+                            {userData.staffMatricNo}
+                        </ProDescriptions.Item>
+                        <ProDescriptions.Item label="Contact Number">
+                            {userData.contactNumber}
+                        </ProDescriptions.Item>
+                        <ProDescriptions.Item label="Department">
+                            {
+                                departments.find(d => d.id === userData.departmentId)?.name ??
+                                userData.departmentId
+                            }
+                        </ProDescriptions.Item>
+                        <ProDescriptions.Item label="PTJ / Unit">
+                            {userData.unit ?? '-'}
+                        </ProDescriptions.Item>
+                        <ProDescriptions.Item label="Position">
+                            {positions.find(p => p.id === userData.positionId)?.name}
+                        </ProDescriptions.Item>
+                        <ProDescriptions.Item label="Role">
+                            {roles.find(r => r.id === userData.roleIds[0])?.name}
+                        </ProDescriptions.Item>
+                    </ProDescriptions>
+                )}
 
-            {/* EDIT MODE */}
-            {editMode && userData && (
-                <ProForm
-                    layout="vertical"
-                    initialValues={{
-                        ...userData,
-                        role: userData.roleIds[0],
-                    }}
-                    onFinish={handleSubmit}
-                    submitter={{
-                        render: () => (
-                            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 16 }}>
-                                <Button onClick={() => setEditMode(false)} disabled={submitting}>
-                                    Cancel
-                                </Button>
-                                <Button type="primary" htmlType="submit" loading={submitting}>
-                                    Save Changes
-                                </Button>
-                            </div>
-                        ),
-                    }}
-                >
-                    <Row gutter={16}>
-                        <Col md={12}>
-                            <ProFormText
-                                name="name"
-                                label="Full Name"
-                                rules={[{ required: true }]}
-                            />
-                        </Col>
+                {/* EDIT MODE */}
+                {editMode && userData && (
+                    <ProForm
+                        layout="vertical"
+                        initialValues={{
+                            ...userData,
+                            role: userData.roleIds[0],
+                        }}
+                        onFinish={handleSubmit}
+                        submitter={{
+                            render: () => (
+                                <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 16 }}>
+                                    <Button onClick={() => setEditMode(false)} disabled={submitting}>
+                                        Cancel
+                                    </Button>
+                                    <Button type="primary" htmlType="submit" loading={submitting}>
+                                        Save Changes
+                                    </Button>
+                                </div>
+                            ),
+                        }}
+                    >
+                        <Row gutter={16}>
+                            <Col md={12}>
+                                <ProFormText
+                                    name="name"
+                                    label="Full Name"
+                                    rules={[{ required: true }]}
+                                />
+                            </Col>
 
-                        <Col md={12}>
-                            <ProFormText name="email" label="UTM Email" disabled />
-                        </Col>
+                            <Col md={12}>
+                                <ProFormText name="email" label="UTM Email" disabled />
+                            </Col>
 
-                        <Col md={12}>
-                            <ProFormText
-                                name="staffMatricNo"
-                                label="Staff / Matric No."
-                                rules={[{ required: true }]}
-                            />
-                        </Col>
+                            <Col md={12}>
+                                <ProFormText
+                                    name="staffMatricNo"
+                                    label="Staff / Matric No."
+                                    rules={[{ required: true }]}
+                                />
+                            </Col>
 
-                        <Col md={12}>
-                            <ProFormText
-                                name="contactNumber"
-                                label="Contact Number"
-                                rules={[{ required: true }]}
-                            />
-                        </Col>
+                            <Col md={12}>
+                                <ProFormText
+                                    name="contactNumber"
+                                    label="Contact Number"
+                                    rules={[{ required: true }]}
+                                />
+                            </Col>
 
-                        <Col md={12}>
-                            <ProFormSelect
-                                name="departmentId"
-                                label="Department"
-                                options={departments.map(r => ({ label: r.name, value: r.id }))}
-                                rules={[{ required: true }]}
-                                showSearch
-                            />
-                        </Col>
+                            <Col md={12}>
+                                <ProFormSelect
+                                    name="departmentId"
+                                    label="Department"
+                                    options={departments.map(r => ({ label: r.name, value: r.id }))}
+                                    rules={[{ required: true }]}
+                                    fieldProps={{
+                                        showSearch: true,
+                                        optionFilterProp: "label",
+                                    }}
+                                />
+                            </Col>
 
-                        <Col md={12}>
-                            <ProFormText name="unit" label="PTJ / Unit" />
-                        </Col>
+                            <Col md={12}>
+                                <ProFormText name="unit" label="PTJ / Unit" />
+                            </Col>
 
-                        <Col md={12}>
-                            <ProFormSelect
-                                name="positionId"
-                                label="Position"
-                                options={positions.map(p => ({ label: p.name, value: p.id }))}
-                                disabled
-                            />
-                        </Col>
+                            <Col md={12}>
+                                <ProFormSelect
+                                    name="positionId"
+                                    label="Position"
+                                    options={positions.map(p => ({ label: p.name, value: p.id }))}
+                                    disabled
+                                />
+                            </Col>
 
-                        <Col md={12}>
-                            <ProFormSelect
-                                name="roleIds"
-                                label="Role"
-                                options={roleOptions}
-                                disabled
-                            />
-                        </Col>
-                    </Row>
-                </ProForm>
-            )}
-        </ProCard>
+                            <Col md={12}>
+                                <ProFormSelect
+                                    name="roleIds"
+                                    label="Role"
+                                    options={roleOptions}
+                                    disabled
+                                />
+                            </Col>
+                        </Row>
+                    </ProForm>
+                )}
+            </ProCard>
+        </PageContainer>
     );
 };
 

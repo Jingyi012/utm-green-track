@@ -1,170 +1,162 @@
 'use client';
 
-import { Avatar, Button, Dropdown, Layout, Menu, MenuProps, theme } from 'antd';
-import React, { useState } from 'react';
-import { AppMenuItem, menuItems, profileMenuItems } from '@/lib/config/menu';
+import React, { useMemo } from 'react';
+import { Dropdown, Avatar, theme, ConfigProvider } from 'antd';
+import { ProLayout, PageContainer } from '@ant-design/pro-components';
+import { proLayoutMenuData, profileMenuItems } from '@/lib/config/menu';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import PageGuard from '@/components/routes/PageGuard';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/notification/NotificationBell';
 
-const { Header, Sider, Content } = Layout;
-
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-    const [collapsed, setCollapsed] = useState(false);
-    const {
-        token: { colorPrimary },
-    } = theme.useToken();
-
     const router = useRouter();
     const pathname = usePathname();
-
     const { user, logout } = useAuth();
 
-    const handleMenuClick: MenuProps['onClick'] = async ({ key }) => {
+    const initials = user?.userName ? user.userName[0].toUpperCase() : 'U';
+
+    // Filter menu based on user roles
+    const filteredMenu = useMemo(() => {
+        function filterByRole(items: typeof proLayoutMenuData, roles?: string[]) {
+            return items
+                .filter(item => !item.hideInMenu && (!item.roles || !roles || item.roles.some(r => roles.includes(r))))
+                .map(item => ({
+                    ...item,
+                    children: item.children ? filterByRole(item.children, roles) : undefined,
+                }));
+        }
+        return filterByRole(proLayoutMenuData, user?.roles);
+    }, [user?.roles]);
+
+    const handleProfileClick = async ({ key }: { key: string }) => {
         if (key === 'logout') {
-            await logout(); // clear session
+            await logout();
             router.replace('/login');
+        } else {
+            router.push(key);
         }
     };
-
-    const initials = user?.userName
-        ? user.userName[0].toUpperCase()
-        : 'U';
-
-    function filterMenuByRole(items: AppMenuItem[], userRoles?: string[]): AppMenuItem[] {
-        return items
-            .filter(item => {
-                if (item.hideInMenu) return false;
-                if (!item.roles || !userRoles) return true;
-                return item.roles.some(role => userRoles.includes(role));
-            })
-            .map(item => {
-                if ("children" in item && item.children) {
-                    const filteredChildren = filterMenuByRole(item.children, userRoles);
-
-                    if (filteredChildren.length > 0) {
-                        return { ...item, children: filteredChildren } as AppMenuItem;
-                    }
-
-                    const { children, ...rest } = item;
-                    return rest as AppMenuItem;
-                }
-
-                return item as AppMenuItem;
-            });
-    }
-
-    const findParentKey = (items: any[], path: string): string | undefined => {
-        for (const item of items) {
-            if (item.children?.some((child: any) => path.startsWith(child.key))) {
-                return item.key as string;
-            }
-        }
-        return undefined;
-    };
-
-    const parentKey = findParentKey(menuItems, pathname);
 
     return (
         <PageGuard>
-            <Layout style={{ minHeight: '100vh' }}>
-                {/* Sidebar */}
-                <Sider
-                    trigger={null}
-                    collapsible
-                    collapsed={collapsed}
-                    onCollapse={(value) => setCollapsed(value)}
-                    theme='light'
-                    breakpoint="lg"
-                    collapsedWidth="0"
-                    style={{
-                        position: 'sticky',
-                        height: '100vh',
-                        top: 0,
-                        bottom: 0,
-                        scrollbarWidth: 'thin',
-                        scrollbarGutter: 'stable',
-                    }}
-                >
-                    <div className='h-[44px] m-[10px] flex justify-center items-center'>
-                        <div className='flex justify-center items-center'>
-                            <Image src="/images/logo2.png" alt="Logo" height={40} width={40} />
-                            <span className="ml-2 font-bold whitespace-nowrap" style={{ color: colorPrimary }}>UTM Green Track</span>
+            <ConfigProvider
+                theme={{
+                    token: {
+                        colorPrimary: '#16a34a',
+                    },
+                }}
+            >
+                <style jsx global>{`
+                    .ant-pro-layout-header, .ant-layout-header {
+                        background: linear-gradient(135deg, #15803d 0%, #16a34a 50%, #059669 100%) !important;
+                    }
+                    .ant-pro-global-header-logo, .ant-pro-sider-logo {
+                        background: transparent !important;
+                    }
+                `}</style>
+
+                <ProLayout
+                    title="UTM Green Track"
+                    logo={
+                        <div className="relative h-8 w-8">
+                            <Image src="/images/logo2.png" alt="Logo" fill className="object-contain" />
                         </div>
-                    </div>
+                    }
+                    layout="mix"
+                    splitMenus={false}
+                    fixedHeader
+                    fixSiderbar
+                    location={{ pathname }}
+                    route={{ routes: filteredMenu }}
+                    breadcrumbProps={{
+                        minLength: 1,
+                        itemRender: (route, params, routes, paths) => {
+                            const last = routes.indexOf(route) === routes.length - 1;
+                            if (last) {
+                                return <span color='gray'>{route.title}</span>;
+                            }
 
-                    <Menu
-                        theme="light"
-                        mode="inline"
-                        selectedKeys={[pathname]}
-                        defaultOpenKeys={parentKey ? [parentKey] : []}
-                        items={filterMenuByRole(menuItems, user?.roles)}
-                        onClick={({ key }) => router.push(key)}
-                        inlineCollapsed={collapsed}
-                    />
-                </Sider>
-
-                {/* Main */}
-                <Layout>
-                    <Header
-                        style={{
-                            padding: 0,
-                            background: 'linear-gradient(135deg, #15803d 0%, #16a34a 50%, #059669 100%)',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            position: 'sticky',
-                            top: 0,
-                            zIndex: 1000,
-                        }}
-                    >
-                        {/* Left: Menu Button */}
-                        <Button
-                            type="text"
-                            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                            onClick={() => setCollapsed(!collapsed)}
-                            style={{
-                                color: 'white',
-                                fontSize: 16,
-                                width: 64,
-                                height: 64,
-                            }}
-                        />
-
-                        {/* Right: Profile + Notifications */}
-                        <div className="flex items-center gap-4">
-                            <NotificationBell />
-                            <Dropdown
-                                menu={{ items: profileMenuItems, onClick: handleMenuClick }}
-                                trigger={['click']}
-                                placement="bottomRight"
+                            return (
+                                <span
+                                    className="cursor-pointer hover:text-green-600 transition-colors"
+                                    onClick={() => router.push(route.path || '/')}
+                                >
+                                    {route.title}
+                                </span>
+                            );
+                        },
+                    }}
+                    menuItemRender={(item, dom) =>
+                        item.path ? (
+                            <a
+                                href={item.path}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    router.push(item.path!);
+                                }}
+                                className="cursor-pointer w-full h-full flex items-center gap-2"
                             >
-                                <div className="flex items-center gap-2 cursor-pointer mr-8">
-
-                                    <Avatar size="large" style={{ backgroundColor: '#0f6448ff' }}>
+                                {dom}
+                            </a>
+                        ) : (
+                            dom
+                        )
+                    }
+                    token={{
+                        header: {
+                            colorBgHeader: 'transparent',
+                            colorTextRightActionsItem: 'white',
+                            colorTextMenu: 'white',
+                            colorHeaderTitle: 'white',
+                            colorBgMenuItemHover: 'rgba(255,255,255,0.1)',
+                        },
+                        sider: {
+                            colorMenuBackground: '#fff',
+                            colorTextMenu: '#595959',
+                            colorTextMenuSelected: '#16a34a',
+                            colorBgMenuItemSelected: '#f6ffed',
+                        },
+                    }}
+                    siderMenuType="sub"
+                    actionsRender={(props) => {
+                        if (props.isMobile) return [];
+                        return [
+                            <NotificationBell key="bell" />,
+                            <Dropdown
+                                key="profile"
+                                menu={{ items: profileMenuItems, onClick: handleProfileClick }}
+                                placement="bottomRight"
+                                trigger={['click']}
+                            >
+                                <div className="flex items-center gap-3 cursor-pointer px-2 py-1 rounded-md hover:bg-white/10 transition-colors">
+                                    <Avatar
+                                        size="large"
+                                        style={{
+                                            backgroundColor: '#0f6448',
+                                            color: '#fff',
+                                            border: '2px solid rgba(255,255,255,0.2)',
+                                        }}
+                                    >
                                         {initials}
                                     </Avatar>
-                                    <div className="flex flex-col items-start ml-2">
-                                        <span className="text-white text-xs leading-none">Welcome</span>
-                                        <span className="text-white font-medium leading-snug">
+                                    <div className="flex flex-col items-start leading-none">
+                                        <span className="text-white/80 text-[10px] uppercase font-semibold tracking-wide">
+                                            Welcome
+                                        </span>
+                                        <span className="text-white font-medium text-sm mt-0.5">
                                             {user?.userName || 'User'}
                                         </span>
                                     </div>
                                 </div>
-                            </Dropdown>
-
-                        </div>
-                    </Header>
-
-                    {/* Content */}
-                    <Content style={{ margin: '16px 24px' }}>
-                        {children}
-                    </Content>
-                </Layout>
-            </Layout>
+                            </Dropdown>,
+                        ];
+                    }}
+                >
+                    {children}
+                </ProLayout>
+            </ConfigProvider>
         </PageGuard>
     );
 }

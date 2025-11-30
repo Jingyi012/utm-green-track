@@ -14,129 +14,129 @@ import {
   BellOutlined,
 } from '@ant-design/icons';
 import { MenuProps } from 'antd';
-import React from 'react';
+import { ReactNode } from 'react';
 
-export type AppMenuItem = Exclude<MenuProps["items"], undefined>[number] & {
-  key: string;
-  icon?: React.ReactNode;
-  label: React.ReactNode;
+export interface AppMenuItem {
+  path: string;
+  name: string;
+  icon?: ReactNode;
   roles?: string[];
   children?: AppMenuItem[];
   hideInMenu?: boolean;
-};
+}
 
-export const menuItems: AppMenuItem[] = [
+export const proLayoutMenuData: AppMenuItem[] = [
   {
-    key: '/home',
+    path: '/home',
+    name: 'Home',
     icon: <HomeOutlined />,
-    label: 'Home',
   },
   {
-    key: '/dashboard',
+    path: '/dashboard',
+    name: 'Dashboard',
     icon: <DashboardOutlined />,
-    label: 'Dashboard',
   },
   {
-    key: '/data-entry',
+    path: '/data-entry',
+    name: 'Data Entry',
     icon: <FileTextOutlined />,
-    label: 'Data Entry',
     roles: ['Admin', 'Green Manager'],
     children: [
       {
-        key: '/data-entry/new-form',
-        label: 'New Form',
+        path: '/data-entry/new-form',
+        name: 'New Form',
       },
       {
-        key: '/data-entry/view-form',
-        label: 'View Form',
+        path: '/data-entry/view-form',
+        name: 'View Form',
       },
       {
-        key: '/data-entry/statistic',
-        label: 'Statistic',
-      }
-    ]
+        path: '/data-entry/statistic',
+        name: 'Statistic',
+      },
+    ],
   },
   {
-    key: '/waste-records',
+    path: '/waste-records',
+    name: 'Waste Records',
     icon: <UnorderedListOutlined />,
-    label: 'Waste Records',
     roles: ['Admin'],
     children: [
       {
-        key: '/waste-records/approval',
-        label: 'Approval',
+        path: '/waste-records/approval',
+        name: 'Approval',
       },
       {
-        key: '/waste-records/management',
-        label: 'Management',
-      }
-    ]
+        path: '/waste-records/management',
+        name: 'Management',
+      },
+    ],
   },
   {
-    key: '/users',
+    path: '/users',
+    name: 'Users',
     icon: <UsergroupAddOutlined />,
-    label: 'Users',
     roles: ['Admin'],
     children: [
       {
-        key: '/users/approval',
-        label: 'Approval',
+        path: '/users/approval',
+        name: 'Approval',
       },
       {
-        key: '/users/management',
-        label: 'Management',
-      }
-    ]
+        path: '/users/management',
+        name: 'Management',
+      },
+    ],
   },
   {
-    key: '/requests',
+    path: '/requests',
+    name: 'Requests',
     icon: <MessageOutlined />,
-    label: 'Requests',
     roles: ['Admin'],
   },
   {
-    key: '/configurations',
+    path: '/configurations',
+    name: 'Configurations',
     icon: <ToolOutlined />,
-    label: 'Configurations',
     roles: ['Admin'],
   },
   {
-    key: '/waste-info',
+    path: '/waste-info',
+    name: 'Waste Info',
     icon: <BulbOutlined />,
-    label: 'Waste Info',
   },
   {
-    key: '/settings',
+    path: '/settings',
+    name: 'Settings',
     icon: <SettingOutlined />,
-    label: 'Settings',
     children: [
       {
-        key: '/settings/edit-profile',
-        label: 'Edit Profile',
+        path: '/settings/edit-profile',
+        name: 'Edit Profile',
       },
       {
-        key: '/settings/change-password',
-        label: 'Change Password',
-      }
-    ]
+        path: '/settings/change-password',
+        name: 'Change Password',
+      },
+    ],
   },
   {
-    key: '/enquiry',
+    path: '/enquiry',
+    name: 'Enquiry',
     icon: <MailOutlined />,
-    label: 'Enquiry',
   },
   {
-    key: '/notifications',
+    path: '/notifications',
+    name: 'Notifications',
     icon: <BellOutlined />,
-    label: 'Notifications',
-    hideInMenu: true
+    hideInMenu: true,
   },
 ];
 
 export const profileMenuItems: MenuProps['items'] = [
   {
     key: 'logout',
-    icon: <LogoutOutlined />,
     label: 'Logout',
-  },
-];
+    icon: <LogoutOutlined />,
+  }
+]

@@ -1,5 +1,6 @@
 'use client';
 
+import { PageContainer } from '@ant-design/pro-components';
 import { Tabs } from 'antd';
 import type { TabsProps } from 'antd';
 import { GeneralConfig } from './GeneralConfig';
@@ -26,13 +27,15 @@ export const GeneralConfigLayout: React.FC = () => {
     ];
 
     return (
-        <div className="bg-white p-4 rounded-lg shadow-md">
-            <Tabs
-                defaultActiveKey="disposal"
-                tabPosition="left"
-                items={items}
-                style={{ minHeight: '400px' }}
-            />
-        </div>
+        <PageContainer title="Configurations" style={{ minHeight: '500px' }}>
+            <div className="bg-white p-4 rounded-lg shadow-md">
+                <Tabs
+                    defaultActiveKey="general"
+                    items={items}
+                    tabPosition="left"
+                    style={{ minHeight: '400px' }}
+                />
+            </div>
+        </PageContainer>
     );
 };

@@ -1,6 +1,8 @@
+'use client'
 import { Card } from "antd";
 import CollapsibleWasteInfo from "./CollapsibleWasteInfo";
 import WasteInfoUpperCards from "./WasteInfoUpperCards";
+import { PageContainer } from "@ant-design/pro-components";
 
 
 const wasteManagementItems = [
@@ -44,13 +46,15 @@ const wasteManagementItems = [
 
 const WasteInfoSection = () => {
     return (
-        <Card title={"Waste Info"}>
-            <WasteInfoUpperCards />
-            <CollapsibleWasteInfo
-                items={wasteManagementItems}
-                defaultActiveKey={[1]}
-            />
-        </Card>
+        <PageContainer title={'Waste Info'}>
+            <Card>
+                <WasteInfoUpperCards />
+                <CollapsibleWasteInfo
+                    items={wasteManagementItems}
+                    defaultActiveKey={[1]}
+                />
+            </Card>
+        </PageContainer>
     );
 }
 

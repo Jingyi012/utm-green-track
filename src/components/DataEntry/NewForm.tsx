@@ -17,6 +17,7 @@ import {
     ProFormText,
     ProFormDigit,
     ProFormDateTimePicker,
+    PageContainer,
 } from '@ant-design/pro-components';
 import { EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons';
 import { useState } from 'react';
@@ -269,7 +270,7 @@ export default function WasteEntryForm() {
     ];
 
     return (
-        <>
+        <PageContainer title={false}>
             <Card loading={isLoading} style={{ marginBottom: 24 }}>
                 <ProForm
                     form={form}
@@ -487,6 +488,6 @@ export default function WasteEntryForm() {
                 }}
                 onSave={handleSaveEdit}
             />
-        </>
+        </PageContainer>
     );
 }

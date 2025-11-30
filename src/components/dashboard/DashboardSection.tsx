@@ -8,6 +8,7 @@ import { CampusYearlySummaryResponse, MonthlyWasteSummary, TotalSummary } from "
 import { useWasteRecordDropdownOptions } from "@/hook/options";
 import { MONTH_LABELS_SHORT } from "@/lib/enum/monthName";
 import React from "react";
+import { PageContainer } from "@ant-design/pro-components";
 
 export interface ChartDataItem {
     month: string;
@@ -278,7 +279,7 @@ const DashboardSection: React.FC = () => {
     };
 
     return (
-        <Card title={"Dashboard"}>
+        <PageContainer title={"Dashboard"}>
             <Row gutter={16} wrap align="middle" justify="space-between" >
                 <Col xs={24} sm={12} md={8}>
                     <label>UTM Campus</label>
@@ -308,20 +309,21 @@ const DashboardSection: React.FC = () => {
             <Skeleton loading={chartLoading}>
                 <InfoCardGrid {...summary} wasteTypeTotals={campusYearlySummary?.wasteTypeTotals} />
                 <br />
-                <Divider />
-                <Splitter
-                    onResize={setSizes}
-                    style={{}}
-                >
-                    <Splitter.Panel size={sizes[0]} resizable={true}>
-                        <Column {...config} />
-                    </Splitter.Panel>
-                    <Splitter.Panel size={sizes[1]}>
-                        <Pie {...pieConfig} />
-                    </Splitter.Panel>
-                </Splitter>
+                <div style={{ backgroundColor: 'white' }}>
+                    <Splitter
+                        onResize={setSizes}
+                        style={{}}
+                    >
+                        <Splitter.Panel size={sizes[0]} resizable={true}>
+                            <Column {...config} />
+                        </Splitter.Panel>
+                        <Splitter.Panel size={sizes[1]}>
+                            <Pie {...pieConfig} />
+                        </Splitter.Panel>
+                    </Splitter>
+                </div>
             </Skeleton>
-        </Card>
+        </PageContainer>
     )
 }
 

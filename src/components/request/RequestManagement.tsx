@@ -5,7 +5,7 @@ import { getAllRequest, updateRequestResolveStatus } from "@/lib/services/reques
 import { ChangeRequest } from "@/lib/types/typing";
 import { dateFormatter, dateTimeFormatter } from "@/lib/utils/formatter";
 import { EyeOutlined } from "@ant-design/icons";
-import { ActionType, FooterToolbar, ProColumns, ProTable } from "@ant-design/pro-components";
+import { ActionType, FooterToolbar, PageContainer, ProColumns, ProTable } from "@ant-design/pro-components";
 import { App, Button, Descriptions, Popconfirm, Tabs } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import Popover from "antd/lib/popover";
@@ -198,29 +198,27 @@ const RequestManagement: React.FC = () => {
     }, [statusFilter]);
 
     return (
-        <>
-            <Tabs
-                activeKey={statusFilter.toString()}
-                onChange={(key) => {
-                    setStatusFilter(parseInt(key) as RequestStatus);
-                    setSelectedRows([]);
-                }}
-                style={{ marginBottom: 16 }}
-                items={[
-                    {
-                        key: RequestStatus.Pending.toString(),
-                        label: requestStatusLabels[RequestStatus.Pending],
-                    },
-                    {
-                        key: RequestStatus.Approved.toString(),
-                        label: requestStatusLabels[RequestStatus.Approved],
-                    },
-                    {
-                        key: RequestStatus.Rejected.toString(),
-                        label: requestStatusLabels[RequestStatus.Rejected],
-                    },
-                ]}
-            />
+        <PageContainer
+            title={'Request Management'}
+            tabList={[
+                {
+                    key: RequestStatus.Pending.toString(),
+                    tab: requestStatusLabels[RequestStatus.Pending],
+                },
+                {
+                    key: RequestStatus.Approved.toString(),
+                    tab: requestStatusLabels[RequestStatus.Approved],
+                },
+                {
+                    key: RequestStatus.Rejected.toString(),
+                    tab: requestStatusLabels[RequestStatus.Rejected],
+                },
+            ]}
+            onTabChange={(key) => {
+                setStatusFilter(parseInt(key) as RequestStatus);
+                setSelectedRows([]);
+            }}
+        >
 
             <ProTable<ChangeRequest>
                 rowKey="id"
@@ -268,7 +266,7 @@ const RequestManagement: React.FC = () => {
                 </FooterToolbar>
             )}
 
-        </>
+        </PageContainer>
     );
 };
 

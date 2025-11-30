@@ -3,16 +3,20 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname, notFound } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { menuItems } from "@/lib/config/menu";
+import { AppMenuItem, proLayoutMenuData } from "@/lib/config/menu";
 
-function findItemAndEffectiveRoles(items: any[], key: string, inheritedRoles?: string[] | undefined): { item: any | null; roles?: string[] | undefined } {
+function findItemAndEffectiveRoles(
+    items: AppMenuItem[],
+    path: string,
+    inheritedRoles?: string[]
+): { item: AppMenuItem | null; roles?: string[] } {
     for (const item of items) {
-        const currentRoles = item.roles ?? inheritedRoles;
-        if (item.key === key) {
-            return { item, roles: currentRoles };
-        }
-        if (item.children) {
-            const found = findItemAndEffectiveRoles(item.children, key, currentRoles);
+        const currentRoles = item.roles && item.roles.length > 0 ? item.roles : inheritedRoles;
+
+        if (item.path === path) return { item, roles: currentRoles };
+
+        if (item.children && item.children.length > 0) {
+            const found = findItemAndEffectiveRoles(item.children, path, currentRoles);
             if (found.item) return found;
         }
     }
@@ -26,12 +30,7 @@ export default function PageGuard({ children }: { children: React.ReactNode }) {
     const [authorized, setAuthorized] = useState(false);
 
     useEffect(() => {
-        const { item, roles: requiredRoles } = findItemAndEffectiveRoles(menuItems as any[], pathname);
-
-        if (!item) {
-            notFound();
-            return;
-        }
+        const { item, roles: requiredRoles } = findItemAndEffectiveRoles(proLayoutMenuData, pathname);
 
         // If no required roles (neither on item nor its ancestors), allow access
         if (!requiredRoles || requiredRoles.length === 0) {
@@ -41,7 +40,7 @@ export default function PageGuard({ children }: { children: React.ReactNode }) {
 
         const allowed = requiredRoles.some((r: string) => roles.includes(r));
         if (!allowed) {
-            notFound();
+            router.replace("/forbidden");
         }
         setAuthorized(allowed);
     }, [pathname, roles, router]);

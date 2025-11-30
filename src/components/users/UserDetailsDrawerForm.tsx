@@ -143,6 +143,10 @@ const UserDetailsDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                                 value: r.id,
                             }))}
                             disabled={!isEditing}
+                            fieldProps={{
+                                showSearch: true,
+                                optionFilterProp: "label",
+                            }}
                         />
                     </Col>
                 </Row>

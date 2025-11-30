@@ -149,7 +149,10 @@ export default function RegistrationForm() {
                                 value: dept.id,
                             }))}
                             rules={[{ required: true, message: 'Please select your faculty / department' }]}
-                            showSearch
+                            fieldProps={{
+                                showSearch: true,
+                                optionFilterProp: "label",
+                            }}
                         />
                     </Col>
 

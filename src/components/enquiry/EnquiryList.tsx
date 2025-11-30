@@ -2,7 +2,7 @@
 import { EnquiryStatus, enquiryStatusLabels } from "@/lib/enum/status";
 import { createEnquiry, deleteEnquiry, getAllEnquiry, updateEnquiryStatus } from "@/lib/services/enquiry";
 import { Enquiry, EnquiryInput } from "@/lib/types/typing";
-import { ActionType, ProColumns, ProTable } from "@ant-design/pro-components";
+import { ActionType, PageContainer, ProColumns, ProTable } from "@ant-design/pro-components";
 import { App, Button, Popconfirm, Space } from "antd";
 import { useState, useRef } from "react"
 import { EnquiryDetailDrawer } from "./EnquiryDetailDrawer";
@@ -210,7 +210,7 @@ export const EnquiryList: React.FC = () => {
     }
 
     return (
-        <>
+        <PageContainer title={'Enquiry'}>
             <ProTable<Enquiry>
                 rowKey="id"
                 headerTitle="Enquiry List"
@@ -251,7 +251,7 @@ export const EnquiryList: React.FC = () => {
                 onClose={() => setSelectedId(null)}
                 currentUserId={user?.id ?? ""}
                 updateStatus={handleEnquiryStatusUpdate}
-            />;
+            />
 
             <CreateEnquiryModal
                 onCancel={() => {
@@ -259,6 +259,6 @@ export const EnquiryList: React.FC = () => {
                 }}
                 onSubmit={handleCreateEnquiry}
                 visible={createModalOpen} />
-        </>
+        </PageContainer>
     )
 }

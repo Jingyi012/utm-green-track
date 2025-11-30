@@ -4,7 +4,7 @@ import { useProfileDropdownOptions, useWasteRecordDropdownOptions } from "@/hook
 import { wasteRecordStatusLabels, WasteRecordStatus } from "@/lib/enum/status";
 import { getWasteRecordsPaginated, updateWasteRecordApprovalStatus } from "@/lib/services/wasteRecord";
 import { WasteRecord, WasteRecordFilter } from "@/lib/types/wasteRecord";
-import { ActionType, FooterToolbar, ModalForm, ProColumns, ProFormTextArea, ProTable } from "@ant-design/pro-components";
+import { ActionType, FooterToolbar, ModalForm, PageContainer, ProColumns, ProFormTextArea, ProTable } from "@ant-design/pro-components";
 import { App, Button, Tabs } from "antd";
 import { SortOrder } from "antd/es/table/interface";
 import { useState, useEffect, useRef } from "react";
@@ -182,33 +182,32 @@ const WasteRecordApproval: React.FC = () => {
     }, [statusFilter])
 
     return (
-        <>
-            <Tabs
-                activeKey={statusFilter.toString()}
-                onChange={(key) => {
-                    setStatusFilter(parseInt(key) as WasteRecordStatus);
-                    setSelectedRows([]);
-                }}
-                style={{ marginBottom: 16 }}
-                items={[
-                    {
-                        key: WasteRecordStatus.New.toString(),
-                        label: wasteRecordStatusLabels[WasteRecordStatus.New],
-                    },
-                    {
-                        key: WasteRecordStatus.Verified.toString(),
-                        label: wasteRecordStatusLabels[WasteRecordStatus.Verified],
-                    },
-                    {
-                        key: WasteRecordStatus.Rejected.toString(),
-                        label: wasteRecordStatusLabels[WasteRecordStatus.Rejected],
-                    },
-                    {
-                        key: WasteRecordStatus.RevisionRequired.toString(),
-                        label: wasteRecordStatusLabels[WasteRecordStatus.RevisionRequired],
-                    },
-                ]}
-            />
+        <PageContainer
+            title={'Waste Record Approval Management'}
+            loading={isLoading}
+            tabList={[
+                {
+                    key: WasteRecordStatus.New.toString(),
+                    tab: wasteRecordStatusLabels[WasteRecordStatus.New],
+                },
+                {
+                    key: WasteRecordStatus.Verified.toString(),
+                    tab: wasteRecordStatusLabels[WasteRecordStatus.Verified],
+                },
+                {
+                    key: WasteRecordStatus.Rejected.toString(),
+                    tab: wasteRecordStatusLabels[WasteRecordStatus.Rejected],
+                },
+                {
+                    key: WasteRecordStatus.RevisionRequired.toString(),
+                    tab: wasteRecordStatusLabels[WasteRecordStatus.RevisionRequired],
+                },
+            ]}
+            onTabChange={(key) => {
+                setStatusFilter(parseInt(key) as WasteRecordStatus);
+                setSelectedRows([]);
+            }}
+        >
 
             <ProTable<WasteRecord>
                 rowKey="id"
@@ -285,7 +284,7 @@ const WasteRecordApproval: React.FC = () => {
                 />
             </ModalForm>
 
-        </>
+        </PageContainer>
     );
 };
 

@@ -71,7 +71,7 @@ export default function InfoCardGrid(props: InfoCardGridProps) {
 
         setModalContent(
             <div>
-                <Title level={3}>Summary by Disposal Method</Title>
+                <Title level={4}>Summary by Disposal Method</Title>
                 <Table
                     dataSource={summary}
                     pagination={false}
@@ -89,7 +89,7 @@ export default function InfoCardGrid(props: InfoCardGridProps) {
 
                 <Divider />
 
-                <Title level={3}>Detailed Breakdown</Title>
+                <Title level={4}>Detailed Breakdown</Title>
                 <Collapse accordion items={collapseItems} />
             </div>
         );
@@ -134,7 +134,7 @@ export default function InfoCardGrid(props: InfoCardGridProps) {
 
         setModalContent(
             <div>
-                <Title level={3}>Summary by Disposal Method</Title>
+                <Title level={4}>Summary by Disposal Method</Title>
                 <Table
                     dataSource={summary}
                     pagination={false}
@@ -152,7 +152,7 @@ export default function InfoCardGrid(props: InfoCardGridProps) {
 
                 <Divider />
 
-                <Title level={3}>Detailed Breakdown</Title>
+                <Title level={4}>Detailed Breakdown</Title>
                 <Collapse accordion items={collapseItems} />
             </div>
         );

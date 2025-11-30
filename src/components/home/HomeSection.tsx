@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { PageContainer, ProCard } from '@ant-design/pro-components';
 
 const { Title, Paragraph } = Typography;
 
@@ -43,33 +44,35 @@ export default function HomeSection() {
     ];
 
     return (
-        <Card
-            title={<Title level={4} style={{ margin: 0 }}>About GREENTRACK SYSTEM</Title>}
+        <PageContainer
+            title={false}
         >
-            <Paragraph style={{ fontSize: 18, lineHeight: 1.6 }}>
-                UTM GreenTrack is a user-friendly system designed to help UTM track and monitor
-                campus-generated waste. All data entered into the system, including waste generation,
-                recycling, composting, and disposal methods, is sourced exclusively from within UTM,
-                ensuring accurate and reliable internal reporting. This system enables the university
-                to monitor its sustainability progress effectively and strengthen its commitment to
-                a greener future.
-            </Paragraph>
+            <ProCard title={<Title level={4} style={{ margin: 0 }}>About GREENTRACK SYSTEM</Title>}>
+                <Paragraph style={{ fontSize: 16, lineHeight: 1.6 }}>
+                    UTM GreenTrack is a user-friendly system designed to help UTM track and monitor
+                    campus-generated waste. All data entered into the system, including waste generation,
+                    recycling, composting, and disposal methods, is sourced exclusively from within UTM,
+                    ensuring accurate and reliable internal reporting. This system enables the university
+                    to monitor its sustainability progress effectively and strengthen its commitment to
+                    a greener future.
+                </Paragraph>
 
-            <Title level={1} style={{ textAlign: 'center', margin: '30px' }}>Get Started!</Title>
+                <Title level={1} style={{ textAlign: 'center', margin: '30px' }}>Get Started!</Title>
 
-            <Row gutter={[16, 16]} justify="center" style={{ margin: '30px 0' }}>
-                {features.map((f, i) => (
-                    <Col xs={24} sm={12} md={6} key={i}>
-                        <Card
-                            hoverable
-                            onClick={() => router.push(f.path)}
-                            style={{ textAlign: 'center', borderRadius: 12 }}>
-                            {f.icon}
-                            <div style={{ marginTop: 10, fontWeight: 500, fontSize: 18 }}>{f.title}</div>
-                        </Card>
-                    </Col>
-                ))}
-            </Row>
-        </Card>
+                <Row gutter={[16, 16]} justify="center" style={{ margin: '30px 0' }}>
+                    {features.map((f, i) => (
+                        <Col xs={24} sm={12} md={6} key={i}>
+                            <Card
+                                hoverable
+                                onClick={() => router.push(f.path)}
+                                style={{ textAlign: 'center', borderRadius: 12 }}>
+                                {f.icon}
+                                <div style={{ marginTop: 10, fontWeight: 500, fontSize: 16 }}>{f.title}</div>
+                            </Card>
+                        </Col>
+                    ))}
+                </Row>
+            </ProCard>
+        </PageContainer>
     );
 }

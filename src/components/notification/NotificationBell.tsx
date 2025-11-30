@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge, Button, Dropdown, List, Spin, Typography, Avatar, Tabs, Empty, Tooltip, theme, Skeleton } from 'antd';
-import { BellOutlined, CheckOutlined, DeleteOutlined, ReadOutlined, HistoryOutlined, BellFilled } from '@ant-design/icons';
+import { CheckOutlined, ReadOutlined, HistoryOutlined, BellFilled } from '@ant-design/icons';
 import { getAllNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification, getUnreadNotificationCount } from '@/lib/services/notification';
 import { Notification } from '@/lib/types/typing';
 import dayjs from 'dayjs';
@@ -202,7 +202,7 @@ export const NotificationBell: React.FC = () => {
 
     return (
         <Dropdown
-            dropdownRender={renderDropdown}
+            popupRender={renderDropdown}
             trigger={['click']}
             open={dropdownOpen}
             onOpenChange={setDropdownOpen}

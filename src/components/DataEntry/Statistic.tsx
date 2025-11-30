@@ -25,6 +25,8 @@ import { MONTH_LABELS_SHORT } from '@/lib/enum/monthName';
 import { DisposalMethodWithWasteType } from '@/lib/types/typing';
 import { ColumnsType } from 'antd/es/table';
 import { downloadFile } from '@/lib/utils/downloadFile';
+import { PageContainer } from '@ant-design/pro-components';
+import { WhiteBgWrapper } from '../wrapper/whiteBgWrapper';
 
 export interface StatisticRow {
     month: string;
@@ -241,114 +243,118 @@ const WasteManagementTable: React.FC = () => {
     };
 
     return (
-        <Card title={'Statistic'} loading={isLoading || isDepartmentLoading}>
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                {/* Header */}
-                <Row gutter={[16, 16]} justify="space-between" align="middle">
-                    {/* Filters Section */}
-                    <Col flex="auto">
-                        <Space wrap size="middle">
-                            <Segmented
-                                value={isPersonalView}
-                                onChange={setIsPersonalView}
-                                options={[
-                                    { label: "Personal", value: true },
-                                    { label: "All", value: false },
-                                ]}
-                            />
+        <PageContainer title={'Statistic'} loading={isLoading || isDepartmentLoading}>
+            <WhiteBgWrapper>
+                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                    {/* Header */}
+                    <Row gutter={[16, 16]} justify="space-between" align="middle">
+                        {/* Filters Section */}
+                        <Col flex="auto">
+                            <Space wrap size="middle">
+                                <Segmented
+                                    value={isPersonalView}
+                                    onChange={setIsPersonalView}
+                                    options={[
+                                        { label: "Personal", value: true },
+                                        { label: "All", value: false },
+                                    ]}
+                                />
 
-                            <Select
-                                value={year}
-                                onChange={setYear}
-                                style={{ width: 120 }}
-                                options={yearOptions}
-                                placeholder="Year"
-                            />
+                                <Select
+                                    value={year}
+                                    onChange={setYear}
+                                    style={{ width: 100 }}
+                                    options={yearOptions}
+                                    placeholder="Year"
+                                />
 
-                            <Select
-                                value={selectedCampus}
-                                onChange={setSelectedCampus}
-                                style={{ width: 160 }}
-                                placeholder="Campus"
-                                options={campuses.map((c) => ({
-                                    label: c.name,
-                                    value: c.id,
-                                }))}
-                                allowClear
-                            />
+                                <Select
+                                    value={selectedCampus}
+                                    onChange={setSelectedCampus}
+                                    style={{ minWidth: 250, width: 'auto' }}
+                                    placeholder="Campus"
+                                    options={campuses.map((c) => ({
+                                        label: c.name,
+                                        value: c.id,
+                                    }))}
+                                    optionFilterProp="label"
+                                    allowClear
+                                />
 
-                            <Select
-                                value={selectedDepartment}
-                                onChange={setSelectedDepartment}
-                                placeholder="Department"
-                                options={departments.map((d) => ({
-                                    label: d.name,
-                                    value: d.id,
-                                }))}
-                                style={{ minWidth: 350, width: 'auto' }}
-                                popupMatchSelectWidth
-                                showSearch
-                                allowClear
-                            />
-                        </Space>
-                    </Col>
+                                <Select
+                                    value={selectedDepartment}
+                                    onChange={setSelectedDepartment}
+                                    placeholder="Department"
+                                    options={departments.map((d) => ({
+                                        label: d.name,
+                                        value: d.id,
+                                    }))}
+                                    optionFilterProp="label"
+                                    style={{ minWidth: 350, width: 'auto' }}
+                                    popupMatchSelectWidth
+                                    showSearch
+                                    allowClear
+                                />
+                            </Space>
+                        </Col>
 
-                    {/* Export Section */}
-                    <Col>
-                        <Space>
-                            <Button
-                                loading={excelLoading}
-                                icon={<FileExcelOutlined />}
-                                onClick={handleExportExcel}
-                            >
-                                Excel
-                            </Button>
-                            <Button
-                                loading={pdfLoading}
-                                icon={<FilePdfOutlined />}
-                                danger
-                                onClick={handleExportPDF}
-                            >
-                                PDF
-                            </Button>
-                        </Space>
-                    </Col>
-                </Row>
-                {/* Table */}
+                        {/* Export Section */}
+                        <Col>
+                            <Space>
+                                <Button
+                                    loading={excelLoading}
+                                    icon={<FileExcelOutlined />}
+                                    onClick={handleExportExcel}
+                                >
+                                    Excel
+                                </Button>
+                                <Button
+                                    loading={pdfLoading}
+                                    icon={<FilePdfOutlined />}
+                                    danger
+                                    onClick={handleExportPDF}
+                                >
+                                    PDF
+                                </Button>
+                            </Space>
+                        </Col>
+                    </Row>
+                    {/* Table */}
 
-                <Table
-                    loading={isLoading || loading || isDepartmentLoading}
-                    columns={columns}
-                    dataSource={data?.tableData || []}
-                    bordered
-                    size="middle"
-                    scroll={{ x: 'max-content' }}
-                    pagination={false}
-                    rowKey="month"
-                />
+                    <Table
+                        loading={isLoading || loading || isDepartmentLoading}
+                        columns={columns}
+                        dataSource={data?.tableData || []}
+                        bordered
+                        size="middle"
+                        scroll={{ x: 'max-content' }}
+                        pagination={false}
+                        rowKey="month"
+                    />
 
-                {/* Category Totals */}
+                    {/* Category Totals */}
 
-                <div
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'space-around',
-                        backgroundColor: 'white',
-                        padding: '16px',
-                        borderRadius: '8px',
-                        border: '1px solid #d9d9d9',
-                        overflow: 'auto',
-                    }}
-                >
-                    {Object.entries(data?.categoryTotals ?? {}).map(([method, value]) => (
-                        <div key={method} style={{ textAlign: 'center' }}>
-                            <strong>Total {method}:</strong> {formatNumber(typeof value === 'number' ? value : 0)} KG
-                        </div>
-                    ))}
-                </div>
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-around',
+                            backgroundColor: 'white',
+                            padding: '16px',
+                            borderRadius: '8px',
+                            border: '1px solid #d9d9d9',
+                            overflow: 'auto',
+                        }}
+                    >
+                        {Object.entries(data?.categoryTotals ?? {}).map(([method, value]) => (
+                            <div key={method} style={{ textAlign: 'center' }}>
+                                <strong>Total {method}:</strong> {formatNumber(typeof value === 'number' ? value : 0)} KG
+                            </div>
+                        ))}
+                    </div>
 
-            </Space>
-        </Card>
+                </Space>
+            </WhiteBgWrapper>
+        </PageContainer>
     );
 };
 

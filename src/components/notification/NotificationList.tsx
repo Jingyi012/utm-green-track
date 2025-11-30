@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { ProList, ActionType } from '@ant-design/pro-components';
+import { ProList, ActionType, PageContainer } from '@ant-design/pro-components';
 import { Button, Tag, Popconfirm, message, Badge, Avatar, Typography, Space, Tooltip, theme } from 'antd';
 import { CheckOutlined, DeleteOutlined, BellOutlined, ReadOutlined, RightOutlined } from '@ant-design/icons';
 import { getAllNotifications, markNotificationAsRead, deleteNotification, deleteAllNotifications, markAllNotificationsAsRead } from '@/lib/services/notification';
@@ -80,7 +80,7 @@ export default function NotificationPage() {
     };
 
     return (
-        <div>
+        <PageContainer title={false}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <div>
                     <Title level={3} style={{ margin: 0 }}>Notifications</Title>
@@ -200,6 +200,6 @@ export default function NotificationPage() {
                     }
                 })}
             />
-        </div>
+        </PageContainer>
     );
 }

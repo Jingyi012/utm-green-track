@@ -53,6 +53,8 @@ const YearMonthPicker: React.FC<YearMonthPickerProps> = ({ year, month = 0, onCh
         placeholder="Month"
         style={{ width: 140 }}
         onChange={(val) => onChange?.({ year: year!, month: val })}
+        showSearch
+        optionFilterProp="label"
       >
         {months.map((m) => (
           <Option key={m.value} value={m.value}>
