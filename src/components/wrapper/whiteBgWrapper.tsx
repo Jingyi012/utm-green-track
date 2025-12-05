@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-export const WhiteBgWrapper = (children: any) => {
+export const WhiteBgWrapper = ({ children }: { children: ReactNode }) => {
     return <div
         style={{
             background: 'white',
