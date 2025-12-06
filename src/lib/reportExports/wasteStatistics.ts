@@ -3,7 +3,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { message } from 'antd';
 import { formatNumber } from '../utils/formatter';
-import { StatisticRow } from '@/components/DataEntry/Statistic';
+import { StatisticRow } from '@/components/dataEntry/statistic/Statistic';
 
 function getNestedValue(obj: any, path: (string | number)[]): any {
     return path.reduce((acc, key) => acc?.[key], obj);

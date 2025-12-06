@@ -26,7 +26,7 @@ import { downloadFile } from '@/lib/utils/downloadFile';
 import { PageContainer, ProForm, ProFormSelect, ProFormText } from '@ant-design/pro-components';
 import { WhiteBgWrapper } from '@/components/wrapper/whiteBgWrapper';
 import { useAuth } from '@/contexts/AuthContext';
-import { ExportWasteReportModal } from './ExportWasteReportModal';
+import { ExportWasteReportModal } from '@/components/dataEntry/statistic/ExportWasteReportModal';
 
 export interface StatisticRow {
     month: string;
