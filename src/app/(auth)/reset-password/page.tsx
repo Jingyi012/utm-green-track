@@ -1,5 +1,5 @@
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
-import AuthLayout from "@/components/layout/AuthLayout";
+import AuthLayout from "@/components/layouts/AuthLayout";
 import { Spin } from "antd";
 import { Suspense } from "react";
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 
 type User = {
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User>(null);
+    const router = useRouter();
 
     useEffect(() => {
         const storedUser = localStorage.getItem("currentUser");
@@ -41,6 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const logout = () => {
         localStorage.removeItem("currentUser");
         setUser(null);
+        router.replace('login')
     };
 
     const hasRole = (role: string) => {

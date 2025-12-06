@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname, notFound } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppMenuItem, proLayoutMenuData } from "@/lib/config/menu";
+import ForbiddenPage from "@/components/layouts/forbiddenPage";
 
 function findItemAndEffectiveRoles(
     items: AppMenuItem[],
@@ -28,11 +29,11 @@ export default function PageGuard({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const [authorized, setAuthorized] = useState(false);
+    const [accessDenied, setAccessDenied] = useState(false);
 
     useEffect(() => {
         const { item, roles: requiredRoles } = findItemAndEffectiveRoles(proLayoutMenuData, pathname);
 
-        // If no required roles (neither on item nor its ancestors), allow access
         if (!requiredRoles || requiredRoles.length === 0) {
             setAuthorized(true);
             return;
@@ -40,12 +41,14 @@ export default function PageGuard({ children }: { children: React.ReactNode }) {
 
         const allowed = requiredRoles.some((r: string) => roles.includes(r));
         if (!allowed) {
-            router.replace("/forbidden");
+            setAccessDenied(true);
+            setAuthorized(false);
+            return;
         }
-        setAuthorized(allowed);
-    }, [pathname, roles, router]);
+        setAuthorized(true);
+    }, [pathname, roles]);
 
+    if (accessDenied) return <ForbiddenPage />;
     if (!authorized) return null;
-
     return <>{children}</>;
 }
