@@ -1,4 +1,4 @@
-import WasteEntryForm from "@/components/DataEntry/NewForm";
+import WasteEntryForm from "@/components/dataEntry/NewForm";
 
 export default function NewFormPage() {
     return (
