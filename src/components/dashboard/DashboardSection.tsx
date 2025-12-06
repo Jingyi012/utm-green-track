@@ -237,7 +237,7 @@ const DashboardSection: React.FC = () => {
         label: {
             text: (d) => {
                 const percent = (d.totalWeight / totalSum) * 100;
-                return `${d.wasteType}\n${percent.toFixed(1)}%`;
+                return `${d.wasteType}\n${d.totalWeight} Tonnes (${percent}%)`;
             },
             position: 'outside',
             style: {

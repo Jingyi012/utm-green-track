@@ -3,20 +3,18 @@
 import React, { useEffect, useState } from 'react';
 import {
     Table,
-    Select,
     Button,
     Space,
-    Card,
     App,
     Col,
     Row,
-    Segmented,
 } from 'antd';
 import {
     FilePdfOutlined,
     FileExcelOutlined,
+    DownloadOutlined,
 } from '@ant-design/icons';
-import { exportExcelWasteStatistics, exportPdfWasteStatistics, getWasteStatisticByYear } from '@/lib/services/wasteRecord';
+import { exportExcelWasteStatistics, exportPdfWasteReport, exportPdfWasteStatistics, getWasteStatisticByYear } from '@/lib/services/wasteRecord';
 import { formatNumber } from '@/lib/utils/formatter';
 import { useConfirmAction } from '@/hook/confirmAction';
 import { MonthlyStatisticByYearResponse } from '@/lib/types/wasteSummary';
@@ -25,8 +23,10 @@ import { MONTH_LABELS_SHORT } from '@/lib/enum/monthName';
 import { DisposalMethodWithWasteType } from '@/lib/types/typing';
 import { ColumnsType } from 'antd/es/table';
 import { downloadFile } from '@/lib/utils/downloadFile';
-import { PageContainer } from '@ant-design/pro-components';
-import { WhiteBgWrapper } from '../wrapper/whiteBgWrapper';
+import { PageContainer, ProForm, ProFormSelect, ProFormText } from '@ant-design/pro-components';
+import { WhiteBgWrapper } from '@/components/wrapper/whiteBgWrapper';
+import { useAuth } from '@/contexts/AuthContext';
+import { ExportWasteReportModal } from './ExportWasteReportModal';
 
 export interface StatisticRow {
     month: string;
@@ -117,6 +117,7 @@ const transformWasteData = (rawData: MonthlyStatisticByYearResponse, disposalMet
 
 const WasteManagementTable: React.FC = () => {
     const { message } = App.useApp();
+    const { isAdmin } = useAuth();
     const confirmAction = useConfirmAction();
     const { departments, isLoading: isDepartmentLoading } = useProfileDropdownOptions();
     const { disposalMethods, campuses, isLoading } = useWasteRecordDropdownOptions();
@@ -125,9 +126,11 @@ const WasteManagementTable: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [excelLoading, setExcelLoading] = useState<boolean>(false);
     const [pdfLoading, setPdfLoading] = useState<boolean>(false);
+    const [reportLoading, setReportLoading] = useState<boolean>(false);
     const [selectedCampus, setSelectedCampus] = useState<string | undefined>(undefined);
     const [selectedDepartment, setSelectedDepartment] = useState<string | undefined>(undefined);
-    const [isPersonalView, setIsPersonalView] = useState<boolean>(true);
+    const [selectedUnit, setSelectedUnit] = useState<string | undefined>(undefined);
+    const [exportReportModalOpen, setExportReportModalOpen] = useState<boolean>(false);
 
     const fetchData = async (selectedYear: number) => {
         setLoading(true);
@@ -136,7 +139,8 @@ const WasteManagementTable: React.FC = () => {
                 year: selectedYear,
                 campusId: selectedCampus,
                 departmentId: selectedDepartment,
-                isPersonalView: isPersonalView
+                unit: selectedUnit,
+                isViewAll: isAdmin ? true : false
             });
             const transformed = transformWasteData(res.data, disposalMethods);
             setData({
@@ -156,10 +160,9 @@ const WasteManagementTable: React.FC = () => {
     }, [isLoading, disposalMethods]);
 
     useEffect(() => {
-        if (disposalMethods.length > 0) {
-            fetchData(year);
-        }
-    }, [year, selectedCampus, selectedDepartment, isPersonalView]);
+        if (disposalMethods.length === 0) return;
+        fetchData(year);
+    }, [year, selectedCampus, selectedDepartment, selectedUnit, disposalMethods]);
 
     const generateColumns = (disposalMethods: DisposalMethodWithWasteType[]) => {
         const columns: ColumnsType<StatisticRow> = [
@@ -191,10 +194,28 @@ const WasteManagementTable: React.FC = () => {
 
     const columns = generateColumns(disposalMethods);
 
+    const getLocationContext = (campusId?: string, departmentId?: string, unit?: string) => {
+        const campusName = campusId ? campuses.find(c => c.id === campusId)?.name : undefined;
+        const departmentName = departmentId ? departments.find(d => d.id === departmentId)?.name : undefined;
+        const unitName = unit?.trim() || undefined;
+
+        const parts: string[] = [];
+
+        if (campusName) parts.push(campusName);
+        if (departmentName) parts.push(departmentName);
+        if (unitName) parts.push(unitName);
+
+        if (parts.length === 0) return "";
+
+        return ` for ${parts.join(", ")}`;
+    };
+
+
     const handleExportExcel = async () => {
+        const context = getLocationContext(selectedCampus, selectedDepartment, selectedUnit);
         const confirmed = await confirmAction({
             title: 'Confirm Excel Export',
-            content: `Are you sure you want to download the Excel file for ${year} waste statistic?`,
+            content: `Are you sure you want to download the ${year} waste statistics${context}?`,
         });
         if (!confirmed) return;
         const hide = message.loading("Generating Excel...");
@@ -205,7 +226,8 @@ const WasteManagementTable: React.FC = () => {
                 year,
                 campusId: selectedCampus,
                 departmentId: selectedDepartment,
-                isPersonalView: isPersonalView
+                unit: selectedUnit,
+                isViewAll: isAdmin ? true : false
             });
             const contentDisposition = response.headers['content-disposition'];
             downloadFile(response.data, contentDisposition, `Waste_Statistic_${year}.xlsx`);
@@ -218,9 +240,10 @@ const WasteManagementTable: React.FC = () => {
     };
 
     const handleExportPDF = async () => {
+        const context = getLocationContext(selectedCampus, selectedDepartment, selectedUnit);
         const confirmed = await confirmAction({
             title: 'Confirm PDF Export',
-            content: `Are you sure you want to download the PDF file for ${year} waste statistic?`,
+            content: `Are you sure you want to download the ${year} waste statistics${context}?`,
         });
         if (!confirmed) return;
         const hide = message.loading("Generating PDF...");
@@ -230,7 +253,8 @@ const WasteManagementTable: React.FC = () => {
                 year,
                 campusId: selectedCampus,
                 departmentId: selectedDepartment,
-                isPersonalView: isPersonalView
+                unit: selectedUnit,
+                isViewAll: isAdmin ? true : false
             });
             const contentDisposition = response.headers['content-disposition'];
             downloadFile(response.data, contentDisposition, `Waste_Statistic_${year}.pdf`);
@@ -242,6 +266,33 @@ const WasteManagementTable: React.FC = () => {
         }
     };
 
+    const handleDownloadWasteReport = async (year: number, campusId?: string, departmentId?: string, unit?: string) => {
+        const context = getLocationContext(campusId, departmentId, unit);
+        const confirmed = await confirmAction({
+            title: 'Confirm Excel Export',
+            content: `Are you sure you want to download the ${year} waste report${context}?`,
+        });
+        if (!confirmed) return;
+        const hide = message.loading("Generating waste report...");
+        try {
+            setReportLoading(true);
+            var response = await exportPdfWasteReport({
+                year,
+                campusId,
+                departmentId,
+                unit,
+                isViewAll: isAdmin ? true : false
+            });
+            const contentDisposition = response.headers['content-disposition'];
+            downloadFile(response.data, contentDisposition, `Waste_Report${year}.pdf`);
+        } catch (err: any) {
+            message.error(err?.response?.data?.message || 'Failed to generate waste report');
+        } finally {
+            setReportLoading(false);
+            hide();
+        }
+    }
+
     return (
         <PageContainer title={'Statistic'} loading={isLoading || isDepartmentLoading}>
             <WhiteBgWrapper>
@@ -250,52 +301,70 @@ const WasteManagementTable: React.FC = () => {
                     <Row gutter={[16, 16]} justify="space-between" align="middle">
                         {/* Filters Section */}
                         <Col flex="auto">
-                            <Space wrap size="middle">
-                                <Segmented
-                                    value={isPersonalView}
-                                    onChange={setIsPersonalView}
-                                    options={[
-                                        { label: "Personal", value: true },
-                                        { label: "All", value: false },
-                                    ]}
-                                />
+                            <ProForm submitter={false}>
+                                <Space wrap size="middle">
+                                    <ProFormSelect
+                                        name="year"
+                                        initialValue={year}
+                                        onChange={setYear}
+                                        style={{ width: 100 }}
+                                        options={yearOptions}
+                                        placeholder="Year"
+                                        label="Year"
+                                        fieldProps={{
+                                            showSearch: true,
+                                            optionFilterProp: "label",
+                                        }}
+                                    />
 
-                                <Select
-                                    value={year}
-                                    onChange={setYear}
-                                    style={{ width: 100 }}
-                                    options={yearOptions}
-                                    placeholder="Year"
-                                />
+                                    <ProFormSelect
+                                        name="campus"
+                                        initialValue={selectedCampus}
+                                        onChange={setSelectedCampus}
+                                        style={{ minWidth: 250, width: 'auto' }}
+                                        label="Campus"
+                                        placeholder="Campus"
+                                        options={campuses.map((c) => ({
+                                            label: c.name,
+                                            value: c.id,
+                                        }))}
+                                        fieldProps={{
+                                            showSearch: true,
+                                            optionFilterProp: "label",
+                                        }}
+                                        allowClear
+                                    />
 
-                                <Select
-                                    value={selectedCampus}
-                                    onChange={setSelectedCampus}
-                                    style={{ minWidth: 250, width: 'auto' }}
-                                    placeholder="Campus"
-                                    options={campuses.map((c) => ({
-                                        label: c.name,
-                                        value: c.id,
-                                    }))}
-                                    optionFilterProp="label"
-                                    allowClear
-                                />
-
-                                <Select
-                                    value={selectedDepartment}
-                                    onChange={setSelectedDepartment}
-                                    placeholder="Department"
-                                    options={departments.map((d) => ({
-                                        label: d.name,
-                                        value: d.id,
-                                    }))}
-                                    optionFilterProp="label"
-                                    style={{ minWidth: 350, width: 'auto' }}
-                                    popupMatchSelectWidth
-                                    showSearch
-                                    allowClear
-                                />
-                            </Space>
+                                    <ProFormSelect
+                                        name="department"
+                                        initialValue={selectedDepartment}
+                                        onChange={setSelectedDepartment}
+                                        style={{ minWidth: 350, width: 'auto' }}
+                                        label="Department"
+                                        placeholder="Department"
+                                        options={departments.map((d) => ({
+                                            label: d.name,
+                                            value: d.id,
+                                        }))}
+                                        fieldProps={{
+                                            showSearch: true,
+                                            optionFilterProp: "label",
+                                        }}
+                                        allowClear
+                                    />
+                                    <ProFormText
+                                        name="unit"
+                                        label="PTJ / Unit"
+                                        placeholder="Enter PTJ / Unit"
+                                        fieldProps={{
+                                            onBlur: (e) => {
+                                                const value = e.target.value.trim();
+                                                setSelectedUnit(value);
+                                            }
+                                        }}
+                                    />
+                                </Space>
+                            </ProForm>
                         </Col>
 
                         {/* Export Section */}
@@ -306,7 +375,7 @@ const WasteManagementTable: React.FC = () => {
                                     icon={<FileExcelOutlined />}
                                     onClick={handleExportExcel}
                                 >
-                                    Excel
+                                    Waste Stats (Excel)
                                 </Button>
                                 <Button
                                     loading={pdfLoading}
@@ -314,7 +383,16 @@ const WasteManagementTable: React.FC = () => {
                                     danger
                                     onClick={handleExportPDF}
                                 >
-                                    PDF
+                                    Waste Stats (PDF)
+                                </Button>
+                                <Button
+                                    loading={reportLoading}
+                                    icon={<DownloadOutlined />}
+                                    color='primary'
+                                    variant='outlined'
+                                    onClick={() => setExportReportModalOpen(true)}
+                                >
+                                    Waste Report
                                 </Button>
                             </Space>
                         </Col>
@@ -354,6 +432,16 @@ const WasteManagementTable: React.FC = () => {
 
                 </Space>
             </WhiteBgWrapper>
+            <ExportWasteReportModal
+                open={!!exportReportModalOpen}
+                onCancel={
+                    () => setExportReportModalOpen(false)
+                }
+                onConfirm={handleDownloadWasteReport}
+                campuses={campuses}
+                departments={departments}
+                isAdmin={isAdmin}
+            />
         </PageContainer>
     );
 };

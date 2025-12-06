@@ -1,4 +1,4 @@
-import WasteManagementTable from "@/components/DataEntry/Statistic";
+import WasteManagementTable from "@/components/DataEntry/statistic/Statistic";
 
 export default function StatisticPage() {
     return (

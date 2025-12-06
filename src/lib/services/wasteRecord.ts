@@ -119,7 +119,8 @@ export async function getWasteStatisticByYear(params: {
     year: number,
     campusId?: string
     departmentId?: string,
-    isPersonalView?: boolean,
+    unit?: string,
+    isViewAll?: boolean,
 },
     options?: { [key: string]: any },
 ) {
@@ -168,7 +169,8 @@ export async function exportExcelWasteStatistics(params: {
     year: number,
     campusId?: string
     departmentId?: string,
-    isPersonalView?: boolean,
+    unit?: string,
+    isViewAll?: boolean,
 },
     options?: { [key: string]: any },
 ) {
@@ -183,11 +185,28 @@ export async function exportPdfWasteStatistics(params: {
     year: number,
     campusId?: string
     departmentId?: string,
-    isPersonalView?: boolean,
+    unit?: string,
+    isViewAll?: boolean,
 },
     options?: { [key: string]: any },
 ) {
     return api.get(`${API_URL}/statistic/export/pdf`, {
+        params,
+        responseType: "blob",
+        ...options,
+    });
+}
+
+export async function exportPdfWasteReport(params: {
+    year: number,
+    campusId?: string
+    departmentId?: string,
+    unit?: string,
+    isViewAll?: boolean,
+},
+    options?: { [key: string]: any },
+) {
+    return api.get(`${API_URL}/report/export`, {
         params,
         responseType: "blob",
         ...options,

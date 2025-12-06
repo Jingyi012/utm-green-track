@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { createRequest } from "@/lib/services/requestService";
 import { downloadFile } from "@/lib/utils/downloadFile";
 import { DeleteOutlined, EditOutlined, FileExcelOutlined, FilePdfOutlined } from "@ant-design/icons";
-import { ExportModal } from "../DataEntry/ExportModal";
+import { ExportWasteRecordModal } from "./ExportWasteRecordModal";
 import { getBaseColumns } from './columns';
 
 interface WasteRecordManagementProps {
@@ -313,7 +313,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
                 handleDelete={async () => confirmDeletion(selectedRecord!)}
             />
 
-            <ExportModal
+            <ExportWasteRecordModal
                 open={!!modalOpen}
                 type={modalOpen || "excel"}
                 onCancel={() => setModalOpen(false)}
