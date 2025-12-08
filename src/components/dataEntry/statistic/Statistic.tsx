@@ -218,7 +218,7 @@ const WasteManagementTable: React.FC = () => {
             content: `Are you sure you want to download the ${year} waste statistics${context}?`,
         });
         if (!confirmed) return;
-        const hide = message.loading("Generating Excel...");
+        const hide = message.loading("Generating Excel...", 0);
         try {
             setExcelLoading(true);
 
@@ -246,7 +246,7 @@ const WasteManagementTable: React.FC = () => {
             content: `Are you sure you want to download the ${year} waste statistics${context}?`,
         });
         if (!confirmed) return;
-        const hide = message.loading("Generating PDF...");
+        const hide = message.loading("Generating PDF...", 0);
         try {
             setPdfLoading(true);
             var response = await exportPdfWasteStatistics({
@@ -273,7 +273,7 @@ const WasteManagementTable: React.FC = () => {
             content: `Are you sure you want to download the ${year} waste report${context}?`,
         });
         if (!confirmed) return;
-        const hide = message.loading("Generating waste report...");
+        const hide = message.loading("Generating waste report...", 0);
         try {
             setReportLoading(true);
             var response = await exportPdfWasteReport({

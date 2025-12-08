@@ -147,7 +147,7 @@ const UserManagement: React.FC = () => {
 
     const handleExportExcel = async () => {
 
-        const hide = message.loading("Generating Excel...");
+        const hide = message.loading("Generating Excel...", 0);
         try {
             setExcelLoading(true);
             const response = await exportExcelUsers();
@@ -162,7 +162,7 @@ const UserManagement: React.FC = () => {
     };
 
     const handleExportPDF = async () => {
-        const hide = message.loading("Generating Pdf...");
+        const hide = message.loading("Generating Pdf...", 0);
         try {
             setPdfLoading(true);
             const response = await exportPdfUsers();

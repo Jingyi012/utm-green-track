@@ -138,7 +138,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
 
     const handleExportExcel = async (year: number, month: number) => {
 
-        const hide = message.loading("Generating Excel...");
+        const hide = message.loading("Generating Excel...", 0);
         try {
             setExcelLoading(true);
             const response = await exportExcelWasteRecords({ year, month });
@@ -153,7 +153,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
     };
 
     const handleExportPDF = async (year: number, month: number) => {
-        const hide = message.loading("Generating Pdf...");
+        const hide = message.loading("Generating Pdf...", 0);
         try {
             setPdfLoading(true);
             const response = await exportPdfWasteRecords({ year, month });
