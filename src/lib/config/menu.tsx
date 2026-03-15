@@ -57,24 +57,28 @@ export const proLayoutMenuData: AppMenuItem[] = [
     ],
   },
   {
-    path: '/waste-records',
-    name: 'Waste Records',
+    path: '/waste-data',
+    name: 'Waste Data',
     icon: <UnorderedListOutlined />,
     roles: ['Admin'],
     children: [
       {
-        path: '/waste-records/approval',
+        path: '/waste-data/approval',
         name: 'Approval',
       },
       {
-        path: '/waste-records/management',
+        path: '/waste-data/management',
         name: 'Management',
+      },
+      {
+        path: '/requests',
+        name: 'Requests',
       },
     ],
   },
   {
     path: '/users',
-    name: 'Users',
+    name: 'User Data',
     icon: <UsergroupAddOutlined />,
     roles: ['Admin'],
     children: [
@@ -89,9 +93,9 @@ export const proLayoutMenuData: AppMenuItem[] = [
     ],
   },
   {
-    path: '/requests',
-    name: 'Requests',
-    icon: <MessageOutlined />,
+    path: '/data-analytics',
+    name: 'Data Analytics',
+    icon: <ToolOutlined />,
     roles: ['Admin'],
   },
   {
@@ -104,6 +108,11 @@ export const proLayoutMenuData: AppMenuItem[] = [
     path: '/waste-info',
     name: 'Waste Info',
     icon: <BulbOutlined />,
+  },
+  {
+    path: '/enquiry',
+    name: 'Enquiry',
+    icon: <MailOutlined />,
   },
   {
     path: '/settings',
@@ -121,11 +130,6 @@ export const proLayoutMenuData: AppMenuItem[] = [
     ],
   },
   {
-    path: '/enquiry',
-    name: 'Enquiry',
-    icon: <MailOutlined />,
-  },
-  {
     path: '/notifications',
     name: 'Notifications',
     icon: <BellOutlined />,
@@ -138,5 +142,5 @@ export const profileMenuItems: MenuProps['items'] = [
     key: 'logout',
     label: 'Logout',
     icon: <LogoutOutlined />,
-  }
-]
+  },
+];
