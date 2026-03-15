@@ -1,20 +1,19 @@
 import {
+  BellOutlined,
+  BulbOutlined,
   DashboardOutlined,
   FileTextOutlined,
-  LogoutOutlined,
-  SettingOutlined,
-  InfoCircleOutlined,
-  UsergroupAddOutlined,
-  UnorderedListOutlined,
-  MessageOutlined,
-  BulbOutlined,
-  ToolOutlined,
-  MailOutlined,
   HomeOutlined,
-  BellOutlined,
+  LogoutOutlined,
+  MailOutlined,
+  SettingOutlined,
+  ToolOutlined,
+  UnorderedListOutlined,
+  UsergroupAddOutlined,
 } from '@ant-design/icons';
 import { MenuProps } from 'antd';
 import { ReactNode } from 'react';
+import { GrAnalytics } from 'react-icons/gr';
 
 export interface AppMenuItem {
   path: string;
@@ -95,7 +94,7 @@ export const proLayoutMenuData: AppMenuItem[] = [
   {
     path: '/data-analytics',
     name: 'Data Analytics',
-    icon: <ToolOutlined />,
+    icon: <GrAnalytics />,
     roles: ['Admin'],
   },
   {
