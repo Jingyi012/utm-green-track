@@ -4,10 +4,9 @@ import { useProfileDropdownOptions } from "@/hook/options";
 import { deleteUser, exportExcelUsers, exportPdfUsers, getAllUsers, updateUser } from "@/lib/services/user";
 import { UserDetails } from "@/lib/types/typing";
 import { ActionType, PageContainer, ProColumns, ProTable } from "@ant-design/pro-components";
-import { App, Button, Modal, Popconfirm, Tag } from "antd";
-import { SortOrder } from "antd/es/table/interface";
+import { App, Button, Modal, Popconfirm } from "antd";
 import { useState, useRef } from "react";
-import UserDetailsDrawerForm, { FormValueType } from "./UserDetailsDrawerForm";
+import UserDetailsDrawerForm from "./UserDetailsDrawerForm";
 import { DeleteOutlined, EditOutlined, FileExcelOutlined, FilePdfOutlined } from "@ant-design/icons";
 import { getBaseUserColumns } from "./columns";
 import { downloadFile } from "@/lib/utils/downloadFile";
@@ -45,7 +44,7 @@ const UserManagement: React.FC = () => {
                 success: res.success,
                 total: res.totalCount
             }
-        } catch (err) {
+        } catch {
             message.error("Failed to fetch users");
             return {
                 data: [],
@@ -81,7 +80,7 @@ const UserManagement: React.FC = () => {
                 message.error(res.message || "Failed to update user");
                 return false;
             }
-        } catch (err) {
+        } catch {
             message.error("Failed to update user");
             return false;
         } finally {
@@ -101,8 +100,8 @@ const UserManagement: React.FC = () => {
                 message.error(res.message || "Failed to delete user");
                 return false;
             }
-        } catch (err) {
-            message.error(err?.response?.data?.message || "Failed to delete user");
+        } catch {
+            message.error("Failed to delete user");
             return false;
         }
     }
@@ -111,6 +110,8 @@ const UserManagement: React.FC = () => {
         ...getBaseUserColumns({ positions, departments, roles }),
         {
             title: "Action",
+            width: 130,
+            fixed: "right",
             align: "center",
             hideInSearch: true,
             render: (_, record) => {
@@ -153,7 +154,7 @@ const UserManagement: React.FC = () => {
             const response = await exportExcelUsers();
             const contentDisposition = response.headers['content-disposition'];
             downloadFile(response.data, contentDisposition, "User_Records.xlsx");
-        } catch (err: any) {
+        } catch {
             message.error('Failed to generate Excel');
         } finally {
             setExcelLoading(false);
@@ -168,7 +169,7 @@ const UserManagement: React.FC = () => {
             const response = await exportPdfUsers();
             const contentDisposition = response.headers['content-disposition'];
             downloadFile(response.data, contentDisposition, "User_Records.pdf");
-        } catch (err: any) {
+        } catch {
             message.error('Failed to generate PDF');
         } finally {
             setPdfLoading(false);
@@ -183,10 +184,20 @@ const UserManagement: React.FC = () => {
                 headerTitle="User List"
                 actionRef={actionRef}
                 loading={loading || isLoading}
+                tableLayout="fixed"
+                scroll={{ x: 1600 }}
+                columnsState={{
+                    persistenceKey: "user-management-columns",
+                    persistenceType: "localStorage",
+                }}
                 columns={columns}
                 pagination={{
                 }}
-                request={(params: any, sort: Record<string, SortOrder>, filter: Record<string, (string | number)[] | null>) => {
+                request={(params: {
+                    current?: number;
+                    pageSize?: number;
+                    [key: string]: unknown;
+                }) => {
                     return fetchData({
                         ...params,
                         pageNumber: params.current ?? 1,

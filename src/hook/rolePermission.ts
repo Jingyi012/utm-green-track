@@ -17,6 +17,10 @@ type RolePermissionMetadata = {
   availablePermissions: AvailablePermission[];
 };
 
+const EMPTY_ROLES: Role[] = [];
+const EMPTY_AVAILABLE_PERMISSIONS: AvailablePermission[] = [];
+const EMPTY_ROLE_PERMISSIONS: string[] = [];
+
 const fetchRolePermissionMetadata = async (): Promise<RolePermissionMetadata> => {
   const [permissionsResponse, rolesResponse] = await Promise.all([
     getAvailablePermissions(),
@@ -48,8 +52,8 @@ export function useRolePermissionMetadata() {
   );
 
   return {
-    roles: data?.roles ?? [],
-    availablePermissions: data?.availablePermissions ?? [],
+    roles: data?.roles ?? EMPTY_ROLES,
+    availablePermissions: data?.availablePermissions ?? EMPTY_AVAILABLE_PERMISSIONS,
     isLoading,
     error,
     refresh: mutate,
@@ -69,7 +73,7 @@ export function useRolePermissions(roleId?: string) {
   });
 
   return {
-    rolePermissions: rolePermissions ?? [],
+    rolePermissions: rolePermissions ?? EMPTY_ROLE_PERMISSIONS,
     isLoading,
     error,
     refresh: mutate,

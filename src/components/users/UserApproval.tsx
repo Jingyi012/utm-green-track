@@ -5,8 +5,7 @@ import { UserStatus, userStatusLabels } from "@/lib/enum/status";
 import { getAllUsers, updateUserApprovalStatus } from "@/lib/services/user";
 import { UserDetails } from "@/lib/types/typing";
 import { ActionType, FooterToolbar, ModalForm, PageContainer, ProColumns, ProFormTextArea, ProTable } from "@ant-design/pro-components";
-import { App, Button, Tabs } from "antd";
-import { SortOrder } from "antd/es/table/interface";
+import { App, Button } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { getBaseUserColumns } from "./columns";
 
@@ -46,7 +45,7 @@ const UserApproval: React.FC = () => {
                 success: res.success,
                 total: res.totalCount
             }
-        } catch (err) {
+        } catch {
             message.error("Failed to fetch users");
             return {
                 data: [],
@@ -84,6 +83,8 @@ const UserApproval: React.FC = () => {
         ...getBaseUserColumns({ positions, departments, roles }),
         {
             title: "Action",
+            width: 170,
+            fixed: "right",
             align: "center",
             hideInSearch: true,
             render: (_, record) => {
@@ -170,11 +171,21 @@ const UserApproval: React.FC = () => {
                 headerTitle="User List"
                 actionRef={actionRef}
                 loading={loading || isLoading}
+                tableLayout="fixed"
+                scroll={{ x: 1600 }}
+                columnsState={{
+                    persistenceKey: "user-approval-columns",
+                    persistenceType: "localStorage",
+                }}
                 columns={columns}
                 pagination={{
                     showSizeChanger: true
                 }}
-                request={(params: any, sort: Record<string, SortOrder>, filter: Record<string, (string | number)[] | null>) => {
+                request={(params: {
+                    current?: number;
+                    pageSize?: number;
+                    [key: string]: unknown;
+                }) => {
                     return fetchData({
                         ...params,
                         pageNumber: params.current ?? 1,

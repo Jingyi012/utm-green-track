@@ -25,9 +25,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+type JwtPermissionClaims = {
+  Permission?: string | string[];
+};
+
 const parsePermissionsFromToken = (token: string): string[] => {
   try {
-    const decoded = jwtDecode<Record<string, any>>(token);
+    const decoded = jwtDecode<JwtPermissionClaims>(token);
     // JWT standard uses "Permission" claim, but can also be an array of permissions
     if (decoded.Permission) {
       console.log(decoded.Permission);
@@ -73,7 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('currentUser');
     setUser(null);
     setPermissions([]);
-    router.replace('login');
+    router.replace('/login');
   };
 
   const hasRole = (role: string) => {

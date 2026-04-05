@@ -29,6 +29,14 @@ type RoleTableRow = Role & {
   isLocked: boolean;
 };
 
+const arraysEqual = (left: string[], right: string[]): boolean => {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((value, index) => value === right[index]);
+};
+
 const getPageRules = (
   items: AppMenuItem[],
   inheritedPermission?: string,
@@ -80,11 +88,13 @@ export default function RolePermissions() {
 
   useEffect(() => {
     if (!editingRole) {
-      setDraftPermissions([]);
+      setDraftPermissions((prev) => (prev.length === 0 ? prev : []));
       return;
     }
 
-    setDraftPermissions(rolePermissions);
+    setDraftPermissions((prev) =>
+      arraysEqual(prev, rolePermissions) ? prev : rolePermissions,
+    );
   }, [editingRole, rolePermissions]);
 
   const permissionLabelMap = useMemo(

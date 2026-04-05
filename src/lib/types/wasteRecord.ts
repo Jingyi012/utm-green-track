@@ -19,6 +19,8 @@ export interface WasteRecord {
     attachments?: Attachment[],
     userId: string,
     user: string,
+    userName?: string,
+    userEmail?: string,
     uploadedAttachments?: UploadFile[],
     comment?: string,
 }
@@ -55,6 +57,7 @@ export interface WasteRecordInput extends Omit<WasteRecordDraftInput, 'attachmen
 }
 
 export interface WasteRecordFilter {
+    id?: string;
     pageNumber: number;
     pageSize: number;
     campusId?: string;

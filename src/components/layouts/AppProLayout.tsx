@@ -1,12 +1,18 @@
 import { profileMenuItems, proLayoutMenuData } from '@/lib/config/menu';
 import { ProLayout } from '@ant-design/pro-components';
-import { Dropdown, Avatar } from 'antd';
+import { Dropdown, Avatar, Badge } from 'antd';
 import { NotificationBell } from '../notification/NotificationBell';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { filterMenuByPermissions } from '@/lib/utils/menuFilter';
+import { getAllEnquiry } from '@/lib/services/enquiry';
+import { getAllRequest } from '@/lib/services/requestService';
+import { getAllUsers } from '@/lib/services/user';
+import { getWasteRecordsPaginated } from '@/lib/services/wasteRecord';
+import { EnquiryStatus, RequestStatus, UserStatus, WasteRecordStatus } from '@/lib/enum/status';
+import { PERMISSIONS } from '@/lib/utils/permissions';
 
 interface AppProLayoutProps {
   children: React.ReactNode;
@@ -16,13 +22,73 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout, permissions } = useAuth();
+  const [menuBadgeCounts, setMenuBadgeCounts] = useState<Record<string, number>>({});
 
   const initials = user?.userName ? user.userName[0].toUpperCase() : 'U';
+  const canManageAdminItems = permissions.includes(PERMISSIONS.ADMIN_OPERATION.WRITE);
 
   // Filter menu based on user permissions
   const filteredMenu = useMemo(() => {
     return filterMenuByPermissions(proLayoutMenuData, permissions);
   }, [permissions]);
+
+  useEffect(() => {
+    if (!user) {
+      setMenuBadgeCounts({});
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadMenuBadgeCounts = async () => {
+      const nextCounts: Record<string, number> = {};
+
+      const enquiryPromise = getAllEnquiry({
+        pageNumber: 1,
+        pageSize: 1,
+        status: EnquiryStatus.Open,
+      });
+
+      const adminPromises = canManageAdminItems
+        ? Promise.all([
+            getAllRequest({ pageNumber: 1, pageSize: 1, status: RequestStatus.Pending }),
+            getWasteRecordsPaginated({
+              pageNumber: 1,
+              pageSize: 1,
+              status: WasteRecordStatus.New,
+              isAdmin: true,
+            }),
+            getAllUsers({ pageNumber: 1, pageSize: 1, status: UserStatus.Pending }),
+          ])
+        : null;
+
+      try {
+        const enquiryResult = await enquiryPromise;
+        nextCounts['/enquiry'] = enquiryResult.totalCount ?? 0;
+
+        if (adminPromises) {
+          const [requestResult, wasteApprovalResult, userApprovalResult] = await adminPromises;
+          nextCounts['/waste-data/requests'] = requestResult.totalCount ?? 0;
+          nextCounts['/waste-data/approval'] = wasteApprovalResult.totalCount ?? 0;
+          nextCounts['/users/approval'] = userApprovalResult.totalCount ?? 0;
+        }
+      } catch {
+        // Keep the previous badges if a transient request fails.
+      }
+
+      if (isMounted) {
+        setMenuBadgeCounts((prev) => ({ ...prev, ...nextCounts }));
+      }
+    };
+
+    loadMenuBadgeCounts();
+    const timerId = window.setInterval(loadMenuBadgeCounts, 60000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(timerId);
+    };
+  }, [canManageAdminItems, user]);
 
   const handleProfileClick = async ({ key }: { key: string }) => {
     if (key === 'logout') {
@@ -76,8 +142,19 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
             );
           },
         }}
-        menuItemRender={(item, dom) =>
-          item.path ? (
+        menuItemRender={(item, dom) => {
+          const badgeCount = item.path ? menuBadgeCounts[item.path] ?? 0 : 0;
+          const menuContent =
+            badgeCount > 0 ? (
+              <div className="w-full flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-2">{dom}</span>
+                <Badge count={badgeCount} color="#ff4d4f" overflowCount={99} size="small" />
+              </div>
+            ) : (
+              dom
+            );
+
+          return item.path ? (
             <a
               href={item.path}
               onClick={(e) => {
@@ -86,12 +163,12 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
               }}
               className="cursor-pointer w-full h-full flex items-center gap-2"
             >
-              {dom}
+              {menuContent}
             </a>
           ) : (
-            dom
-          )
-        }
+            menuContent
+          );
+        }}
         token={{
           header: {
             colorBgHeader: 'transparent',

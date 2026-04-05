@@ -1,18 +1,41 @@
 'use client';
 
-import { RequestStatus, requestStatusLabels } from "@/lib/enum/status";
+import { RequestStatus, requestStatusLabels, wasteRecordStatusLabels } from "@/lib/enum/status";
 import { getAllRequest, updateRequestResolveStatus } from "@/lib/services/requestService";
 import { ChangeRequest } from "@/lib/types/typing";
 import { dateFormatter, dateTimeFormatter } from "@/lib/utils/formatter";
 import { EyeOutlined } from "@ant-design/icons";
 import { ActionType, FooterToolbar, PageContainer, ProColumns, ProTable } from "@ant-design/pro-components";
-import { App, Button, Descriptions, Popconfirm, Tabs } from "antd";
-import { SortOrder } from "antd/es/table/interface";
+import { App, Button, Descriptions, Popconfirm, Space, Tooltip } from "antd";
 import Popover from "antd/lib/popover";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+const renderEllipsisText = (value: string | undefined, maxWidth = 180) => {
+    const text = value?.trim() || "-";
+    if (text === "-") return text;
+
+    return (
+        <Tooltip title={text}>
+            <span
+                style={{
+                    display: "inline-block",
+                    maxWidth,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    verticalAlign: "bottom",
+                }}
+            >
+                {text}
+            </span>
+        </Tooltip>
+    );
+};
 
 const RequestManagement: React.FC = () => {
     const { message } = App.useApp();
+    const router = useRouter();
     const [loading, setLoading] = useState<boolean>(false);
     const [selectedRows, setSelectedRows] = useState<ChangeRequest[]>([]);
     const actionRef = useRef<ActionType | undefined>(undefined);
@@ -35,7 +58,7 @@ const RequestManagement: React.FC = () => {
                 success: res.success,
                 total: res.totalCount
             }
-        } catch (err) {
+        } catch {
             message.error("Failed to fetch requests");
             return {
                 data: [],
@@ -68,7 +91,7 @@ const RequestManagement: React.FC = () => {
     const columns: ProColumns<ChangeRequest>[] = [
         {
             title: "No.",
-            render: (_: any, __: any, index: number, action) => {
+            render: (_: unknown, __: ChangeRequest, index: number, action?: ActionType) => {
                 const current = action?.pageInfo?.current ?? 1;
                 const pageSize = action?.pageInfo?.pageSize ?? 10;
                 return (current - 1) * pageSize + index + 1;
@@ -79,24 +102,37 @@ const RequestManagement: React.FC = () => {
         },
         {
             title: 'User',
-            dataIndex: 'user', align: "center",
+            dataIndex: 'user',
+            width: 180,
+            ellipsis: true,
+            align: "center",
+            render: (_: unknown, record: ChangeRequest) => renderEllipsisText(record.user, 160),
             hideInSearch: true
         },
         {
-            title: 'Staff/Matric No.',
-            dataIndex: 'matricNo', align: "center",
+            title: 'Staff / Matric No.',
+            dataIndex: 'matricNo',
+            width: 170,
+            ellipsis: true,
+            align: "center",
+            render: (_: unknown, record: ChangeRequest) => renderEllipsisText(record.matricNo, 150),
         },
         {
             title: 'Message',
-            dataIndex: 'message', align: "center",
+            dataIndex: 'message',
+            width: 260,
+            ellipsis: true,
+            align: "center",
+            render: (_: unknown, record: ChangeRequest) => renderEllipsisText(record.message, 240),
             hideInSearch: true
         },
         {
             title: 'Related Waste Record',
             dataIndex: 'wasteRecord',
+            width: 260,
             align: "center",
             hideInSearch: true,
-            render: (_: any, record: ChangeRequest) => {
+            render: (_: unknown, record: ChangeRequest) => {
                 const wr = record.wasteRecord;
                 if (!wr) return "-";
 
@@ -111,7 +147,7 @@ const RequestManagement: React.FC = () => {
                         <Descriptions.Item label="Program">{wr.program || "-"}</Descriptions.Item>
                         <Descriptions.Item label="Program Date">{dateTimeFormatter(wr.programDate) || "-"}</Descriptions.Item>
                         <Descriptions.Item label="Waste Weight">{wr.wasteWeight}</Descriptions.Item>
-                        <Descriptions.Item label="Status">{requestStatusLabels[wr.status]}</Descriptions.Item>
+                        <Descriptions.Item label="Status">{wasteRecordStatusLabels[wr.status]}</Descriptions.Item>
                         <Descriptions.Item label="Date">{dateFormatter(wr.date)}</Descriptions.Item>
                         <Descriptions.Item label="Attachments">
                             {wr.attachments?.length
@@ -122,17 +158,28 @@ const RequestManagement: React.FC = () => {
                 );
 
                 return (
-                    <Popover content={content} title="Waste Record Details" trigger="click"
-                        arrow={false}
-                    >
-                        <Button type="link" icon={<EyeOutlined />}>View Details</Button>
-                    </Popover>
+                    <Space size={4} wrap>
+                        <Popover content={content} title="Waste Record Details" trigger="click"
+                            arrow={false}
+                        >
+                            <Button type="link" icon={<EyeOutlined />}>View Details</Button>
+                        </Popover>
+                        {record.wasteRecordId && (
+                            <Button
+                                type="link"
+                                onClick={() => router.push(`/waste-data/management?wasteRecordId=${record.wasteRecordId}`)}
+                            >
+                                Open in Waste Data
+                            </Button>
+                        )}
+                    </Space>
                 );
             }
         },
         {
             title: "Status",
             dataIndex: "status",
+            width: 130,
             align: "center",
             hideInSearch: true,
             valueEnum: {
@@ -152,6 +199,8 @@ const RequestManagement: React.FC = () => {
         },
         {
             title: "Action",
+            width: 170,
+            fixed: "right",
             align: "center",
             hideInSearch: true,
             render: (_, record) => {
@@ -225,12 +274,22 @@ const RequestManagement: React.FC = () => {
                 headerTitle="Request List"
                 actionRef={actionRef}
                 loading={loading}
+                tableLayout="fixed"
+                scroll={{ x: 1300 }}
+                columnsState={{
+                    persistenceKey: "request-management-columns",
+                    persistenceType: "localStorage",
+                }}
                 columns={columns}
                 pagination={{
                     current: 1,
                     pageSize: 20
                 }}
-                request={(params: any, sort: Record<string, SortOrder>, filter: Record<string, (string | number)[] | null>) => {
+                request={(params: {
+                    current?: number;
+                    pageSize?: number;
+                    matricNo?: string;
+                }) => {
                     return fetchData({
                         pageNumber: params.current ?? 1,
                         pageSize: params.pageSize ?? 20,
