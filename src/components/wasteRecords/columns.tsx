@@ -154,7 +154,7 @@ export const getBaseColumns = (params: {
                     ellipsis: true,
                     hideInSearch: true,
                     render: (_: unknown, record: WasteRecord) => {
-                        const userName = record.userName || record.user || '-';
+                        const userName = record.userName || '-';
                         const userEmail = record.userEmail;
 
                         if (!userEmail) {

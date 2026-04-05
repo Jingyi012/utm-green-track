@@ -39,6 +39,7 @@ export function useProfileDropdownOptions(): ProfileDropdownOptions {
 
 export function useWasteRecordDropdownOptions(): WasteRecordDropdownOptions {
   const { data, isLoading } = useSWR('waste-options', () => getWasteRecordDropdownOptions(), {
+    revalidateOnMount: true,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     dedupingInterval: 1000 * 60 * 30,

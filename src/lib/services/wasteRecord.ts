@@ -2,6 +2,7 @@ import { UploadFile } from "antd";
 import { GeneralResponse, PagedResponse } from "../types/apiResponse";
 import { WasteRecord, WasteRecordFilter, WasteRecordInput } from "../types/wasteRecord";
 import { CampusYearlySummaryResponse, MonthlyStatisticByYearResponse } from "../types/wasteSummary";
+import { LifetimeDataAnalyticsResponse, YearlyDataAnalyticsResponse } from "../types/dataAnalytics";
 import api from "../utils/axios";
 
 const API_URL = '/api/waste-records';
@@ -135,6 +136,29 @@ export async function getCampusYearlySummary(campusId: string, year: number,
 ): Promise<GeneralResponse<CampusYearlySummaryResponse>> {
     return api.get<GeneralResponse<CampusYearlySummaryResponse>>(`${API_URL}/yearly-summary`, {
         params: { campusId, year },
+        ...options,
+    });
+}
+
+export async function getYearlyDataAnalytics(params: {
+    year: number;
+    campusId: string;
+},
+    options?: { [key: string]: any },
+): Promise<GeneralResponse<YearlyDataAnalyticsResponse>> {
+    return api.get<GeneralResponse<YearlyDataAnalyticsResponse>>(`${API_URL}/analytics/yearly`, {
+        params,
+        ...options,
+    });
+}
+
+export async function getLifetimeDataAnalytics(params: {
+    campusId: string;
+},
+    options?: { [key: string]: any },
+): Promise<GeneralResponse<LifetimeDataAnalyticsResponse>> {
+    return api.get<GeneralResponse<LifetimeDataAnalyticsResponse>>(`${API_URL}/analytics/lifetime`, {
+        params,
         ...options,
     });
 }

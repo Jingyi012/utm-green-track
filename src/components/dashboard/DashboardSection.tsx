@@ -11,6 +11,7 @@ import {
 } from '@/lib/types/wasteSummary';
 import { useWasteRecordDropdownOptions } from '@/hook/options';
 import { MONTH_LABELS_SHORT } from '@/lib/enum/monthName';
+import { DISPOSAL_METHOD_COLOR_SCALE } from '@/lib/utils/disposalMethodChart';
 import React from 'react';
 import { PageContainer } from '@ant-design/pro-components';
 
@@ -171,12 +172,7 @@ const DashboardSection: React.FC = () => {
     yField: 'totalWeight',
     stack: true,
     colorField: 'disposalMethod',
-    scale: {
-      color: {
-        domain: ['Landfilling', 'Recycling', 'Composting', 'Energy Recovery'],
-        range: ['#727272ff', '#1867ddff', '#2ffa14ff', '#ee752fff'],
-      },
-    },
+    scale: DISPOSAL_METHOD_COLOR_SCALE,
     legend: {
       position: 'top',
     },
