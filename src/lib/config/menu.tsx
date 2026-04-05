@@ -15,11 +15,24 @@ import { MenuProps } from 'antd';
 import { ReactNode } from 'react';
 import { GrAnalytics } from 'react-icons/gr';
 
+export const APP_PERMISSIONS = {
+  WASTE_RECORD: {
+    READ: 'Permissions.WasteRecord.Read',
+    WRITE: 'Permissions.WasteRecord.Write',
+  },
+  ADMIN_OPERATION: {
+    WRITE: 'Permissions.AdminOperation.Write',
+  },
+} as const;
+
+const ADMIN_OPERATION_PERMISSION = APP_PERMISSIONS.ADMIN_OPERATION.WRITE;
+
 export interface AppMenuItem {
   path: string;
   name: string;
   icon?: ReactNode;
-  roles?: string[];
+  requiredPermission?: string;
+  showInMenuWithoutPermission?: boolean;
   children?: AppMenuItem[];
   hideInMenu?: boolean;
 }
@@ -39,19 +52,26 @@ export const proLayoutMenuData: AppMenuItem[] = [
     path: '/data-entry',
     name: 'Data Entry',
     icon: <FileTextOutlined />,
-    roles: ['Admin', 'Green Manager'],
+    requiredPermission: APP_PERMISSIONS.WASTE_RECORD.WRITE,
+    showInMenuWithoutPermission: true,
     children: [
       {
         path: '/data-entry/new-form',
         name: 'New Form',
+        requiredPermission: APP_PERMISSIONS.WASTE_RECORD.WRITE,
+        showInMenuWithoutPermission: true,
       },
       {
         path: '/data-entry/view-form',
         name: 'View Form',
+        requiredPermission: APP_PERMISSIONS.WASTE_RECORD.WRITE,
+        showInMenuWithoutPermission: true,
       },
       {
         path: '/data-entry/statistic',
         name: 'Statistic',
+        requiredPermission: APP_PERMISSIONS.WASTE_RECORD.WRITE,
+        showInMenuWithoutPermission: true,
       },
     ],
   },
@@ -59,19 +79,22 @@ export const proLayoutMenuData: AppMenuItem[] = [
     path: '/waste-data',
     name: 'Waste Data',
     icon: <UnorderedListOutlined />,
-    roles: ['Admin'],
+    requiredPermission: ADMIN_OPERATION_PERMISSION,
     children: [
       {
         path: '/waste-data/approval',
         name: 'Approval',
+        requiredPermission: ADMIN_OPERATION_PERMISSION,
       },
       {
         path: '/waste-data/management',
         name: 'Management',
+        requiredPermission: ADMIN_OPERATION_PERMISSION,
       },
       {
-        path: '/requests',
+        path: '/waste-data/requests',
         name: 'Requests',
+        requiredPermission: ADMIN_OPERATION_PERMISSION,
       },
     ],
   },
@@ -79,15 +102,17 @@ export const proLayoutMenuData: AppMenuItem[] = [
     path: '/users',
     name: 'User Data',
     icon: <UsergroupAddOutlined />,
-    roles: ['Admin'],
+    requiredPermission: ADMIN_OPERATION_PERMISSION,
     children: [
       {
         path: '/users/approval',
         name: 'Approval',
+        requiredPermission: ADMIN_OPERATION_PERMISSION,
       },
       {
         path: '/users/management',
         name: 'Management',
+        requiredPermission: ADMIN_OPERATION_PERMISSION,
       },
     ],
   },
@@ -95,13 +120,21 @@ export const proLayoutMenuData: AppMenuItem[] = [
     path: '/data-analytics',
     name: 'Data Analytics',
     icon: <GrAnalytics />,
-    roles: ['Admin'],
+    requiredPermission: APP_PERMISSIONS.WASTE_RECORD.READ,
   },
   {
     path: '/configurations',
     name: 'Configurations',
     icon: <ToolOutlined />,
-    roles: ['Admin'],
+    requiredPermission: ADMIN_OPERATION_PERMISSION,
+    children: [
+      {
+        path: '/configurations/role-permissions',
+        name: 'Role Permissions',
+        requiredPermission: ADMIN_OPERATION_PERMISSION,
+        hideInMenu: true,
+      },
+    ],
   },
   {
     path: '/waste-info',

@@ -1,4 +1,4 @@
-import { Col, Row, Form, Button, UploadFile, Upload, Typography } from 'antd';
+import { Col, Row, Form, Button, Upload, Typography, App } from 'antd';
 import {
     ProFormSelect,
     ProFormText,
@@ -15,6 +15,11 @@ import { WasteRecordStatus, wasteRecordStatusLabels } from '@/lib/enum/status';
 import { DeleteOutlined, EditOutlined, UploadOutlined } from '@ant-design/icons';
 import { WasteRecord } from '@/lib/types/wasteRecord';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+    ATTACHMENT_ACCEPT_ATTRIBUTE,
+    ATTACHMENT_ACCEPT_LABEL,
+    validateAttachmentBeforeUpload,
+} from '@/lib/utils/attachmentValidation';
 const { Title } = Typography;
 export type FormValueType = Partial<WasteRecord>;
 
@@ -42,6 +47,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
     handleDelete
 }) => {
     const [form] = Form.useForm();
+    const { message } = App.useApp();
     const { isAdmin } = useAuth();
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [selectedDisposalMethod, setSelectedDisposalMethod] = useState<string>();
@@ -315,19 +321,20 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
             <ProCard title={"Attachments"} bordered collapsible style={{ marginTop: '16px' }}>
                 <ProForm.Item
                     name='uploadedAttachments'
+                    label="Attachment (Optional)"
+                    extra={ATTACHMENT_ACCEPT_LABEL}
                     valuePropName="fileList"
                     getValueFromEvent={(e) => e.fileList}
-                    rules={[{ required: true, message: 'Please upload attachment' }]}
                 >
                     <Upload
                         name='fileList'
                         multiple
                         listType="picture"
-                        accept=".pdf,image/*,.xlsx,.doc,.docx"
+                        accept={ATTACHMENT_ACCEPT_ATTRIBUTE}
                         beforeUpload={(file) => {
-                            return false;
+                            return validateAttachmentBeforeUpload(file, message.error);
                         }}
-                        onRemove={(file) => {
+                        onRemove={() => {
                         }}
                         disabled={!isEditing}
                     >

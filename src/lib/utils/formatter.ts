@@ -20,7 +20,11 @@ export const dateFormatter = (date: string) => {
     return new Date(date).toLocaleDateString('en-GB')
 }
 
-export const dateTimeFormatter = (date: string | Date): string => {
+export const dateTimeFormatter = (date?: string | Date | null): string => {
+    if (!date) {
+        return "-";
+    }
+
     const d = dayjs.tz(date, 'Asia/Kuala_Lumpur');
 
     if (!d.isValid()) {

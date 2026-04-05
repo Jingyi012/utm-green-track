@@ -13,7 +13,7 @@ export default function ForbiddenPage() {
       <Result
         status="403"
         title="403"
-        subTitle="Page restricted, please contact administration."
+        subTitle="Page restricted, please contact administration"
         extra={
           <Button type="primary" onClick={() => router.back()}>
             Back

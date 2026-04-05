@@ -1,12 +1,12 @@
 import { create } from "zustand";
-import { WasteRecordInput } from "../types/wasteRecord";
+import { WasteRecordDraftInput } from "../types/wasteRecord";
 
 type WasteEntryStore = {
-  tableData: WasteRecordInput[];
-  addRecord: (record: WasteRecordInput) => void;
-  updateRecord: (key: string, updated: Partial<WasteRecordInput>) => void;
+  tableData: WasteRecordDraftInput[];
+  addRecord: (record: WasteRecordDraftInput) => void;
+  updateRecord: (key: string, updated: Partial<WasteRecordDraftInput>) => void;
   deleteRecord: (key: string) => void;
-  setRecords: (records: WasteRecordInput[]) => void;
+  setRecords: (records: WasteRecordDraftInput[]) => void;
   clearRecords: () => void;
 };
 
