@@ -142,7 +142,7 @@ const WasteManagementTable: React.FC = () => {
 
   const getRequiredFilterWarning = (): string => {
     if (!selectedCampus) return 'Please select UTM Campus first.';
-    if (!selectedDepartment) return 'Please select Faculty / Department / College first.';
+    if (!selectedDepartment) return 'Please select Faculty / Department / College / PTJ first.';
     return 'Please complete required filters.';
   };
 
@@ -449,7 +449,7 @@ const WasteManagementTable: React.FC = () => {
                         : [
                             {
                               required: true,
-                              message: 'Faculty / Department / College is required',
+                              message: 'Faculty / Department / College / PTJ is required',
                             },
                           ]
                     }
@@ -461,8 +461,8 @@ const WasteManagementTable: React.FC = () => {
                       disabled: !isAdmin,
                     }}
                     style={{ minWidth: 350, width: 'auto' }}
-                    label="Faculty / Department / College"
-                    placeholder="Faculty / Department / College"
+                    label="Faculty / Department / College / PTJ"
+                    placeholder="Faculty / Department / College / PTJ"
                     options={
                       isAdmin
                         ? departments.map((d) => ({
@@ -477,8 +477,8 @@ const WasteManagementTable: React.FC = () => {
                   />
                   <ProFormText
                     name="unit"
-                    label="PTJ / Unit"
-                    placeholder="Enter PTJ / Unit"
+                    label="Unit"
+                    placeholder="Enter Unit"
                     fieldProps={{
                       value: selectedUnit ?? '',
                       onChange: (e) => setSelectedUnit(e.target.value),
@@ -568,3 +568,4 @@ const WasteManagementTable: React.FC = () => {
 };
 
 export default WasteManagementTable;
+

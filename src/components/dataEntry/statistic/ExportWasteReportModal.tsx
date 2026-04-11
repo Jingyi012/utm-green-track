@@ -79,8 +79,8 @@ export const ExportWasteReportModal = ({
 
                         <ProFormSelect
                             name="departmentId"
-                            label="Department"
-                            placeholder="Select department"
+                            label="Faculty / Department / College / PTJ"
+                            placeholder="Select faculty / department / college / PTJ"
                             options={departments.map((d) => ({ label: d.name, value: d.id }))}
                             fieldProps={{
                                 showSearch: true,
@@ -91,8 +91,8 @@ export const ExportWasteReportModal = ({
                         />
                         <ProFormText
                             name="unit"
-                            placeholder="Enter PTJ / Unit"
-                            label="PTJ / Unit"
+                            placeholder="Enter unit"
+                            label="Unit"
                         />
                     </>
                 )}
@@ -100,3 +100,5 @@ export const ExportWasteReportModal = ({
         </Modal>
     );
 };
+
+

@@ -139,7 +139,7 @@ const RequestManagement: React.FC = () => {
                 const content = (
                     <Descriptions column={1} size="small" bordered>
                         <Descriptions.Item label="Campus">{wr.campus}</Descriptions.Item>
-                        <Descriptions.Item label="Department">{wr.department}</Descriptions.Item>
+                        <Descriptions.Item label="Faculty / Department / College / PTJ">{wr.department}</Descriptions.Item>
                         <Descriptions.Item label="Disposal Method">{wr.disposalMethod}</Descriptions.Item>
                         <Descriptions.Item label="Waste Type">{wr.wasteType}</Descriptions.Item>
                         <Descriptions.Item label="Location">{wr.location || "-"}</Descriptions.Item>
@@ -330,3 +330,4 @@ const RequestManagement: React.FC = () => {
 };
 
 export default RequestManagement;
+

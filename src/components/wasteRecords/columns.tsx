@@ -130,7 +130,7 @@ export const getBaseColumns = (params: {
             align: 'center' as const
         },
         {
-            title: 'Faculty / Department / College',
+            title: 'Faculty / Department / College / PTJ',
             dataIndex: 'departmentId',
             valueEnum: listToValueEnum(departments),
             width: 220,
@@ -139,7 +139,7 @@ export const getBaseColumns = (params: {
             align: 'center' as const
         },
         {
-            title: 'PTJ / Unit',
+            title: 'Unit',
             dataIndex: 'unit',
             width: 180,
             ellipsis: true,
@@ -295,3 +295,4 @@ export const getBaseColumns = (params: {
         },
     ] as ProColumns<WasteRecord>[];
 };
+

@@ -142,13 +142,13 @@ export default function RegistrationForm() {
                     <Col xs={24} md={12}>
                         <ProFormSelect
                             name="departmentId"
-                            label="Faculty / Department / College"
-                            placeholder="Select your department"
+                            label="Faculty / Department / College / PTJ"
+                            placeholder="Select faculty / department / college / PTJ"
                             options={departments.map((dept) => ({
                                 label: dept.name,
                                 value: dept.id,
                             }))}
-                            rules={[{ required: true, message: 'Please select your faculty / department' }]}
+                            rules={[{ required: true, message: 'Please select faculty / department / college / PTJ' }]}
                             fieldProps={{
                                 showSearch: true,
                                 optionFilterProp: "label",
@@ -159,8 +159,8 @@ export default function RegistrationForm() {
                     <Col xs={24} md={12}>
                         <ProFormText
                             name="unit"
-                            label="PTJ / Unit"
-                            placeholder="Enter your PTJ / unit"
+                            label="Unit"
+                            placeholder="Enter your unit"
                             rules={[]}
                         />
                     </Col>
@@ -236,3 +236,5 @@ export default function RegistrationForm() {
         </div>
     );
 }
+
+

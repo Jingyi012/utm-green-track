@@ -277,14 +277,14 @@ export default function WasteEntryForm() {
       render: (campusId: string) => campuses.find((campus) => campus.id === campusId)?.name ?? '-',
     },
     {
-      title: 'Faculty / Department / College',
+      title: 'Faculty / Department / College / PTJ',
       dataIndex: 'departmentId',
       width: 180,
       render: (departmentId: string) =>
         departments.find((department) => department.id === departmentId)?.name ?? '-',
     },
     {
-      title: 'PTJ / Unit',
+      title: 'Unit',
       dataIndex: 'unit',
       width: 140,
     },
@@ -396,9 +396,9 @@ export default function WasteEntryForm() {
             <Col xs={24} md={12}>
               <ProFormSelect
                 name="departmentId"
-                label="Faculty / Department / College"
-                placeholder="Select your department"
-                rules={[{ required: true, message: 'Please select your faculty / department' }]}
+                label="Faculty / Department / College / PTJ"
+                placeholder="Select faculty / department / college / PTJ"
+                rules={[{ required: true, message: 'Please select faculty / department / college / PTJ' }]}
                 options={departments.map((department) => ({
                   label: department.name,
                   value: department.id,
@@ -412,9 +412,9 @@ export default function WasteEntryForm() {
             <Col xs={24} md={12}>
               <ProFormText
                 name="unit"
-                label="PTJ / Unit"
-                placeholder="Please enter PTJ / unit"
-                rules={[{ required: true, message: 'Please enter PTJ / unit' }]}
+                label="Unit"
+                placeholder="Please enter unit"
+                rules={[{ required: true, message: 'Please enter unit' }]}
               />
             </Col>
             <Col xs={24} md={12}>
@@ -599,3 +599,5 @@ export default function WasteEntryForm() {
     </PageContainer>
   );
 }
+
+

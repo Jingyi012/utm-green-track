@@ -136,8 +136,8 @@ const UserDetailsDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                     <Col span={12}>
                         <ProFormSelect
                             name={"departmentId"}
-                            label="Faculty/Department"
-                            rules={[{ required: true, message: 'Please select your faculty / department' }]}
+                            label="Faculty / Department / College / PTJ"
+                            rules={[{ required: true, message: 'Please select faculty / department / college / PTJ' }]}
                             options={departments.map(r => ({
                                 label: r.name,
                                 value: r.id,
@@ -261,3 +261,4 @@ const UserDetailsDrawerForm: React.FC<UpdateFormDrawerProps> = ({
 };
 
 export default UserDetailsDrawerForm;
+

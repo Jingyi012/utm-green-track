@@ -171,13 +171,13 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                     <Col xs={24} md={12}>
                         <ProFormSelect
                             name="departmentId"
-                            label="Faculty / Department / College"
-                            placeholder="Select your department"
+                            label="Faculty / Department / College / PTJ"
+                            placeholder="Select faculty / department / college / PTJ"
                             options={departments.map((dept) => ({
                                 label: dept.name,
                                 value: dept.id,
                             }))}
-                            rules={[{ required: true, message: 'Please select your faculty / department' }]}
+                            rules={[{ required: true, message: 'Please select faculty / department / college / PTJ' }]}
                             disabled={!isEditing}
                             showSearch
                         />
@@ -187,9 +187,9 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                     <Col xs={24} md={12}>
                         <ProFormText
                             name="unit"
-                            label="PTJ / Unit"
-                            placeholder="Please enter PTJ / unit"
-                            rules={[{ required: true, message: 'Please enter PTJ / unit' }]}
+                            label="Unit"
+                            placeholder="Please enter unit"
+                            rules={[{ required: true, message: 'Please enter unit' }]}
                             disabled={!isEditing}
                         />
                     </Col>
@@ -347,3 +347,5 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
 };
 
 export default WasteRecordDrawerForm;
+
+

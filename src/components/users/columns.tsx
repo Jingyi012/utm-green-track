@@ -85,7 +85,7 @@ export const getBaseUserColumns = (params: {
             render: (_: unknown, record) => renderEllipsisText(record.staffMatricNo, 140)
         },
         {
-            title: "Department",
+            title: "Faculty / Department / College / PTJ",
             dataIndex: "departmentId",
             width: 220,
             ellipsis: true,
@@ -157,3 +157,4 @@ export const getBaseUserColumns = (params: {
         },
     ] as ProColumns<UserDetails>[];
 };
+

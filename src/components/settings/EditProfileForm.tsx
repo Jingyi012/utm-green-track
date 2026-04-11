@@ -114,13 +114,13 @@ const EditProfileForm = () => {
                         <ProDescriptions.Item label="Contact Number">
                             {userData.contactNumber}
                         </ProDescriptions.Item>
-                        <ProDescriptions.Item label="Department">
+                        <ProDescriptions.Item label="Faculty / Department / College / PTJ">
                             {
                                 departments.find(d => d.id === userData.departmentId)?.name ??
                                 userData.departmentId
                             }
                         </ProDescriptions.Item>
-                        <ProDescriptions.Item label="PTJ / Unit">
+                        <ProDescriptions.Item label="Unit">
                             {userData.unit ?? '-'}
                         </ProDescriptions.Item>
                         <ProDescriptions.Item label="Position">
@@ -186,7 +186,7 @@ const EditProfileForm = () => {
                             <Col md={12}>
                                 <ProFormSelect
                                     name="departmentId"
-                                    label="Department"
+                                    label="Faculty / Department / College / PTJ"
                                     options={departments.map(r => ({ label: r.name, value: r.id }))}
                                     rules={[{ required: true }]}
                                     fieldProps={{
@@ -197,7 +197,7 @@ const EditProfileForm = () => {
                             </Col>
 
                             <Col md={12}>
-                                <ProFormText name="unit" label="PTJ / Unit" />
+                                <ProFormText name="unit" label="Unit" />
                             </Col>
 
                             <Col md={12}>
@@ -226,3 +226,4 @@ const EditProfileForm = () => {
 };
 
 export default EditProfileForm;
+
