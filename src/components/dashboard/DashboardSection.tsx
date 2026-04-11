@@ -194,7 +194,7 @@ const DashboardSection: React.FC = () => {
     tooltip: {
       items: [
         (datum: { totalWeight: number }) => ({
-          value: `${datum.totalWeight.toFixed(2)}`,
+          value: `${datum.totalWeight.toFixed(2)} tonnes`,
         }),
       ],
     },

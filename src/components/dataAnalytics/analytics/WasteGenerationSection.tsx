@@ -65,6 +65,13 @@ export function WasteGenerationSection({ data }: WasteGenerationSectionProps) {
       x: { title: 'Month' },
       y: { title: 'Weight (tonnes)' },
     },
+    tooltip: {
+      items: [
+        (datum: { totalWeightTonnes: number }) => ({
+          value: `${datum.totalWeightTonnes.toFixed(2)} tonnes`,
+        }),
+      ],
+    },
     legend: { position: 'top' },
   };
 
@@ -93,7 +100,12 @@ export function WasteGenerationSection({ data }: WasteGenerationSectionProps) {
 
   return (
     <ProCard direction="column" ghost>
-      <Space direction="vertical" size={16} style={{ width: '100%' }} styles={{ item: { width: '100%' } }}>
+      <Space
+        direction="vertical"
+        size={16}
+        style={{ width: '100%' }}
+        styles={{ item: { width: '100%' } }}
+      >
         <MetricCardGrid items={metrics} />
 
         <ProCard bordered>
@@ -103,10 +115,10 @@ export function WasteGenerationSection({ data }: WasteGenerationSectionProps) {
         <ProCard bordered>
           <Row gutter={[16, 16]}>
             <Col xs={24} lg={16}>
-            {disposalMethodBreakdownData.length > 0 ? (
-              <Pie {...disposalMethodBreakdownConfig} />
-            ) : (
-              <Empty />
+              {disposalMethodBreakdownData.length > 0 ? (
+                <Pie {...disposalMethodBreakdownConfig} />
+              ) : (
+                <Empty />
               )}
             </Col>
           </Row>

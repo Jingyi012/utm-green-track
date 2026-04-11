@@ -61,12 +61,10 @@ export function WasteManagementCostSection({ data }: WasteManagementCostSectionP
         tooltip: {
           title: 'monthLabel',
           items: [
-            {
-              channel: 'y',
+            (datum: { landfillWeightTonnes: number }) => ({
               name: 'Landfill (tonnes)',
-              valueFormatter: (value: number | string) =>
-                `${Number(value ?? 0).toFixed(2)} tonnes`,
-            },
+              value: `${formatFixed(datum.landfillWeightTonnes)} tonnes`,
+            }),
           ],
         },
         style: { fill: '#91a6ff' },
@@ -83,11 +81,10 @@ export function WasteManagementCostSection({ data }: WasteManagementCostSectionP
         tooltip: {
           title: 'monthLabel',
           items: [
-            {
-              channel: 'y',
-              name: 'Management Cost (RM)',
-              valueFormatter: (value: number | string) => `RM ${Number(value ?? 0).toFixed(2)}`,
-            },
+            (datum: { managementCostRm: number }) => ({
+              name: 'Management Cost',
+              value: `RM ${formatFixed(datum.managementCostRm)}`,
+            }),
           ],
         },
         style: { stroke: '#ff7a45', lineWidth: 2 },
@@ -98,7 +95,12 @@ export function WasteManagementCostSection({ data }: WasteManagementCostSectionP
 
   return (
     <ProCard direction="column" ghost>
-      <Space direction="vertical" size={16} style={{ width: '100%' }} styles={{ item: { width: '100%' } }}>
+      <Space
+        direction="vertical"
+        size={16}
+        style={{ width: '100%' }}
+        styles={{ item: { width: '100%' } }}
+      >
         <MetricCardGrid items={metrics} />
 
         <ProCard bordered>

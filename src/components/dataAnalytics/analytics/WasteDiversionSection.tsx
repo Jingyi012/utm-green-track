@@ -96,6 +96,13 @@ export function WasteDiversionSection({ data }: WasteDiversionSectionProps) {
       x: { title: 'Month' },
       y: { title: 'Weight (tonnes)' },
     },
+    tooltip: {
+      items: [
+        (datum: { totalWeightTonnes: number }) => ({
+          value: `${datum.totalWeightTonnes.toFixed(2)} tonnes`,
+        }),
+      ],
+    },
     legend: { position: 'top' },
   };
 
