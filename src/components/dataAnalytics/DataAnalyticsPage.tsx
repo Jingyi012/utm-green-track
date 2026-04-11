@@ -2,12 +2,15 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { App, Empty, Tabs } from 'antd';
+import { App, Empty, Space, Tabs } from 'antd';
 import { PageContainer, ProCard } from '@ant-design/pro-components';
 import { WhiteBgWrapper } from '@/components/wrapper/whiteBgWrapper';
 import { useWasteRecordDropdownOptions } from '@/hook/options';
 import { getLifetimeDataAnalytics, getYearlyDataAnalytics } from '@/lib/services/wasteRecord';
-import { LifetimeDataAnalyticsResponse, YearlyDataAnalyticsResponse } from '@/lib/types/dataAnalytics';
+import {
+  LifetimeDataAnalyticsResponse,
+  YearlyDataAnalyticsResponse,
+} from '@/lib/types/dataAnalytics';
 import { AnalyticsFilters } from './analytics/AnalyticsFilters';
 import {
   YEARLY_ANALYTICS_SECTION_KEYS,
@@ -26,7 +29,9 @@ function isAnalyticsTabKey(value: string | null): value is AnalyticsTabKey {
 }
 
 function isYearlySectionKey(value: string | null): value is YearlyAnalyticsSectionKey {
-  return value !== null && YEARLY_ANALYTICS_SECTION_KEYS.includes(value as YearlyAnalyticsSectionKey);
+  return (
+    value !== null && YEARLY_ANALYTICS_SECTION_KEYS.includes(value as YearlyAnalyticsSectionKey)
+  );
 }
 
 function getRequestErrorMessage(error: unknown, fallback: string): string {
@@ -59,7 +64,9 @@ const DataAnalyticsPage: React.FC = () => {
     }
     return CURRENT_YEAR;
   });
-  const [campusId, setCampusId] = useState<string | undefined>(() => searchParams.get('campusId') || undefined);
+  const [campusId, setCampusId] = useState<string | undefined>(
+    () => searchParams.get('campusId') || undefined,
+  );
   const [activeTab, setActiveTab] = useState<AnalyticsTabKey>(() => {
     const queryTab = searchParams.get('analysisTab');
     return isAnalyticsTabKey(queryTab) ? queryTab : 'yearly';
@@ -173,55 +180,61 @@ const DataAnalyticsPage: React.FC = () => {
     <PageContainer title="Data Analytics" loading={isLoading}>
       <WhiteBgWrapper>
         <ProCard direction="column" split="horizontal" ghost>
-          <AnalyticsFilters
-            year={year}
-            campusId={campusId}
-            yearOptions={yearOptions}
-            campusOptions={campusOptions}
-            onYearChange={setYear}
-            onCampusChange={setCampusId}
-          />
-
-          <ProCard bordered>
-            <Tabs
-              activeKey={activeTab}
-              destroyInactiveTabPane
-              animated={false}
-              onChange={(key) => setActiveTab(key as AnalyticsTabKey)}
-              items={[
-                {
-                  key: 'yearly',
-                  label: 'Yearly Analysis',
-                  children: (
-                    <ProCard loading={yearlyLoading} ghost>
-                      {yearlyData ? (
-                        <YearlyAnalyticsPanel
-                          data={yearlyData}
-                          activeSection={yearlySection}
-                          onSectionChange={setYearlySection}
-                        />
-                      ) : (
-                        <Empty description="No yearly analytics data available." />
-                      )}
-                    </ProCard>
-                  ),
-                },
-                {
-                  key: 'lifetime',
-                  label: 'Lifetime Analysis',
-                  children: (
-                    <ProCard loading={lifetimeLoading} ghost>
-                      {lifetimeData ? (
-                        <LifetimeSummarySection data={lifetimeData} />
-                      ) : (
-                        <Empty description="No lifetime analytics data available." />
-                      )}
-                    </ProCard>
-                  ),
-                },
-              ]}
+          <Space
+            direction="vertical"
+            size={16}
+            style={{ width: '100%' }}
+            styles={{ item: { width: '100%' } }}
+          >
+            <AnalyticsFilters
+              year={year}
+              campusId={campusId}
+              yearOptions={yearOptions}
+              campusOptions={campusOptions}
+              onYearChange={setYear}
+              onCampusChange={setCampusId}
             />
-          </ProCard>
+            <ProCard bordered>
+              <Tabs
+                activeKey={activeTab}
+                destroyOnHidden
+                animated={false}
+                onChange={(key) => setActiveTab(key as AnalyticsTabKey)}
+                items={[
+                  {
+                    key: 'yearly',
+                    label: 'Yearly Analysis',
+                    children: (
+                      <ProCard loading={yearlyLoading} ghost>
+                        {yearlyData ? (
+                          <YearlyAnalyticsPanel
+                            data={yearlyData}
+                            activeSection={yearlySection}
+                            onSectionChange={setYearlySection}
+                          />
+                        ) : (
+                          <Empty description="No yearly analytics data available." />
+                        )}
+                      </ProCard>
+                    ),
+                  },
+                  {
+                    key: 'lifetime',
+                    label: 'Lifetime Analysis',
+                    children: (
+                      <ProCard loading={lifetimeLoading} ghost>
+                        {lifetimeData ? (
+                          <LifetimeSummarySection data={lifetimeData} />
+                        ) : (
+                          <Empty description="No lifetime analytics data available." />
+                        )}
+                      </ProCard>
+                    ),
+                  },
+                ]}
+              />
+            </ProCard>
+          </Space>
         </ProCard>
       </WhiteBgWrapper>
     </PageContainer>

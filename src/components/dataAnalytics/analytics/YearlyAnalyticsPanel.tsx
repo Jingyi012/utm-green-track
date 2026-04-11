@@ -32,7 +32,7 @@ export function YearlyAnalyticsPanel({
   return (
     <Tabs
       activeKey={activeSection}
-      destroyInactiveTabPane
+      destroyOnHidden
       animated={false}
       onChange={(key) => onSectionChange(key as YearlyAnalyticsSectionKey)}
       items={[

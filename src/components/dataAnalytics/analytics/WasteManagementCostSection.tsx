@@ -4,6 +4,7 @@ import { ProCard } from '@ant-design/pro-components';
 import { WasteManagementCostAnalysisSection as WasteManagementCostData } from '@/lib/types/dataAnalytics';
 import { MetricCardGrid } from './MetricCardGrid';
 import { formatFixed, monthLabel } from './helpers';
+import { COLORS, METHOD_COLOR_MAP } from '@/lib/utils/disposalMethodChart';
 
 interface WasteManagementCostSectionProps {
   data: WasteManagementCostData;
@@ -64,10 +65,11 @@ export function WasteManagementCostSection({ data }: WasteManagementCostSectionP
             (datum: { landfillWeightTonnes: number }) => ({
               name: 'Landfill (tonnes)',
               value: `${formatFixed(datum.landfillWeightTonnes)} tonnes`,
+              color: METHOD_COLOR_MAP.Landfilling,
             }),
           ],
         },
-        style: { fill: '#91a6ff' },
+        style: { fill: METHOD_COLOR_MAP.Landfilling },
       },
       {
         type: 'line',
@@ -84,10 +86,11 @@ export function WasteManagementCostSection({ data }: WasteManagementCostSectionP
             (datum: { managementCostRm: number }) => ({
               name: 'Management Cost',
               value: `RM ${formatFixed(datum.managementCostRm)}`,
+              color: COLORS.yellow,
             }),
           ],
         },
-        style: { stroke: '#ff7a45', lineWidth: 2 },
+        style: { lineWidth: 4, stroke: COLORS.yellow },
         smooth: true,
       },
     ],

@@ -1,11 +1,12 @@
-const COLORS = {
+export const COLORS = {
   gray: '#727272ff',
   blue: '#1867ddff',
   green: '#2ffa14ff',
   orange: '#ee752fff',
+  yellow: '#f5f071',
 };
 
-const METHOD_COLOR_MAP = {
+export const METHOD_COLOR_MAP = {
   Landfilling: COLORS.gray,
   Recycling: COLORS.blue,
   Composting: COLORS.green,
