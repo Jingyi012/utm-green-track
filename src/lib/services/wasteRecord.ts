@@ -61,6 +61,10 @@ export async function getWasteRecordsPaginated(params: WasteRecordFilter,
     return api.get<PagedResponse<WasteRecord[]>>(`${API_URL}`, { params: { ...params }, ...options });
 }
 
+export async function getWasteRecordById(id: string, options?: { [key: string]: any }) {
+    return api.get<GeneralResponse<WasteRecord>>(`${API_URL}/${id}`, { ...options });
+}
+
 export async function updateWasteRecordApprovalStatus(body: {
     wasteRecordIds: string[];
     status?: number;

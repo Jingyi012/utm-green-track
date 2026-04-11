@@ -279,7 +279,7 @@ const WasteRecordApproval: React.FC = () => {
       <ModalForm
         title={modalStatus === WasteRecordStatus.Rejected ? 'Reject Record' : 'Request Revision'}
         modalProps={{
-          destroyOnClose: true,
+          destroyOnHidden: true,
         }}
         open={modalOpen}
         onOpenChange={setModalOpen}

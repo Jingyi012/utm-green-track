@@ -7,10 +7,10 @@ import {
   ModalForm,
   PageContainer,
   ProColumns,
-  ProFormText,
+  ProFormTextArea,
   ProTable,
 } from '@ant-design/pro-components';
-import { App, Button } from 'antd';
+import { Alert, App, Button } from 'antd';
 import { useState, useRef, useEffect } from 'react';
 import WasteRecordDrawerForm from './WasteRecordDrawerForm';
 import { WasteRecord, WasteRecordFilter } from '@/lib/types/wasteRecord';
@@ -28,13 +28,14 @@ import { createRequest } from '@/lib/services/requestService';
 import { downloadFile } from '@/lib/utils/downloadFile';
 import {
   DeleteOutlined,
+  EyeOutlined,
   EditOutlined,
   FileExcelOutlined,
   FilePdfOutlined,
 } from '@ant-design/icons';
 import { ExportWasteRecordModal } from './ExportWasteRecordModal';
 import { getBaseColumns } from './columns';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface WasteRecordManagementProps {
   isViewForm?: boolean;
@@ -42,6 +43,7 @@ interface WasteRecordManagementProps {
 
 const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewForm = false }) => {
   const { message, modal } = App.useApp();
+  const router = useRouter();
   const { hasRole } = useAuth();
   const searchParams = useSearchParams();
   const { departments } = useProfileDropdownOptions();
@@ -55,10 +57,27 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
 
   const actionRef = useRef<ActionType | undefined>(undefined);
   const isAdmin = hasRole('Admin');
+  const userRequestRoute = '/data-entry/view-form/requests';
   const linkedWasteRecordId = searchParams.get('wasteRecordId') ?? undefined;
   const [modalOpen, setModalOpen] = useState<false | 'excel' | 'pdf'>(false);
 
   const [changeRequestModalOpen, setChangeRequestModalOpen] = useState<boolean>(false);
+
+  const showRequestGuide = () => {
+    modal.info({
+      title: 'Request Changes Process',
+      content: (
+        <div>
+          <p>1. Click Request Changes on a record and describe the correction clearly.</p>
+          <p>2. Admin reviews your request.</p>
+          <p>3. If approved, the record status becomes Revision Required.</p>
+          <p>4. Update the record in View Form and submit again.</p>
+          <p>Track your request status in My Requests.</p>
+        </div>
+      ),
+      okText: 'Understood',
+    });
+  };
 
   const fetchData = async (filter: WasteRecordFilter) => {
     setLoading(true);
@@ -188,6 +207,11 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
   };
 
   const handleChangeRequest = async (wasteRecordId: string | undefined, reqMessage: string) => {
+    if (!wasteRecordId) {
+      message.error('No waste record selected for request');
+      return false;
+    }
+
     const hide = message.loading('Sending request...', 0);
     try {
       const res = await createRequest({
@@ -198,7 +222,19 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         if (actionRef.current) {
           actionRef.current.reload();
         }
-        message.success('Request created successfully');
+        message.success('Request submitted successfully');
+        modal.info({
+          title: 'Request Submitted',
+          content: (
+            <div>
+              <p>1. Admin reviews your request message.</p>
+              <p>2. If approved, record status becomes Revision Required.</p>
+              <p>3. You can update the record in View Form.</p>
+              <p>Track progress in My Requests.</p>
+            </div>
+          ),
+          okText: 'Got it',
+        });
         return true;
       } else {
         message.error('Failed to send request');
@@ -222,12 +258,17 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
     {
       title: 'Action',
       align: 'center',
-      width: 140,
+      width: 220,
       fixed: 'right',
       hideInSearch: true,
       render: (_, record) => {
         return (
           <>
+            <Button
+              type="link"
+              icon={<EyeOutlined />}
+              onClick={() => router.push(`/data-entry/view-form/record?wasteRecordId=${record.id}`)}
+            ></Button>
             {(isAdmin || record.status == WasteRecordStatus.RevisionRequired) && (
               <>
                 <Button
@@ -276,9 +317,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
     <PageContainer
       title={!isViewForm ? 'Waste Record Management' : 'View Form'}
       subTitle={
-        linkedWasteRecordId
-          ? `Showing linked request record: ${linkedWasteRecordId}`
-          : undefined
+        linkedWasteRecordId ? `Showing linked request record: ${linkedWasteRecordId}` : undefined
       }
     >
       <ProTable<WasteRecord>
@@ -298,13 +337,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         pagination={{
           showSizeChanger: true,
         }}
-        request={(
-          params: {
-            current?: number;
-            pageSize?: number;
-            [key: string]: unknown;
-          },
-        ) => {
+        request={(params: { current?: number; pageSize?: number; [key: string]: unknown }) => {
           return fetchData({
             ...params,
             id: linkedWasteRecordId,
@@ -315,6 +348,16 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         }}
         toolbar={{
           actions: [
+            ...(!isAdmin
+              ? [
+                  <Button key="request-guide" onClick={showRequestGuide}>
+                    Request Guide
+                  </Button>,
+                  <Button key="request-status" onClick={() => router.push(userRequestRoute)}>
+                    My Requests
+                  </Button>,
+                ]
+              : []),
             <Button
               key="excel"
               loading={excelLoading}
@@ -378,7 +421,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         title="Request Changes"
         open={changeRequestModalOpen}
         modalProps={{
-          destroyOnClose: true,
+          destroyOnHidden: true,
           onCancel: () => {
             setSelectedRecord(undefined);
             setChangeRequestModalOpen(false);
@@ -403,15 +446,26 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         }}
         submitter={{
           searchConfig: {
-            submitText: 'Submit',
+            submitText: 'Submit Request',
           },
         }}
       >
-        <ProFormText
-          label="Message"
+        <Alert
+          showIcon
+          type="info"
+          style={{ marginBottom: 12 }}
+          message="Before submitting"
+          description="Include exact fields and values to change for faster approval."
+        />
+        <ProFormTextArea
+          label="Why you want to change this record"
           name="message"
-          placeholder="Please enter message"
-          rules={[{ required: true }]}
+          placeholder="Example: Please change waste type from Plastic to Paper and waste weight from 8.5 kg to 6.2 kg."
+          rules={[
+            { required: true, message: 'Please enter request details' },
+            { min: 10, message: 'Please provide more detail (minimum 10 characters)' },
+          ]}
+          fieldProps={{ showCount: true, maxLength: 500, autoSize: { minRows: 4, maxRows: 8 } }}
         />
       </ModalForm>
     </PageContainer>

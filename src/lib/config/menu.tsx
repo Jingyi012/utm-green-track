@@ -66,6 +66,20 @@ export const proLayoutMenuData: AppMenuItem[] = [
         name: 'View Form',
         requiredPermission: APP_PERMISSIONS.WASTE_RECORD.WRITE,
         showInMenuWithoutPermission: true,
+        children: [
+          {
+            path: '/data-entry/view-form/record',
+            name: 'Waste Record Details',
+            requiredPermission: APP_PERMISSIONS.WASTE_RECORD.WRITE,
+            hideInMenu: true,
+          },
+          {
+            path: '/data-entry/view-form/requests',
+            name: 'My Request Changes',
+            requiredPermission: APP_PERMISSIONS.WASTE_RECORD.WRITE,
+            hideInMenu: true,
+          },
+        ],
       },
       {
         path: '/data-entry/statistic',

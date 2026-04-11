@@ -53,11 +53,14 @@ const buildCampusYearKey = (prefix: string, campusName: string, year: number): s
   `${prefix}_${toCampusToken(campusName)}_${year}`;
 
 const buildYearOptions = (currentYear: number): number[] =>
-  Array.from({ length: currentYear - CONFIG_START_YEAR + 1 }, (_, index) => CONFIG_START_YEAR + index).sort(
-    (a, b) => b - a,
-  );
+  Array.from(
+    { length: currentYear - CONFIG_START_YEAR + 1 },
+    (_, index) => CONFIG_START_YEAR + index,
+  ).sort((a, b) => b - a);
 
-const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }> = ({ definition }) => {
+const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }> = ({
+  definition,
+}) => {
   const { message } = App.useApp();
   const { campuses, isLoading: isCampusLoading } = useWasteRecordDropdownOptions();
 
@@ -227,7 +230,7 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
         open={modalOpen}
         initialValues={selectedConfig || {}}
         modalProps={{
-          destroyOnClose: true,
+          destroyOnHidden: true,
           onCancel: () => {
             setSelectedConfig(undefined);
             setModalOpen(false);

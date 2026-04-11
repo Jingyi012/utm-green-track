@@ -1,257 +1,242 @@
 'use client';
 
-import { useProfileDropdownOptions } from "@/hook/options";
-import { UserStatus, userStatusLabels } from "@/lib/enum/status";
-import { getAllUsers, updateUserApprovalStatus } from "@/lib/services/user";
-import { UserDetails } from "@/lib/types/typing";
-import { ActionType, FooterToolbar, ModalForm, PageContainer, ProColumns, ProFormTextArea, ProTable } from "@ant-design/pro-components";
-import { App, Button } from "antd";
-import { useState, useEffect, useRef } from "react";
-import { getBaseUserColumns } from "./columns";
+import { useProfileDropdownOptions } from '@/hook/options';
+import { UserStatus, userStatusLabels } from '@/lib/enum/status';
+import { getAllUsers, updateUserApprovalStatus } from '@/lib/services/user';
+import { UserDetails } from '@/lib/types/typing';
+import {
+  ActionType,
+  FooterToolbar,
+  ModalForm,
+  PageContainer,
+  ProColumns,
+  ProFormTextArea,
+  ProTable,
+} from '@ant-design/pro-components';
+import { App, Button } from 'antd';
+import { useState, useEffect, useRef } from 'react';
+import { getBaseUserColumns } from './columns';
 
 const UserApproval: React.FC = () => {
-    const { message } = App.useApp();
-    const { positions, departments, roles, isLoading } = useProfileDropdownOptions();
-    const [loading, setLoading] = useState<boolean>(false);
-    const [statusFilter, setStatusFilter] = useState<UserStatus>(UserStatus.Pending);
-    const [selectedRows, setSelectedRows] = useState<UserDetails[]>([]);
-    const actionRef = useRef<ActionType | undefined>(undefined);
+  const { message } = App.useApp();
+  const { positions, departments, roles, isLoading } = useProfileDropdownOptions();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [statusFilter, setStatusFilter] = useState<UserStatus>(UserStatus.Pending);
+  const [selectedRows, setSelectedRows] = useState<UserDetails[]>([]);
+  const actionRef = useRef<ActionType | undefined>(undefined);
 
-    const [rejectModalOpen, setRejectModalOpen] = useState(false);
-    const [rejectingUsers, setRejectingUsers] = useState<UserDetails[]>([]);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectingUsers, setRejectingUsers] = useState<UserDetails[]>([]);
 
-    const openRejectModal = (users: UserDetails[]) => {
-        setRejectingUsers(users);
-        setRejectModalOpen(true);
-    };
+  const openRejectModal = (users: UserDetails[]) => {
+    setRejectingUsers(users);
+    setRejectModalOpen(true);
+  };
 
-    const fetchData = async (filter: {
-        pageNumber: number,
-        pageSize: number,
-        name?: string,
-        email?: string,
-        contactNumber?: string,
-        positionId?: string,
-        departmentId?: string,
-        status?: number,
-    }) => {
-        setLoading(true);
-        try {
-            const res = await getAllUsers({
-                ...filter,
-            });
-            return {
-                data: res.data,
-                success: res.success,
-                total: res.totalCount
-            }
-        } catch {
-            message.error("Failed to fetch users");
-            return {
-                data: [],
-                success: false,
-                total: 0
-            }
-        } finally {
-            setLoading(false);
+  const fetchData = async (filter: {
+    pageNumber: number;
+    pageSize: number;
+    name?: string;
+    email?: string;
+    contactNumber?: string;
+    positionId?: string;
+    departmentId?: string;
+    status?: number;
+  }) => {
+    setLoading(true);
+    try {
+      const res = await getAllUsers({
+        ...filter,
+      });
+      return {
+        data: res.data,
+        success: res.success,
+        total: res.totalCount,
+      };
+    } catch {
+      message.error('Failed to fetch users');
+      return {
+        data: [],
+        success: false,
+        total: 0,
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Batch or single approve/reject
+  const handleStatusUpdate = async (
+    users: UserDetails[],
+    status: UserStatus,
+    rejectedReason?: string,
+  ) => {
+    if (!users.length) return;
+    try {
+      const userIds = users.map((u) => u.id);
+      const res = await updateUserApprovalStatus({ userIds, status, rejectedReason });
+      if (res.success) {
+        message.success(`User status updated to ${userStatusLabels[status]}`);
+      } else {
+        message.error(`Failed to update status to ${userStatusLabels[status]}`);
+      }
+      setSelectedRows([]);
+      actionRef.current?.reload();
+    } catch {
+      message.error(`Failed to update status to ${userStatusLabels[status]}`);
+    }
+  };
+
+  const columns: ProColumns<UserDetails>[] = [
+    ...getBaseUserColumns({ positions, departments, roles }),
+    {
+      title: 'Action',
+      width: 170,
+      fixed: 'right',
+      align: 'center',
+      hideInSearch: true,
+      render: (_, record) => {
+        if (record.status === UserStatus.Pending) {
+          return (
+            <>
+              <Button type="link" onClick={() => handleStatusUpdate([record], UserStatus.Approved)}>
+                Approve
+              </Button>
+
+              <Button type="link" danger onClick={() => openRejectModal([record])}>
+                Reject
+              </Button>
+            </>
+          );
         }
-    };
 
-    // Batch or single approve/reject
-    const handleStatusUpdate = async (
-        users: UserDetails[],
-        status: UserStatus,
-        rejectedReason?: string
-    ) => {
-        if (!users.length) return;
-        try {
-            const userIds = users.map(u => u.id);
-            const res = await updateUserApprovalStatus({ userIds, status, rejectedReason });
-            if (res.success) {
-                message.success(`User status updated to ${userStatusLabels[status]}`);
-            } else {
-                message.error(`Failed to update status to ${userStatusLabels[status]}`);
-            }
-            setSelectedRows([]);
-            actionRef.current?.reload();
-        } catch {
-            message.error(`Failed to update status to ${userStatusLabels[status]}`);
+        if (record.status === UserStatus.Approved) {
+          return (
+            <Button type="link" danger onClick={() => openRejectModal([record])}>
+              Reject
+            </Button>
+          );
         }
-    };
 
-    const columns: ProColumns<UserDetails>[] = [
-        ...getBaseUserColumns({ positions, departments, roles }),
+        if (record.status === UserStatus.Rejected) {
+          return (
+            <Button type="link" onClick={() => handleStatusUpdate([record], UserStatus.Approved)}>
+              Approve
+            </Button>
+          );
+        }
+
+        return '-';
+      },
+    },
+  ];
+
+  useEffect(() => {
+    actionRef.current?.reloadAndRest?.();
+  }, [statusFilter]);
+
+  return (
+    <PageContainer
+      title={'User Approval Management'}
+      loading={isLoading}
+      tabList={[
         {
-            title: "Action",
-            width: 170,
-            fixed: "right",
-            align: "center",
-            hideInSearch: true,
-            render: (_, record) => {
-                if (record.status === UserStatus.Pending) {
-                    return (
-                        <>
-                            <Button
-                                type="link"
-                                onClick={() => handleStatusUpdate([record], UserStatus.Approved)}
-                            >
-                                Approve
-                            </Button>
-
-                            <Button
-                                type="link"
-                                danger
-                                onClick={() => openRejectModal([record])}
-                            >
-                                Reject
-                            </Button>
-                        </>
-                    );
-                }
-
-                if (record.status === UserStatus.Approved) {
-                    return (
-                        <Button
-                            type="link"
-                            danger
-                            onClick={() => openRejectModal([record])}
-                        >
-                            Reject
-                        </Button>
-                    );
-                }
-
-                if (record.status === UserStatus.Rejected) {
-                    return (
-                        <Button
-                            type="link"
-                            onClick={() => handleStatusUpdate([record], UserStatus.Approved)}
-                        >
-                            Approve
-                        </Button>
-                    );
-                }
-
-                return "-";
-            }
+          key: UserStatus.Pending.toString(),
+          tab: userStatusLabels[UserStatus.Pending],
+        },
+        {
+          key: UserStatus.Approved.toString(),
+          tab: userStatusLabels[UserStatus.Approved],
+        },
+        {
+          key: UserStatus.Rejected.toString(),
+          tab: userStatusLabels[UserStatus.Rejected],
+        },
+      ]}
+      onTabChange={(key) => {
+        setStatusFilter(parseInt(key) as UserStatus);
+        setSelectedRows([]);
+      }}
+    >
+      <ProTable<UserDetails>
+        rowKey="id"
+        headerTitle="User List"
+        actionRef={actionRef}
+        loading={loading || isLoading}
+        tableLayout="fixed"
+        scroll={{ x: 1600 }}
+        columnsState={{
+          persistenceKey: 'user-approval-columns',
+          persistenceType: 'localStorage',
+        }}
+        columns={columns}
+        pagination={{
+          showSizeChanger: true,
+        }}
+        request={(params: { current?: number; pageSize?: number; [key: string]: unknown }) => {
+          return fetchData({
+            ...params,
+            pageNumber: params.current ?? 1,
+            pageSize: params.pageSize ?? 20,
+            status: statusFilter,
+          });
+        }}
+        search={{
+          labelWidth: 'auto',
+        }}
+        rowSelection={
+          statusFilter === UserStatus.Pending
+            ? {
+                onChange: (_, selectedRows) => setSelectedRows(selectedRows),
+              }
+            : undefined
         }
+      />
 
-    ];
-
-    useEffect(() => {
-        actionRef.current?.reloadAndRest?.();
-    }, [statusFilter])
-
-    return (
-        <PageContainer
-            title={'User Approval Management'}
-            loading={isLoading}
-            tabList={[
-                {
-                    key: UserStatus.Pending.toString(),
-                    tab: userStatusLabels[UserStatus.Pending],
-                },
-                {
-                    key: UserStatus.Approved.toString(),
-                    tab: userStatusLabels[UserStatus.Approved],
-                },
-                {
-                    key: UserStatus.Rejected.toString(),
-                    tab: userStatusLabels[UserStatus.Rejected],
-                },
-            ]}
-            onTabChange={(key) => {
-                setStatusFilter(parseInt(key) as UserStatus);
-                setSelectedRows([]);
-            }}
+      {/* Batch approve toolbar */}
+      {statusFilter === UserStatus.Pending && selectedRows.length > 0 && (
+        <FooterToolbar
+          extra={
+            <div>
+              Chosen <a style={{ fontWeight: 600 }}>{selectedRows.length}</a> item
+            </div>
+          }
         >
+          <Button onClick={async () => handleStatusUpdate(selectedRows, UserStatus.Approved)}>
+            Batch Approve
+          </Button>
+        </FooterToolbar>
+      )}
 
-            <ProTable<UserDetails>
-                rowKey="id"
-                headerTitle="User List"
-                actionRef={actionRef}
-                loading={loading || isLoading}
-                tableLayout="fixed"
-                scroll={{ x: 1600 }}
-                columnsState={{
-                    persistenceKey: "user-approval-columns",
-                    persistenceType: "localStorage",
-                }}
-                columns={columns}
-                pagination={{
-                    showSizeChanger: true
-                }}
-                request={(params: {
-                    current?: number;
-                    pageSize?: number;
-                    [key: string]: unknown;
-                }) => {
-                    return fetchData({
-                        ...params,
-                        pageNumber: params.current ?? 1,
-                        pageSize: params.pageSize ?? 20,
-                        status: statusFilter,
-                    });
-                }}
-                search={{
-                    labelWidth: 'auto',
-                }}
-                rowSelection={
-                    statusFilter === UserStatus.Pending
-                        ? {
-                            onChange: (_, selectedRows) => setSelectedRows(selectedRows),
-                        }
-                        : undefined
-                }
-            />
-
-            {/* Batch approve toolbar */}
-            {statusFilter === UserStatus.Pending && selectedRows.length > 0 && (
-                <FooterToolbar
-                    extra={
-                        <div>
-                            Chosen <a style={{ fontWeight: 600 }}>{selectedRows.length}</a> item
-                        </div>
-                    }
-                >
-                    <Button
-                        onClick={async () => handleStatusUpdate(selectedRows, UserStatus.Approved)}
-                    >
-                        Batch Approve
-                    </Button>
-                </FooterToolbar>
-            )}
-
-            <ModalForm
-                title="Reject User"
-                open={rejectModalOpen}
-                modalProps={{
-                    destroyOnClose: true,
-                    onCancel: () => setRejectModalOpen(false),
-                }}
-                onOpenChange={setRejectModalOpen}
-                onFinish={async (values) => {
-                    await handleStatusUpdate(rejectingUsers, UserStatus.Rejected, values.rejectedReason);
-                    return true;
-                }}
-                submitter={{
-                    searchConfig: {
-                        submitText: "Submit",
-                        resetText: "Cancel"
-                    }
-                }}
-            >
-                <ProFormTextArea
-                    name="rejectedReason"
-                    label="Reject Reason"
-                    placeholder="Enter reason for rejection"
-                    rules={[{ required: true, message: "Reject reason is required" }]}
-                    fieldProps={{ rows: 4 }}
-                />
-            </ModalForm>
-
-        </PageContainer>
-    );
+      <ModalForm
+        title="Reject User"
+        open={rejectModalOpen}
+        modalProps={{
+          destroyOnHidden: true,
+          onCancel: () => setRejectModalOpen(false),
+        }}
+        onOpenChange={setRejectModalOpen}
+        onFinish={async (values) => {
+          await handleStatusUpdate(rejectingUsers, UserStatus.Rejected, values.rejectedReason);
+          return true;
+        }}
+        submitter={{
+          searchConfig: {
+            submitText: 'Submit',
+            resetText: 'Cancel',
+          },
+        }}
+      >
+        <ProFormTextArea
+          name="rejectedReason"
+          label="Reject Reason"
+          placeholder="Enter reason for rejection"
+          rules={[{ required: true, message: 'Reject reason is required' }]}
+          fieldProps={{ rows: 4 }}
+        />
+      </ModalForm>
+    </PageContainer>
+  );
 };
 
 export default UserApproval;

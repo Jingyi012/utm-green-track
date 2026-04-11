@@ -1,13 +1,10 @@
 'use client';
 
-import { RequestStatus, requestStatusLabels, wasteRecordStatusLabels } from "@/lib/enum/status";
+import { RequestStatus, requestStatusLabels } from "@/lib/enum/status";
 import { getAllRequest, updateRequestResolveStatus } from "@/lib/services/requestService";
 import { ChangeRequest } from "@/lib/types/typing";
-import { dateFormatter, dateTimeFormatter } from "@/lib/utils/formatter";
-import { EyeOutlined } from "@ant-design/icons";
 import { ActionType, FooterToolbar, PageContainer, ProColumns, ProTable } from "@ant-design/pro-components";
-import { App, Button, Descriptions, Popconfirm, Space, Tooltip } from "antd";
-import Popover from "antd/lib/popover";
+import { App, Button, Popconfirm, Tooltip } from "antd";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
@@ -129,51 +126,20 @@ const RequestManagement: React.FC = () => {
         {
             title: 'Related Waste Record',
             dataIndex: 'wasteRecord',
-            width: 260,
+            width: 180,
             align: "center",
             hideInSearch: true,
             render: (_: unknown, record: ChangeRequest) => {
-                const wr = record.wasteRecord;
-                if (!wr) return "-";
+                if (!record.wasteRecordId) return "-";
 
-                const content = (
-                    <Descriptions column={1} size="small" bordered>
-                        <Descriptions.Item label="Campus">{wr.campus}</Descriptions.Item>
-                        <Descriptions.Item label="Faculty / Department / College / PTJ">{wr.department}</Descriptions.Item>
-                        <Descriptions.Item label="Disposal Method">{wr.disposalMethod}</Descriptions.Item>
-                        <Descriptions.Item label="Waste Type">{wr.wasteType}</Descriptions.Item>
-                        <Descriptions.Item label="Location">{wr.location || "-"}</Descriptions.Item>
-                        <Descriptions.Item label="Unit">{wr.unit || "-"}</Descriptions.Item>
-                        <Descriptions.Item label="Program">{wr.program || "-"}</Descriptions.Item>
-                        <Descriptions.Item label="Program Date">{dateTimeFormatter(wr.programDate) || "-"}</Descriptions.Item>
-                        <Descriptions.Item label="Waste Weight">{wr.wasteWeight}</Descriptions.Item>
-                        <Descriptions.Item label="Status">{wasteRecordStatusLabels[wr.status]}</Descriptions.Item>
-                        <Descriptions.Item label="Date">{dateFormatter(wr.date)}</Descriptions.Item>
-                        <Descriptions.Item label="Attachments">
-                            {wr.attachments?.length
-                                ? wr.attachments.map(a => <a href={a.filePath} target="_blank" rel="noopener noreferrer" key={a.id}>{a.fileName}</a>)
-                                : "-"}
-                        </Descriptions.Item>
-                    </Descriptions>
-                );
-
-                return (
-                    <Space size={4} wrap>
-                        <Popover content={content} title="Waste Record Details" trigger="click"
-                            arrow={false}
-                        >
-                            <Button type="link" icon={<EyeOutlined />}>View Details</Button>
-                        </Popover>
-                        {record.wasteRecordId && (
-                            <Button
-                                type="link"
-                                onClick={() => router.push(`/waste-data/management?wasteRecordId=${record.wasteRecordId}`)}
-                            >
-                                Open in Waste Data
-                            </Button>
-                        )}
-                    </Space>
-                );
+                return <Button
+                    type="link"
+                    onClick={() =>
+                        router.push(`/data-entry/view-form/record?wasteRecordId=${record.wasteRecordId}`)
+                    }
+                >
+                    View Record
+                </Button>;
             }
         },
         {
