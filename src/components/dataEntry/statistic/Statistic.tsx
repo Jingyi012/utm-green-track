@@ -359,12 +359,6 @@ const WasteManagementTable: React.FC = () => {
       return;
     }
 
-    const context = getLocationContext(campusFilter, departmentFilter);
-    const confirmed = await confirmAction({
-      title: 'Confirm Excel Export',
-      content: `Are you sure you want to download the ${year} waste report${context}?`,
-    });
-    if (!confirmed) return;
     const hide = message.loading('Generating waste report...', 0);
     try {
       setReportLoading(true);

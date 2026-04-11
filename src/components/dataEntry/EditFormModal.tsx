@@ -125,7 +125,6 @@ export default function EditformModal({
               name="unit"
               label="Unit"
               placeholder="Please enter unit"
-              rules={[{ required: true, message: 'Please enter unit' }]}
             />
           </Col>
           <Col xs={24} md={12}>

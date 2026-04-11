@@ -25,11 +25,28 @@ export const dateTimeFormatter = (date?: string | Date | null): string => {
         return "-";
     }
 
-    const d = dayjs.tz(date, 'Asia/Kuala_Lumpur');
+    try {
+        if (typeof date === 'string') {
+            const normalized = date.trim();
+            if (!normalized || normalized === '-' || normalized.toLowerCase() === 'null') {
+                return "-";
+            }
 
-    if (!d.isValid()) {
+            const parsed = dayjs(normalized);
+            if (!parsed.isValid()) {
+                return "-";
+            }
+
+            return parsed.tz('Asia/Kuala_Lumpur').format('DD MMM YYYY, h:mm A');
+        }
+
+        const parsed = dayjs(date);
+        if (!parsed.isValid()) {
+            return "-";
+        }
+
+        return parsed.tz('Asia/Kuala_Lumpur').format('DD MMM YYYY, h:mm A');
+    } catch {
         return "-";
     }
-
-    return d.format('DD MMM YYYY, h:mm A');
 };

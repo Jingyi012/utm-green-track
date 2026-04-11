@@ -39,7 +39,7 @@ type WasteItemFormValue = {
 type WasteEntryFormValues = {
   campusId: string;
   departmentId: string;
-  unit: string;
+  unit?: string;
   location: string;
   program?: string;
   programDate?: string;

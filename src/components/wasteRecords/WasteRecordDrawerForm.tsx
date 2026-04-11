@@ -9,12 +9,13 @@ import {
     ProFormTextArea,
 } from '@ant-design/pro-components';
 import { ProCard } from '@ant-design/pro-components';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Campus, Department, DisposalMethodWithWasteType, WasteTypeWithEmissionFactor } from '@/lib/types/typing';
 import { WasteRecordStatus, wasteRecordStatusLabels } from '@/lib/enum/status';
 import { DeleteOutlined, EditOutlined, UploadOutlined } from '@ant-design/icons';
 import { WasteRecord } from '@/lib/types/wasteRecord';
 import { useAuth } from '@/contexts/AuthContext';
+import dayjs from 'dayjs';
 import {
     ATTACHMENT_ACCEPT_ATTRIBUTE,
     ATTACHMENT_ACCEPT_LABEL,
@@ -53,6 +54,39 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
     const [selectedDisposalMethod, setSelectedDisposalMethod] = useState<string>();
     const [wasteTypes, setWasteTypes] = useState<WasteTypeWithEmissionFactor[]>([]);
 
+    const toPickerValue = (value?: string | null) => {
+        if (!value) {
+            return undefined;
+        }
+        const parsed = dayjs(value);
+        return parsed.isValid() ? parsed : undefined;
+    };
+
+    const toIsoString = (value: unknown): string | undefined => {
+        if (!value) {
+            return undefined;
+        }
+
+        if (dayjs.isDayjs(value)) {
+            return value.toISOString();
+        }
+
+        if (value instanceof Date) {
+            return value.toISOString();
+        }
+
+        if (typeof value === 'string') {
+            return value;
+        }
+
+        return undefined;
+    };
+
+    const normalizedInitialValues = useMemo(() => ({
+        ...initialValues,
+        programDate: toPickerValue(initialValues?.programDate),
+    }), [initialValues]);
+
     const handleDisposalMethodChange = (value: string) => {
         setSelectedDisposalMethod(value);
         form.setFieldValue("wasteTypeId", null);
@@ -87,6 +121,13 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
             form.setFieldValue('uploadedAttachments', formattedFileList);
         }
     }, [initialValues, form]);
+
+    useEffect(() => {
+        if (visible) {
+            form.setFieldsValue(normalizedInitialValues);
+        }
+    }, [visible, form, normalizedInitialValues]);
+
     const watchStatus = Form.useWatch("status", form);
     return (
         <DrawerForm
@@ -95,7 +136,12 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
             width={800}
             form={form}
             onFinish={async (values) => {
-                const success = await onSubmit(values);
+                const payload: FormValueType = {
+                    ...values,
+                    programDate: toIsoString(values.programDate),
+                };
+
+                const success = await onSubmit(payload);
                 if (success) {
                     setIsEditing(false);
                     onCancel();
@@ -145,7 +191,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                     </>
                 )
             }}
-            initialValues={initialValues}
+            initialValues={normalizedInitialValues}
         >
             <ProCard title="Waste Record Details" bordered collapsible>
                 <Title level={5}>Basic Information</Title>
@@ -189,7 +235,6 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                             name="unit"
                             label="Unit"
                             placeholder="Please enter unit"
-                            rules={[{ required: true, message: 'Please enter unit' }]}
                             disabled={!isEditing}
                         />
                     </Col>
