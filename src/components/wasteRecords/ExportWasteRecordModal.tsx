@@ -17,7 +17,12 @@ export const ExportWasteRecordModal = ({
   onConfirm,
   type,
 }: ExportWasteRecordModalProps) => {
+  const startYear = 2020;
   const currentYear = dayjs().year();
+  const yearOptions = Array.from({ length: currentYear - startYear + 1 }, (_, index) => {
+    const year = startYear + index;
+    return { label: year, value: year };
+  }).reverse();
 
   const handleFinish = (values: any) => {
     onConfirm(values.year, values.month);
@@ -53,10 +58,7 @@ export const ExportWasteRecordModal = ({
           name="year"
           label="Year"
           rules={[{ required: true }]}
-          options={[currentYear, currentYear - 1, currentYear - 2].map((y) => ({
-            label: y,
-            value: y,
-          }))}
+          options={yearOptions}
         />
 
         <ProFormSelect

@@ -33,9 +33,10 @@ export interface StatisticRow {
 }
 
 const currentYear = new Date().getFullYear();
-const yearOptions = Array.from({ length: currentYear - 2023 + 1 }, (_, i) => ({
-  label: (2023 + i).toString(),
-  value: 2023 + i,
+const startYear = 2020;
+const yearOptions = Array.from({ length: currentYear - startYear + 1 }, (_, i) => ({
+  label: (startYear + i).toString(),
+  value: startYear + i,
 })).reverse();
 
 const transformWasteData = (
