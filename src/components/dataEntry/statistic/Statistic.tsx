@@ -18,11 +18,10 @@ import { MONTH_LABELS_SHORT } from '@/lib/enum/monthName';
 import { DisposalMethodWithWasteType } from '@/lib/types/typing';
 import { ColumnsType } from 'antd/es/table';
 import { downloadFile } from '@/lib/utils/downloadFile';
-import { PageContainer, ProForm, ProFormSelect, ProFormText } from '@ant-design/pro-components';
+import { PageContainer, ProForm, ProFormSelect } from '@ant-design/pro-components';
 import { WhiteBgWrapper } from '@/components/wrapper/whiteBgWrapper';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExportWasteReportModal } from '@/components/dataEntry/statistic/ExportWasteReportModal';
-import { UserDetails } from '@/lib/types/typing';
 
 export interface StatisticRow {
   month: string;
@@ -132,12 +131,9 @@ const WasteManagementTable: React.FC = () => {
   const [reportLoading, setReportLoading] = useState<boolean>(false);
   const [selectedCampus, setSelectedCampus] = useState<string | undefined>(undefined);
   const [selectedDepartment, setSelectedDepartment] = useState<string | undefined>(undefined);
-  const [selectedUnit, setSelectedUnit] = useState<string | undefined>(undefined);
-  const [userProfile, setUserProfile] = useState<UserDetails | null>(null);
   const [scopeLoading, setScopeLoading] = useState<boolean>(!isAdmin);
   const [exportReportModalOpen, setExportReportModalOpen] = useState<boolean>(false);
 
-  const hasFixedUserUnit = !isAdmin && !!userProfile?.unit?.trim();
   const canFetchForUser = !!selectedCampus && !!selectedDepartment;
 
   const getRequiredFilterWarning = (): string => {
@@ -176,7 +172,6 @@ const WasteManagementTable: React.FC = () => {
           year: selectedYear,
           campusId: selectedCampus,
           departmentId: selectedDepartment,
-          unit: selectedUnit,
           isViewAll: isAdmin,
         });
         const transformed = transformWasteData(res.data, disposalMethods);
@@ -196,7 +191,6 @@ const WasteManagementTable: React.FC = () => {
       message,
       selectedCampus,
       selectedDepartment,
-      selectedUnit,
     ],
   );
 
@@ -211,9 +205,7 @@ const WasteManagementTable: React.FC = () => {
         setScopeLoading(true);
         const profileResponse = await getProfile();
         const profile = profileResponse.data;
-        setUserProfile(profile);
         setSelectedDepartment(profile.departmentId);
-        setSelectedUnit(profile.unit?.trim() || undefined);
       } catch (error: unknown) {
         message.error(getRequestErrorMessage(error, 'Failed to load user scope'));
       } finally {
@@ -223,6 +215,11 @@ const WasteManagementTable: React.FC = () => {
 
     loadUserProfile();
   }, [isAdmin, message]);
+
+  useEffect(() => {
+    if (selectedCampus || campuses.length === 0) return;
+    setSelectedCampus(campuses[0].id);
+  }, [campuses, selectedCampus]);
 
   useEffect(() => {
     if (scopeLoading) return;
@@ -237,7 +234,6 @@ const WasteManagementTable: React.FC = () => {
     year,
     selectedCampus,
     selectedDepartment,
-    selectedUnit,
   ]);
 
   const generateColumns = (disposalMethods: DisposalMethodWithWasteType[]) => {
@@ -270,18 +266,16 @@ const WasteManagementTable: React.FC = () => {
 
   const columns = generateColumns(disposalMethods);
 
-  const getLocationContext = (campusId?: string, departmentId?: string, unit?: string) => {
+  const getLocationContext = (campusId?: string, departmentId?: string) => {
     const campusName = campusId ? campuses.find((c) => c.id === campusId)?.name : undefined;
     const departmentName = departmentId
       ? departments.find((d) => d.id === departmentId)?.name
       : undefined;
-    const unitName = unit?.trim() || undefined;
 
     const parts: string[] = [];
 
     if (campusName) parts.push(campusName);
     if (departmentName) parts.push(departmentName);
-    if (unitName) parts.push(unitName);
 
     if (parts.length === 0) return '';
 
@@ -294,7 +288,7 @@ const WasteManagementTable: React.FC = () => {
       return;
     }
 
-    const context = getLocationContext(selectedCampus, selectedDepartment, selectedUnit);
+    const context = getLocationContext(selectedCampus, selectedDepartment);
     const confirmed = await confirmAction({
       title: 'Confirm Excel Export',
       content: `Are you sure you want to download the ${year} waste statistics${context}?`,
@@ -308,7 +302,6 @@ const WasteManagementTable: React.FC = () => {
         year,
         campusId: selectedCampus,
         departmentId: selectedDepartment,
-        unit: selectedUnit,
         isViewAll: isAdmin,
       });
       const contentDisposition = response.headers['content-disposition'];
@@ -327,7 +320,7 @@ const WasteManagementTable: React.FC = () => {
       return;
     }
 
-    const context = getLocationContext(selectedCampus, selectedDepartment, selectedUnit);
+    const context = getLocationContext(selectedCampus, selectedDepartment);
     const confirmed = await confirmAction({
       title: 'Confirm PDF Export',
       content: `Are you sure you want to download the ${year} waste statistics${context}?`,
@@ -340,7 +333,6 @@ const WasteManagementTable: React.FC = () => {
         year,
         campusId: selectedCampus,
         departmentId: selectedDepartment,
-        unit: selectedUnit,
         isViewAll: isAdmin,
       });
       const contentDisposition = response.headers['content-disposition'];
@@ -357,18 +349,16 @@ const WasteManagementTable: React.FC = () => {
     year: number,
     campusId?: string,
     departmentId?: string,
-    unit?: string,
   ) => {
     const campusFilter = isAdmin ? campusId : selectedCampus;
     const departmentFilter = isAdmin ? departmentId : selectedDepartment;
-    const unitFilter = isAdmin ? unit : selectedUnit;
 
     if (!campusFilter || !departmentFilter) {
       message.warning(getRequiredFilterWarning());
       return;
     }
 
-    const context = getLocationContext(campusFilter, departmentFilter, unitFilter);
+    const context = getLocationContext(campusFilter, departmentFilter);
     const confirmed = await confirmAction({
       title: 'Confirm Excel Export',
       content: `Are you sure you want to download the ${year} waste report${context}?`,
@@ -381,7 +371,6 @@ const WasteManagementTable: React.FC = () => {
         year,
         campusId: campusFilter,
         departmentId: departmentFilter,
-        unit: unitFilter,
         isViewAll: isAdmin,
       });
       const contentDisposition = response.headers['content-disposition'];
@@ -474,17 +463,6 @@ const WasteManagementTable: React.FC = () => {
                             .map((d) => ({ label: d.name, value: d.id }))
                     }
                     allowClear={isAdmin}
-                  />
-                  <ProFormText
-                    name="unit"
-                    label="Unit"
-                    placeholder="Enter Unit"
-                    fieldProps={{
-                      value: selectedUnit ?? '',
-                      onChange: (e) => setSelectedUnit(e.target.value),
-                      onBlur: (e) => setSelectedUnit(e.target.value.trim() || undefined),
-                      disabled: hasFixedUserUnit,
-                    }}
                   />
                 </Space>
               </ProForm>

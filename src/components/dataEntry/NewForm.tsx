@@ -398,7 +398,9 @@ export default function WasteEntryForm() {
                 name="departmentId"
                 label="Faculty / Department / College / PTJ"
                 placeholder="Select faculty / department / college / PTJ"
-                rules={[{ required: true, message: 'Please select faculty / department / college / PTJ' }]}
+                rules={[
+                  { required: true, message: 'Please select faculty / department / college / PTJ' },
+                ]}
                 options={departments.map((department) => ({
                   label: department.name,
                   value: department.id,
@@ -410,12 +412,7 @@ export default function WasteEntryForm() {
 
           <Row gutter={16}>
             <Col xs={24} md={12}>
-              <ProFormText
-                name="unit"
-                label="Unit"
-                placeholder="Please enter unit"
-                rules={[{ required: true, message: 'Please enter unit' }]}
-              />
+              <ProFormText name="unit" label="Unit" placeholder="Please enter unit" />
             </Col>
             <Col xs={24} md={12}>
               <ProFormText
@@ -599,5 +596,3 @@ export default function WasteEntryForm() {
     </PageContainer>
   );
 }
-
-
