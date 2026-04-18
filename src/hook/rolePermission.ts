@@ -1,4 +1,3 @@
-import useSWR, { mutate as mutateCache } from 'swr';
 import {
   getAllRoles,
   getAvailablePermissions,
@@ -7,10 +6,15 @@ import {
   type AvailablePermission,
   type Role,
 } from '@/lib/services/rolePermission';
-import { useCallback, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-const ROLE_PERMISSION_METADATA_KEY = 'role-permission-metadata';
-const rolePermissionKey = (roleId: string) => `role-permissions-${roleId}`;
+// Query Keys
+export const rolePermissionQueryKeys = {
+  all: ['role-permissions'] as const,
+  metadata: () => [...rolePermissionQueryKeys.all, 'metadata'] as const,
+  permissions: () => [...rolePermissionQueryKeys.all, 'permissions'] as const,
+  permission: (roleId: string) => [...rolePermissionQueryKeys.permissions(), roleId] as const,
+} as const;
 
 type RolePermissionMetadata = {
   roles: Role[];
@@ -41,22 +45,19 @@ const fetchRolePermissions = async (roleId: string): Promise<string[]> => {
 };
 
 export function useRolePermissionMetadata() {
-  const { data, error, isLoading, mutate } = useSWR<RolePermissionMetadata>(
-    ROLE_PERMISSION_METADATA_KEY,
-    fetchRolePermissionMetadata,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 1000 * 60 * 10,
-    },
-  );
+  const { data, error, isLoading, refetch } = useQuery({
+    queryKey: rolePermissionQueryKeys.metadata(),
+    queryFn: fetchRolePermissionMetadata,
+    staleTime: 1000 * 60 * 10,
+    throwOnError: true,
+  });
 
   return {
     roles: data?.roles ?? EMPTY_ROLES,
     availablePermissions: data?.availablePermissions ?? EMPTY_AVAILABLE_PERMISSIONS,
     isLoading,
     error,
-    refresh: mutate,
+    refetch,
   };
 }
 
@@ -65,39 +66,42 @@ export function useRolePermissions(roleId?: string) {
     data: rolePermissions,
     error,
     isLoading,
-    mutate,
-  } = useSWR<string[]>(roleId ? rolePermissionKey(roleId) : null, () => fetchRolePermissions(roleId!), {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    dedupingInterval: 1000 * 60 * 5,
+    refetch,
+  } = useQuery({
+    queryKey: rolePermissionQueryKeys.permission(roleId ?? ''),
+    queryFn: () => fetchRolePermissions(roleId!),
+    enabled: !!roleId,
+    staleTime: 1000 * 60 * 5,
+    throwOnError: true,
   });
 
   return {
     rolePermissions: rolePermissions ?? EMPTY_ROLE_PERMISSIONS,
     isLoading,
     error,
-    refresh: mutate,
+    refetch,
   };
 }
 
 export function useUpdateRolePermissions() {
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-
-  const saveRolePermissions = useCallback(async (roleId: string, permissions: string[]) => {
-    try {
-      setIsSaving(true);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async ({ roleId, permissions }: { roleId: string; permissions: string[] }) => {
       await updateRolePermissions(roleId, permissions);
+    },
+    onSuccess: async (_, variables) => {
       await Promise.all([
-        mutateCache(rolePermissionKey(roleId)),
-        mutateCache(ROLE_PERMISSION_METADATA_KEY),
+        queryClient.invalidateQueries({
+          queryKey: rolePermissionQueryKeys.permission(variables.roleId),
+        }),
+        queryClient.invalidateQueries({ queryKey: rolePermissionQueryKeys.metadata() }),
       ]);
-    } finally {
-      setIsSaving(false);
-    }
-  }, []);
+    },
+  });
 
   return {
-    isSaving,
-    saveRolePermissions,
+    isSaving: mutation.isPending,
+    saveRolePermissions: async (roleId: string, permissions: string[]) =>
+      mutation.mutateAsync({ roleId, permissions }),
   };
 }

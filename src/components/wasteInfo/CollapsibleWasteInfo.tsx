@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import { Collapse, Typography } from 'antd';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
@@ -24,11 +22,7 @@ const CollapsibleWasteInfo: React.FC<CollapsibleWasteInfoProps> = ({
 }) => {
   const collapseItems = items.map((item, index) => ({
     key: String(index + 1),
-    label: (
-      <span className="text-base font-medium text-white">
-        {item.title}
-      </span>
-    ),
+    label: <span className="text-base font-medium text-white">{item.title}</span>,
     children: (
       <div className="text-sm text-gray-600">
         {Array.isArray(item.description) ? (
@@ -46,18 +40,22 @@ const CollapsibleWasteInfo: React.FC<CollapsibleWasteInfoProps> = ({
 
   return (
     <div className="w-full">
-      {title && (
-        <h4 className="text-xl font-semibold mb-4">{title}</h4>
-      )}
+      {title && <h4 className="text-xl font-semibold mb-4">{title}</h4>}
 
       <Collapse
         items={collapseItems}
         bordered={true}
-        expandIcon={({ isActive }) => (isActive ? <MinusOutlined style={{ color: '#fff' }} /> : <PlusOutlined style={{ color: '#fff' }} />)}
+        expandIcon={({ isActive }) =>
+          isActive ? (
+            <MinusOutlined style={{ color: '#fff' }} />
+          ) : (
+            <PlusOutlined style={{ color: '#fff' }} />
+          )
+        }
         expandIconPosition="start"
       />
 
-      <style jsx global>{`
+      <style>{`
   .ant-collapse-item .ant-collapse-header {
     background-color:#15803c;
     font-size: 16px;

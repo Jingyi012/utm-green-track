@@ -143,10 +143,29 @@ export const proLayoutMenuData: AppMenuItem[] = [
     requiredPermission: ADMIN_OPERATION_PERMISSION,
     children: [
       {
+        path: '/configurations/landfilling-cost',
+        name: 'Landfilling Cost',
+        requiredPermission: ADMIN_OPERATION_PERMISSION,
+      },
+      {
+        path: '/configurations/utm-population',
+        name: 'UTM Population',
+        requiredPermission: ADMIN_OPERATION_PERMISSION,
+      },
+      {
+        path: '/configurations/disposal-waste',
+        name: 'Disposal/Waste Types',
+        requiredPermission: ADMIN_OPERATION_PERMISSION,
+      },
+      {
+        path: '/configurations/departments',
+        name: 'Departments',
+        requiredPermission: ADMIN_OPERATION_PERMISSION,
+      },
+      {
         path: '/configurations/role-permissions',
         name: 'Role Permissions',
         requiredPermission: ADMIN_OPERATION_PERMISSION,
-        hideInMenu: true,
       },
     ],
   },

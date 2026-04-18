@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useMemo, useState } from 'react';
 import { App, Card, Col, Row, Space, Spin, Typography } from 'antd';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { PageContainer, ProCard } from '@ant-design/pro-components';
 import { WasteRecord } from '@/lib/types/wasteRecord';
 import { getWasteRecordById } from '@/lib/services/wasteRecord';
@@ -20,8 +18,9 @@ const DetailField: React.FC<{ label: string; value?: React.ReactNode }> = ({ lab
 
 const WasteRecordDetailPage: React.FC = () => {
   const { message } = App.useApp();
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const searchStr = useLocation({ select: (location) => location.searchStr });
+  const searchParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
   const wasteRecordId = searchParams.get('wasteRecordId') ?? undefined;
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -78,7 +77,7 @@ const WasteRecordDetailPage: React.FC = () => {
           { title: 'Waste Record Details' },
         ],
       }}
-      onBack={() => router.push('/data-entry/view-form')}
+      onBack={() => void navigate({ to: '/data-entry/view-form' })}
     >
       {loading && (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>

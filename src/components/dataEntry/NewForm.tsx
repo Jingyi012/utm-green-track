@@ -1,5 +1,3 @@
-'use client';
-
 import { useMemo, useState } from 'react';
 import { App, Button, Card, Col, Row, Space, Table, Typography, Upload, UploadFile } from 'antd';
 import type { ColumnsType } from 'antd/es/table';

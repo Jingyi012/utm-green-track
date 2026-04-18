@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Checkbox, Space, Spin, Tag, Typography } from 'antd';
-import { DrawerForm, ProCard, ProTable } from '@ant-design/pro-components';
+import { DrawerForm, ProCard, ProTable, PageContainer } from '@ant-design/pro-components';
 import type { ProColumns } from '@ant-design/pro-components';
 import { proLayoutMenuData, type AppMenuItem } from '@/lib/config/menu';
 import {
@@ -78,7 +76,7 @@ export default function RolePermissions() {
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [draftPermissions, setDraftPermissions] = useState<string[]>([]);
 
-  const { roles, availablePermissions, isLoading, error } = useRolePermissionMetadata();
+  const { roles, availablePermissions, isLoading, error, refetch } = useRolePermissionMetadata();
   const {
     rolePermissions,
     isLoading: isRolePermissionsLoading,
@@ -92,9 +90,7 @@ export default function RolePermissions() {
       return;
     }
 
-    setDraftPermissions((prev) =>
-      arraysEqual(prev, rolePermissions) ? prev : rolePermissions,
-    );
+    setDraftPermissions((prev) => (arraysEqual(prev, rolePermissions) ? prev : rolePermissions));
   }, [editingRole, rolePermissions]);
 
   const permissionLabelMap = useMemo(
@@ -231,28 +227,33 @@ export default function RolePermissions() {
   const hasError = error || rolePermissionError;
 
   return (
-    <Spin spinning={isLoading}>
-      <Space direction="vertical" style={{ width: '100%' }} size="middle">
-        {hasError && (
-          <Alert
-            type="error"
-            message="Unable to load role permissions"
-            description={getErrorMessage(hasError, 'Please refresh and try again.')}
-            showIcon
-          />
-        )}
+    <PageContainer title="Role Permissions Configuration" style={{ minHeight: '500px' }}>
+      <Spin spinning={isLoading}>
+        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          {hasError && (
+            <Alert
+              type="error"
+              message="Unable to load role permissions"
+              description={getErrorMessage(hasError, 'Please refresh and try again.')}
+              showIcon
+            />
+          )}
 
-        <ProTable<RoleTableRow>
-          rowKey="id"
-          columns={roleColumns}
-          dataSource={roleRows}
-          search={false}
-          options={false}
-          pagination={false}
-          cardBordered
-          toolBarRender={false}
-        />
-      </Space>
+          <ProTable<RoleTableRow>
+            rowKey="id"
+            headerTitle={'Role Permission'}
+            columns={roleColumns}
+            dataSource={roleRows}
+            search={false}
+            pagination={false}
+            cardBordered
+            loading={isLoading}
+            options={{
+              reload: () => refetch(),
+            }}
+          />
+        </Space>
+      </Spin>
 
       <DrawerForm
         title={editingRole ? `Manage Access: ${editingRole.name}` : 'Manage Access'}
@@ -349,6 +350,6 @@ export default function RolePermissions() {
           </Space>
         </Spin>
       </DrawerForm>
-    </Spin>
+    </PageContainer>
   );
 }

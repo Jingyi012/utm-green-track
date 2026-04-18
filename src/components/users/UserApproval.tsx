@@ -1,90 +1,66 @@
-'use client';
-
 import { useProfileDropdownOptions } from '@/hook/options';
 import { UserStatus, userStatusLabels } from '@/lib/enum/status';
-import { getAllUsers, updateUserApprovalStatus } from '@/lib/services/user';
 import { UserDetails } from '@/lib/types/typing';
 import {
   ActionType,
-  FooterToolbar,
   ModalForm,
   PageContainer,
   ProColumns,
   ProFormTextArea,
   ProTable,
 } from '@ant-design/pro-components';
+import { FooterToolbar } from '@ant-design/pro-layout/es/components/FooterToolbar';
 import { App, Button } from 'antd';
 import { useState, useEffect, useRef } from 'react';
 import { getBaseUserColumns } from './columns';
+import { useUserList, useUpdateUserApprovalStatus, userQueryKeys } from '@/hook/users';
+import { useQueryClient } from '@tanstack/react-query';
 
 const UserApproval: React.FC = () => {
   const { message } = App.useApp();
+  const queryClient = useQueryClient();
   const { positions, departments, roles, isLoading } = useProfileDropdownOptions();
-  const [loading, setLoading] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<UserStatus>(UserStatus.Pending);
   const [selectedRows, setSelectedRows] = useState<UserDetails[]>([]);
+  const [filters, setFilters] = useState({
+    pageNumber: 1,
+    pageSize: 20,
+    status: statusFilter,
+  });
   const actionRef = useRef<ActionType | undefined>(undefined);
 
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectingUsers, setRejectingUsers] = useState<UserDetails[]>([]);
+
+  const { data: userData, isLoading: isFetching } = useUserList(filters);
+  const { mutate: updateApprovalMutate, isPending: isUpdating } = useUpdateUserApprovalStatus();
 
   const openRejectModal = (users: UserDetails[]) => {
     setRejectingUsers(users);
     setRejectModalOpen(true);
   };
 
-  const fetchData = async (filter: {
-    pageNumber: number;
-    pageSize: number;
-    name?: string;
-    email?: string;
-    contactNumber?: string;
-    positionId?: string;
-    departmentId?: string;
-    status?: number;
-  }) => {
-    setLoading(true);
-    try {
-      const res = await getAllUsers({
-        ...filter,
-      });
-      return {
-        data: res.data,
-        success: res.success,
-        total: res.totalCount,
-      };
-    } catch {
-      message.error('Failed to fetch users');
-      return {
-        data: [],
-        success: false,
-        total: 0,
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Batch or single approve/reject
-  const handleStatusUpdate = async (
+  const handleStatusUpdate = (
     users: UserDetails[],
     status: UserStatus,
     rejectedReason?: string,
   ) => {
     if (!users.length) return;
-    try {
-      const userIds = users.map((u) => u.id);
-      const res = await updateUserApprovalStatus({ userIds, status, rejectedReason });
-      if (res.success) {
-        message.success(`User status updated to ${userStatusLabels[status]}`);
-      } else {
-        message.error(`Failed to update status to ${userStatusLabels[status]}`);
-      }
-      setSelectedRows([]);
-      actionRef.current?.reload();
-    } catch {
-      message.error(`Failed to update status to ${userStatusLabels[status]}`);
-    }
+    const userIds = users.map((u) => u.id);
+    updateApprovalMutate(
+      { userIds, status, rejectedReason },
+      {
+        onSuccess: () => {
+          message.success(`User status updated to ${userStatusLabels[status]}`);
+          setSelectedRows([]);
+          queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
+        },
+        onError: () => {
+          message.error(`Failed to update status to ${userStatusLabels[status]}`);
+        },
+      },
+    );
   };
 
   const columns: ProColumns<UserDetails>[] = [
@@ -99,11 +75,20 @@ const UserApproval: React.FC = () => {
         if (record.status === UserStatus.Pending) {
           return (
             <>
-              <Button type="link" onClick={() => handleStatusUpdate([record], UserStatus.Approved)}>
+              <Button
+                type="link"
+                onClick={() => handleStatusUpdate([record], UserStatus.Approved)}
+                loading={isUpdating}
+              >
                 Approve
               </Button>
 
-              <Button type="link" danger onClick={() => openRejectModal([record])}>
+              <Button
+                type="link"
+                danger
+                onClick={() => openRejectModal([record])}
+                loading={isUpdating}
+              >
                 Reject
               </Button>
             </>
@@ -112,7 +97,12 @@ const UserApproval: React.FC = () => {
 
         if (record.status === UserStatus.Approved) {
           return (
-            <Button type="link" danger onClick={() => openRejectModal([record])}>
+            <Button
+              type="link"
+              danger
+              onClick={() => openRejectModal([record])}
+              loading={isUpdating}
+            >
               Reject
             </Button>
           );
@@ -120,7 +110,11 @@ const UserApproval: React.FC = () => {
 
         if (record.status === UserStatus.Rejected) {
           return (
-            <Button type="link" onClick={() => handleStatusUpdate([record], UserStatus.Approved)}>
+            <Button
+              type="link"
+              onClick={() => handleStatusUpdate([record], UserStatus.Approved)}
+              loading={isUpdating}
+            >
               Approve
             </Button>
           );
@@ -132,7 +126,11 @@ const UserApproval: React.FC = () => {
   ];
 
   useEffect(() => {
-    actionRef.current?.reloadAndRest?.();
+    setFilters((prev) => ({
+      ...prev,
+      status: statusFilter,
+      pageNumber: 1,
+    }));
   }, [statusFilter]);
 
   return (
@@ -162,7 +160,7 @@ const UserApproval: React.FC = () => {
         rowKey="id"
         headerTitle="User List"
         actionRef={actionRef}
-        loading={loading || isLoading}
+        loading={isFetching || isLoading}
         tableLayout="fixed"
         scroll={{ x: 1600 }}
         columnsState={{
@@ -173,12 +171,17 @@ const UserApproval: React.FC = () => {
         pagination={{
           showSizeChanger: true,
         }}
+        dataSource={userData?.data ?? []}
         request={(params: { current?: number; pageSize?: number; [key: string]: unknown }) => {
-          return fetchData({
-            ...params,
+          setFilters((prev) => ({
+            ...prev,
             pageNumber: params.current ?? 1,
             pageSize: params.pageSize ?? 20,
-            status: statusFilter,
+          }));
+          return Promise.resolve({
+            data: userData?.data ?? [],
+            success: true,
+            total: userData?.totalCount ?? 0,
           });
         }}
         search={{
@@ -202,7 +205,10 @@ const UserApproval: React.FC = () => {
             </div>
           }
         >
-          <Button onClick={async () => handleStatusUpdate(selectedRows, UserStatus.Approved)}>
+          <Button
+            onClick={async () => handleStatusUpdate(selectedRows, UserStatus.Approved)}
+            loading={isUpdating}
+          >
             Batch Approve
           </Button>
         </FooterToolbar>
@@ -217,7 +223,11 @@ const UserApproval: React.FC = () => {
         }}
         onOpenChange={setRejectModalOpen}
         onFinish={async (values) => {
-          await handleStatusUpdate(rejectingUsers, UserStatus.Rejected, values.rejectedReason);
+          await new Promise<void>((resolve) => {
+            handleStatusUpdate(rejectingUsers, UserStatus.Rejected, values.rejectedReason);
+            // Give mutation time to complete
+            setTimeout(resolve, 100);
+          });
           return true;
         }}
         submitter={{

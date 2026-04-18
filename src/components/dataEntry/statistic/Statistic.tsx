@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useCallback, useEffect, useState } from 'react';
 import { Table, Button, Space, App, Col, Row } from 'antd';
 import { FilePdfOutlined, FileExcelOutlined, DownloadOutlined } from '@ant-design/icons';
@@ -185,14 +183,7 @@ const WasteManagementTable: React.FC = () => {
       }
       setLoading(false);
     },
-    [
-      canFetchForUser,
-      disposalMethods,
-      isAdmin,
-      message,
-      selectedCampus,
-      selectedDepartment,
-    ],
+    [canFetchForUser, disposalMethods, isAdmin, message, selectedCampus, selectedDepartment],
   );
 
   useEffect(() => {
@@ -541,4 +532,3 @@ const WasteManagementTable: React.FC = () => {
 };
 
 export default WasteManagementTable;
-

@@ -1,5 +1,3 @@
-'use client';
-
 import { useProfileDropdownOptions, useWasteRecordDropdownOptions } from '@/hook/options';
 import { WasteRecordStatus } from '@/lib/enum/status';
 import {
@@ -14,15 +12,7 @@ import { Alert, App, Button } from 'antd';
 import { useState, useRef, useEffect } from 'react';
 import WasteRecordDrawerForm from './WasteRecordDrawerForm';
 import { WasteRecord, WasteRecordFilter } from '@/lib/types/wasteRecord';
-import {
-  deleteAttachment,
-  deleteWasteRecord,
-  exportExcelWasteRecords,
-  exportPdfWasteRecords,
-  getWasteRecordsPaginated,
-  updateWasteRecord,
-  uploadAttachments,
-} from '@/lib/services/wasteRecord';
+import { exportExcelWasteRecords, exportPdfWasteRecords } from '@/lib/services/wasteRecord';
 import { useAuth } from '@/contexts/AuthContext';
 import { createRequest } from '@/lib/services/requestService';
 import { downloadFile } from '@/lib/utils/downloadFile';
@@ -35,7 +25,17 @@ import {
 } from '@ant-design/icons';
 import { ExportWasteRecordModal } from './ExportWasteRecordModal';
 import { getBaseColumns } from './columns';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useLocation, useNavigate } from '@tanstack/react-router';
+import { useMemo } from 'react';
+import {
+  useWasteRecordList,
+  useUpdateWasteRecord,
+  useDeleteWasteRecord,
+  useUploadAttachments,
+  useDeleteAttachment,
+  wasteRecordQueryKeys,
+} from '@/hook/wasteRecords';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface WasteRecordManagementProps {
   isViewForm?: boolean;
@@ -43,138 +43,35 @@ interface WasteRecordManagementProps {
 
 const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewForm = false }) => {
   const { message, modal } = App.useApp();
-  const router = useRouter();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { hasRole } = useAuth();
-  const searchParams = useSearchParams();
+  const searchStr = useLocation({ select: (location) => location.searchStr });
+  const searchParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
   const { departments } = useProfileDropdownOptions();
   const { campuses, disposalMethods, isLoading } = useWasteRecordDropdownOptions();
-  const [loading, setLoading] = useState<boolean>(false);
   const [excelLoading, setExcelLoading] = useState<boolean>(false);
   const [pdfLoading, setPdfLoading] = useState<boolean>(false);
   const [selectedRecord, setSelectedRecord] = useState<WasteRecord>();
   const [modalDrawerOpen, setModalDrawerOpen] = useState<boolean>(false);
   const [editMode, setEditMode] = useState<boolean>(false);
+  const [filters, setFilters] = useState<WasteRecordFilter>({
+    pageNumber: 1,
+    pageSize: 20,
+  });
 
   const actionRef = useRef<ActionType | undefined>(undefined);
   const isAdmin = hasRole('Admin');
   const userRequestRoute = '/data-entry/view-form/requests';
   const linkedWasteRecordId = searchParams.get('wasteRecordId') ?? undefined;
   const [modalOpen, setModalOpen] = useState<false | 'excel' | 'pdf'>(false);
-
   const [changeRequestModalOpen, setChangeRequestModalOpen] = useState<boolean>(false);
 
-  const showRequestGuide = () => {
-    modal.info({
-      title: 'Request Changes Process',
-      content: (
-        <div>
-          <p>1. Click Request Changes on a record and describe the correction clearly.</p>
-          <p>2. Admin reviews your request.</p>
-          <p>3. If approved, the record status becomes Revision Required.</p>
-          <p>4. Update the record in View Form and submit again.</p>
-          <p>Track your request status in My Requests.</p>
-        </div>
-      ),
-      okText: 'Understood',
-    });
-  };
-
-  const fetchData = async (filter: WasteRecordFilter) => {
-    setLoading(true);
-    try {
-      const res = await getWasteRecordsPaginated({
-        ...filter,
-      });
-      return {
-        data: res.data,
-        success: res.success,
-        total: res.totalCount,
-      };
-    } catch {
-      message.error('Failed to fetch waste records');
-      return {
-        data: [],
-        success: false,
-        total: 0,
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleWasteRecordUpdate = async (wasteRecord: WasteRecord) => {
-    try {
-      setLoading(true);
-      const fileList = wasteRecord.uploadedAttachments ?? [];
-
-      const newAttachments = fileList.filter((f) => f.originFileObj);
-
-      const initialAttachmentIds = selectedRecord?.attachments?.map((f) => f.id) ?? [];
-
-      const currentIds = fileList.filter((f) => !f.originFileObj).map((f) => f.uid);
-
-      const fileToRemove = initialAttachmentIds.filter((id) => !currentIds.includes(id));
-
-      // if is not admin user submit update record, change status from required revision to new
-      if (!isAdmin) {
-        wasteRecord.status = WasteRecordStatus.New;
-      }
-      const res = await updateWasteRecord(wasteRecord.id, {
-        ...wasteRecord,
-        id: wasteRecord.id,
-      });
-
-      if (!res.success) {
-        message.error(res.message || 'Failed to update wasteRecord');
-        return false;
-      }
-
-      if (newAttachments.length > 0) {
-        await uploadAttachments(newAttachments, wasteRecord.id);
-      }
-
-      if (fileToRemove.length > 0) {
-        await Promise.all(fileToRemove.map((id) => deleteAttachment(id)));
-      }
-
-      message.success('Waste record updated successfully');
-      return true;
-    } catch {
-      message.error('Failed to update wasteRecord');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const confirmDeletion = async (wasteRecord: WasteRecord) => {
-    modal.confirm({
-      title: 'Confirm Deletion',
-      content: 'Are you sure you want to delete this waste record?',
-      okText: 'Yes',
-      cancelText: 'Cancel',
-      onOk: async () => handleWasteRecordDelete(wasteRecord),
-    });
-  };
-
-  const handleWasteRecordDelete = async (wasteRecord: WasteRecord) => {
-    try {
-      setLoading(true);
-
-      const res = await deleteWasteRecord(wasteRecord.id);
-
-      if (res.success) {
-        message.success('Waste record deleted successfully');
-        actionRef.current?.reload();
-      } else {
-        message.error('Failed to delete waste record, please try again');
-      }
-    } catch {
-      message.error('Failed to delete waste record, please try again');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: wasteRecordData, isLoading: isFetching } = useWasteRecordList(filters);
+  const { mutate: updateWasteRecordMutate, isPending: isUpdating } = useUpdateWasteRecord();
+  const { mutate: deleteWasteRecordMutate, isPending: isDeleting } = useDeleteWasteRecord();
+  const { mutate: uploadAttachmentsMutate, isPending: isUploading } = useUploadAttachments();
+  const { mutate: deleteAttachmentMutate, isPending: isDeletingAttachment } = useDeleteAttachment();
 
   const handleExportExcel = async (year: number, month: number) => {
     const hide = message.loading('Generating Excel...', 0);
@@ -219,9 +116,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         message: reqMessage,
       });
       if (res.success) {
-        if (actionRef.current) {
-          actionRef.current.reload();
-        }
+        queryClient.invalidateQueries({ queryKey: wasteRecordQueryKeys.lists() });
         message.success('Request submitted successfully');
         modal.info({
           title: 'Request Submitted',
@@ -248,6 +143,112 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
     }
   };
 
+  const showRequestGuide = () => {
+    modal.info({
+      title: 'Request Changes Process',
+      content: (
+        <div>
+          <p>1. Click Request Changes on a record and describe the correction clearly.</p>
+          <p>2. Admin reviews your request.</p>
+          <p>3. If approved, the record status becomes Revision Required.</p>
+          <p>4. Update the record in View Form and submit again.</p>
+          <p>Track your request status in My Requests.</p>
+        </div>
+      ),
+      okText: 'Understood',
+    });
+  };
+
+  const handleWasteRecordUpdate = async (wasteRecord: WasteRecord) => {
+    return new Promise<boolean>((resolve) => {
+      const fileList = wasteRecord.uploadedAttachments ?? [];
+      const newAttachments = fileList.filter((f) => f.originFileObj);
+      const initialAttachmentIds = selectedRecord?.attachments?.map((f) => f.id) ?? [];
+      const currentIds = fileList.filter((f) => !f.originFileObj).map((f) => f.uid);
+      const fileToRemove = initialAttachmentIds.filter((id) => !currentIds.includes(id));
+
+      // if is not admin user submit update record, change status from required revision to new
+      if (!isAdmin) {
+        wasteRecord.status = WasteRecordStatus.New;
+      }
+
+      updateWasteRecordMutate(
+        { id: wasteRecord.id, updatedData: { ...wasteRecord, id: wasteRecord.id } },
+        {
+          onSuccess: () => {
+            // Upload new attachments
+            if (newAttachments.length > 0) {
+              uploadAttachmentsMutate(
+                { fileList: newAttachments, wasteRecordId: wasteRecord.id },
+                {
+                  onSuccess: () => {
+                    // Delete removed attachments
+                    if (fileToRemove.length > 0) {
+                      Promise.all(
+                        fileToRemove.map(
+                          (id) =>
+                            new Promise<void>((resolveAttach) => {
+                              deleteAttachmentMutate(id, {
+                                onSuccess: () => resolveAttach(),
+                                onError: () => resolveAttach(),
+                              });
+                            }),
+                        ),
+                      ).then(() => {
+                        resolve(true);
+                      });
+                    } else {
+                      resolve(true);
+                    }
+                  },
+                  onError: () => resolve(false),
+                },
+              );
+            } else {
+              // Delete removed attachments
+              if (fileToRemove.length > 0) {
+                Promise.all(
+                  fileToRemove.map(
+                    (id) =>
+                      new Promise<void>((resolveAttach) => {
+                        deleteAttachmentMutate(id, {
+                          onSuccess: () => resolveAttach(),
+                          onError: () => resolveAttach(),
+                        });
+                      }),
+                  ),
+                ).then(() => {
+                  resolve(true);
+                });
+              } else {
+                resolve(true);
+              }
+            }
+          },
+          onError: () => resolve(false),
+        },
+      );
+    });
+  };
+
+  const confirmDeletion = async (wasteRecord: WasteRecord) => {
+    modal.confirm({
+      title: 'Confirm Deletion',
+      content: 'Are you sure you want to delete this waste record?',
+      okText: 'Yes',
+      cancelText: 'Cancel',
+      onOk: async () => handleWasteRecordDelete(wasteRecord),
+    });
+  };
+
+  const handleWasteRecordDelete = (wasteRecord: WasteRecord) => {
+    deleteWasteRecordMutate(wasteRecord.id, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: wasteRecordQueryKeys.lists() });
+      },
+    });
+  };
+
   const columns: ProColumns<WasteRecord>[] = [
     ...getBaseColumns({
       campuses,
@@ -267,7 +268,9 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
             <Button
               type="link"
               icon={<EyeOutlined />}
-              onClick={() => router.push(`/data-entry/view-form/record?wasteRecordId=${record.id}`)}
+              onClick={() =>
+                void navigate({ href: `/data-entry/view-form/record?wasteRecordId=${record.id}` })
+              }
             ></Button>
             {(isAdmin || record.status == WasteRecordStatus.RevisionRequired) && (
               <>
@@ -310,7 +313,9 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
   ];
 
   useEffect(() => {
-    actionRef.current?.reload();
+    if (linkedWasteRecordId) {
+      setFilters((prev) => ({ ...prev, id: linkedWasteRecordId }));
+    }
   }, [linkedWasteRecordId]);
 
   return (
@@ -324,7 +329,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         rowKey="id"
         headerTitle="Waste Record List"
         actionRef={actionRef}
-        loading={loading || isLoading}
+        loading={isFetching || isLoading}
         tableLayout="fixed"
         scroll={{ x: 2100 }}
         columnsState={{
@@ -337,13 +342,20 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         pagination={{
           showSizeChanger: true,
         }}
+        dataSource={wasteRecordData?.data ?? []}
         request={(params: { current?: number; pageSize?: number; [key: string]: unknown }) => {
-          return fetchData({
+          setFilters({
+            ...filters,
             ...params,
             id: linkedWasteRecordId,
             pageNumber: params.current ?? 1,
             pageSize: params.pageSize ?? 20,
             isAdmin: isAdmin,
+          });
+          return Promise.resolve({
+            data: wasteRecordData?.data ?? [],
+            success: true,
+            total: wasteRecordData?.totalCount ?? 0,
           });
         }}
         toolbar={{
@@ -353,7 +365,10 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
                   <Button key="request-guide" onClick={showRequestGuide}>
                     Request Guide
                   </Button>,
-                  <Button key="request-status" onClick={() => router.push(userRequestRoute)}>
+                  <Button
+                    key="request-status"
+                    onClick={() => void navigate({ href: userRequestRoute })}
+                  >
                     My Requests
                   </Button>,
                 ]
@@ -395,9 +410,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         onSubmit={async (value) => {
           const success = await handleWasteRecordUpdate(value as WasteRecord);
           if (success) {
-            if (actionRef.current) {
-              actionRef.current.reload();
-            }
+            queryClient.invalidateQueries({ queryKey: wasteRecordQueryKeys.lists() });
             return true;
           }
           return false;
@@ -436,9 +449,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         onFinish={async (values) => {
           const success = await handleChangeRequest(selectedRecord?.id, values.message);
           if (success) {
-            if (actionRef.current) {
-              actionRef.current.reload();
-            }
+            queryClient.invalidateQueries({ queryKey: wasteRecordQueryKeys.lists() });
             return true;
           } else {
             return false;

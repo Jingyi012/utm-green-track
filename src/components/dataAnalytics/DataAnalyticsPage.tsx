@@ -1,7 +1,5 @@
-'use client';
-
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { App, Empty, Space, Tabs } from 'antd';
 import { PageContainer, ProCard } from '@ant-design/pro-components';
 import { WhiteBgWrapper } from '@/components/wrapper/whiteBgWrapper';
@@ -52,9 +50,10 @@ function getRequestErrorMessage(error: unknown, fallback: string): string {
 }
 
 const DataAnalyticsPage: React.FC = () => {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const searchStr = useLocation({ select: (location) => location.searchStr });
+  const searchParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
   const { message } = App.useApp();
   const { campuses, isLoading } = useWasteRecordDropdownOptions();
   const [year, setYear] = useState<number>(() => {
@@ -146,7 +145,7 @@ const DataAnalyticsPage: React.FC = () => {
   }, [fetchLifetimeData]);
 
   useEffect(() => {
-    const nextParams = new URLSearchParams(searchParams.toString());
+    const nextParams = new URLSearchParams(searchStr);
     let hasChanges = false;
 
     const setParam = (key: string, value: string | undefined) => {
@@ -172,9 +171,13 @@ const DataAnalyticsPage: React.FC = () => {
 
     if (hasChanges) {
       const queryString = nextParams.toString();
-      router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+      void navigate({
+        href: queryString ? `${pathname}?${queryString}` : pathname,
+        replace: true,
+        resetScroll: false,
+      });
     }
-  }, [activeTab, campusId, pathname, router, searchParams, year, yearlySection]);
+  }, [activeTab, campusId, navigate, pathname, searchStr, year, yearlySection]);
 
   return (
     <PageContainer title="Data Analytics" loading={isLoading}>

@@ -1,8 +1,6 @@
-'use client';
-
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { App, Button, Popconfirm, Tooltip } from 'antd';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '@tanstack/react-router';
 import { RequestStatus, requestStatusLabels } from '@/lib/enum/status';
 import { deleteMyRequest, getMyRequest } from '@/lib/services/requestService';
 import { ChangeRequest } from '@/lib/types/typing';
@@ -33,7 +31,7 @@ const renderEllipsisText = (value: string | undefined, maxWidth = 220) => {
 
 const MyRequestManagement: React.FC = () => {
   const { message } = App.useApp();
-  const router = useRouter();
+  const navigate = useNavigate();
   const actionRef = useRef<ActionType | undefined>(undefined);
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -117,7 +115,9 @@ const MyRequestManagement: React.FC = () => {
             <Button
               type="link"
               onClick={() =>
-                router.push(`/data-entry/view-form/record?wasteRecordId=${record.wasteRecordId}`)
+                void navigate({
+                  href: `/data-entry/view-form/record?wasteRecordId=${record.wasteRecordId}`,
+                })
               }
             >
               Open Record
@@ -172,7 +172,7 @@ const MyRequestManagement: React.FC = () => {
           ),
       },
     ],
-    [router],
+    [navigate],
   );
 
   useEffect(() => {
@@ -192,8 +192,14 @@ const MyRequestManagement: React.FC = () => {
       }}
       tabList={[
         { key: RequestStatus.Pending.toString(), tab: requestStatusLabels[RequestStatus.Pending] },
-        { key: RequestStatus.Approved.toString(), tab: requestStatusLabels[RequestStatus.Approved] },
-        { key: RequestStatus.Rejected.toString(), tab: requestStatusLabels[RequestStatus.Rejected] },
+        {
+          key: RequestStatus.Approved.toString(),
+          tab: requestStatusLabels[RequestStatus.Approved],
+        },
+        {
+          key: RequestStatus.Rejected.toString(),
+          tab: requestStatusLabels[RequestStatus.Rejected],
+        },
       ]}
       onTabChange={(key) => setStatusFilter(parseInt(key, 10) as RequestStatus)}
     >

@@ -2,8 +2,7 @@ import { profileMenuItems, proLayoutMenuData } from '@/lib/config/menu';
 import { ProLayout } from '@ant-design/pro-components';
 import { Dropdown, Avatar, Badge } from 'antd';
 import { NotificationBell } from '../notification/NotificationBell';
-import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useMemo, useState } from 'react';
 import { filterMenuByPermissions } from '@/lib/utils/menuFilter';
@@ -19,8 +18,8 @@ interface AppProLayoutProps {
 }
 
 export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
-  const router = useRouter();
-  const pathname = usePathname();
+  const navigate = useNavigate();
+  const pathname = useLocation({ select: (location) => location.pathname });
   const { user, logout, permissions } = useAuth();
   const [menuBadgeCounts, setMenuBadgeCounts] = useState<Record<string, number>>({});
 
@@ -94,13 +93,13 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
     if (key === 'logout') {
       logout();
     } else {
-      router.push(key);
+      await navigate({ href: key });
     }
   };
 
   return (
     <>
-      <style jsx global>{`
+      <style>{`
         .ant-pro-layout-header,
         .ant-layout-header {
           background: linear-gradient(135deg, #15803d 0%, #16a34a 50%, #059669 100%) !important;
@@ -115,7 +114,7 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
         title="UTM Green Track"
         logo={
           <div className="relative h-8 w-8">
-            <Image src="/images/logo2.png" alt="Logo" fill className="object-contain" />
+            <img src="/images/logo2.png" alt="Logo" className="h-full w-full object-contain" />
           </div>
         }
         layout="mix"
@@ -135,7 +134,7 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
             return (
               <span
                 className="cursor-pointer hover:text-green-600 transition-colors"
-                onClick={() => router.push(route.path || '/')}
+                onClick={() => void navigate({ href: route.path || '/' })}
               >
                 {route.title}
               </span>
@@ -143,7 +142,7 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
           },
         }}
         menuItemRender={(item, dom) => {
-          const badgeCount = item.path ? menuBadgeCounts[item.path] ?? 0 : 0;
+          const badgeCount = item.path ? (menuBadgeCounts[item.path] ?? 0) : 0;
           const menuContent =
             badgeCount > 0 ? (
               <div className="w-full flex items-center justify-between gap-2">
@@ -159,7 +158,7 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
               href={item.path}
               onClick={(e) => {
                 e.preventDefault();
-                router.push(item.path!);
+                void navigate({ href: item.path! });
               }}
               className="cursor-pointer w-full h-full flex items-center gap-2"
             >

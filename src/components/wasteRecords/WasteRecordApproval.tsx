@@ -1,5 +1,3 @@
-'use client';
-
 import { useProfileDropdownOptions, useWasteRecordDropdownOptions } from '@/hook/options';
 import { wasteRecordStatusLabels, WasteRecordStatus } from '@/lib/enum/status';
 import {
@@ -9,13 +7,13 @@ import {
 import { WasteRecord, WasteRecordFilter } from '@/lib/types/wasteRecord';
 import {
   ActionType,
-  FooterToolbar,
   ModalForm,
   PageContainer,
   ProColumns,
   ProFormTextArea,
   ProTable,
 } from '@ant-design/pro-components';
+import { FooterToolbar } from '@ant-design/pro-layout/es/components/FooterToolbar';
 import { App, Button } from 'antd';
 import { useState, useEffect, useRef } from 'react';
 import { CommentButton } from './CommentButton';

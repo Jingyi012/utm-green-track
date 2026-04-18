@@ -1,279 +1,239 @@
-'use client';
-
-import { useProfileDropdownOptions } from "@/hook/options";
-import { deleteUser, exportExcelUsers, exportPdfUsers, getAllUsers, updateUser } from "@/lib/services/user";
-import { UserDetails } from "@/lib/types/typing";
-import { ActionType, PageContainer, ProColumns, ProTable } from "@ant-design/pro-components";
-import { App, Button, Modal, Popconfirm } from "antd";
-import { useState, useRef } from "react";
-import UserDetailsDrawerForm from "./UserDetailsDrawerForm";
-import { DeleteOutlined, EditOutlined, FileExcelOutlined, FilePdfOutlined } from "@ant-design/icons";
-import { getBaseUserColumns } from "./columns";
-import { downloadFile } from "@/lib/utils/downloadFile";
+import { useProfileDropdownOptions } from '@/hook/options';
+import { UserDetails } from '@/lib/types/typing';
+import { ActionType, PageContainer, ProColumns, ProTable } from '@ant-design/pro-components';
+import { App, Button, Modal, Popconfirm } from 'antd';
+import { useState, useRef } from 'react';
+import UserDetailsDrawerForm from './UserDetailsDrawerForm';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  FileExcelOutlined,
+  FilePdfOutlined,
+} from '@ant-design/icons';
+import { getBaseUserColumns } from './columns';
+import { downloadFile } from '@/lib/utils/downloadFile';
+import { exportExcelUsers, exportPdfUsers } from '@/lib/services/user';
+import { useUserList, useUpdateUser, useDeleteUser, userQueryKeys } from '@/hook/users';
+import { useQueryClient } from '@tanstack/react-query';
 
 const UserManagement: React.FC = () => {
-    const { message } = App.useApp();
-    const { positions, departments, roles, isLoading } = useProfileDropdownOptions();
-    const [loading, setLoading] = useState<boolean>(false);
-    const [selectedUser, setSelectedUser] = useState<UserDetails>();
-    const [modalOpen, setModalOpen] = useState<boolean>(false);
-    const [editMode, setEditMode] = useState<boolean>(false);
-    const [excelLoading, setExcelLoading] = useState<boolean>(false);
-    const [pdfLoading, setPdfLoading] = useState<boolean>(false);
+  const { message } = App.useApp();
+  const queryClient = useQueryClient();
+  const { positions, departments, roles, isLoading } = useProfileDropdownOptions();
+  const [selectedUser, setSelectedUser] = useState<UserDetails>();
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [editMode, setEditMode] = useState<boolean>(false);
+  const [excelLoading, setExcelLoading] = useState<boolean>(false);
+  const [pdfLoading, setPdfLoading] = useState<boolean>(false);
+  const [filters, setFilters] = useState({
+    pageNumber: 1,
+    pageSize: 20,
+  });
 
-    const actionRef = useRef<ActionType | undefined>(undefined);
+  const actionRef = useRef<ActionType | undefined>(undefined);
 
-    // Fetch users based on status, page, pageSize
-    const fetchData = async (filter: {
-        pageNumber: number,
-        pageSize: number,
-        name?: string,
-        email?: string,
-        contactNumber?: string,
-        positionId?: string,
-        departmentId?: string,
-        status?: number,
-    }) => {
-        setLoading(true);
-        try {
-            const res = await getAllUsers({
-                ...filter,
-            });
-            return {
-                data: res.data,
-                success: res.success,
-                total: res.totalCount
-            }
-        } catch {
-            message.error("Failed to fetch users");
-            return {
-                data: [],
-                success: false,
-                total: 0
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+  const { data: userData, isLoading: isFetching, refetch } = useUserList(filters);
+  const { mutate: updateUserMutate, isPending: isUpdating } = useUpdateUser();
+  const { mutate: deleteUserMutate, isPending: isDeleting } = useDeleteUser();
 
-    const handleUserUpdate = async (user: UserDetails) => {
-        try {
-            setLoading(true);
-
-            const res = await updateUser({
-                userId: user.id,
-                name: user.name,
-                email: user.email,
-                contactNumber: user.contactNumber,
-                staffMatricNo: user.staffMatricNo,
-                departmentId: user.departmentId,
-                positionId: user.positionId,
-                roleIds: user.roleIds,
-                status: user.status
-            });
-
-            if (res.success) {
-                message.success("User updated successfully");
-                return true;
-            }
-            else {
-                message.error(res.message || "Failed to update user");
-                return false;
-            }
-        } catch {
-            message.error("Failed to update user");
-            return false;
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    const handleDeleteUser = async (userId: string) => {
-        try {
-            setLoading(true);
-            const res = await deleteUser(userId);
-            if (res.success) {
-                message.success("User deleted successfully");
-                return true;
-            }
-            else {
-                message.error(res.message || "Failed to delete user");
-                return false;
-            }
-        } catch {
-            message.error("Failed to delete user");
-            return false;
-        }
-    }
-
-    const columns: ProColumns<UserDetails>[] = [
-        ...getBaseUserColumns({ positions, departments, roles }),
+  const handleUserUpdate = async (user: UserDetails) => {
+    return new Promise<boolean>((resolve) => {
+      updateUserMutate(
         {
-            title: "Action",
-            width: 130,
-            fixed: "right",
-            align: "center",
-            hideInSearch: true,
-            render: (_, record) => {
-                return <>
-                    <Button
-                        type="link"
-                        icon={<EditOutlined />}
-                        onClick={() => {
-                            setSelectedUser(record);
-                            setModalOpen(true);
-                            setEditMode(true);
-                        }}
-                        loading={loading}
-                    />
-                    <Popconfirm
-                        title="Delete this user?"
-                        onConfirm={async () => {
-                            await handleDeleteUser(record.id);
-                            if (actionRef.current) {
-                                actionRef.current.reload();
-                            }
-                        }}
-                    >
-                        <Button
-                            type="link"
-                            danger
-                            icon={<DeleteOutlined />}
-                        />
-                    </Popconfirm>
-                </>
-            }
+          id: user.id,
+          updatedData: {
+            userId: user.id,
+            name: user.name,
+            email: user.email,
+            contactNumber: user.contactNumber,
+            staffMatricNo: user.staffMatricNo,
+            departmentId: user.departmentId,
+            positionId: user.positionId,
+            roleIds: user.roleIds,
+            status: user.status,
+          },
         },
-    ];
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
+            resolve(true);
+          },
+          onError: () => resolve(false),
+        },
+      );
+    });
+  };
 
-    const handleExportExcel = async () => {
+  const handleDeleteUser = (userId: string) => {
+    deleteUserMutate(userId, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
+      },
+    });
+  };
 
-        const hide = message.loading("Generating Excel...", 0);
-        try {
-            setExcelLoading(true);
-            const response = await exportExcelUsers();
-            const contentDisposition = response.headers['content-disposition'];
-            downloadFile(response.data, contentDisposition, "User_Records.xlsx");
-        } catch {
-            message.error('Failed to generate Excel');
-        } finally {
-            setExcelLoading(false);
-            hide();
-        }
-    };
-
-    const handleExportPDF = async () => {
-        const hide = message.loading("Generating Pdf...", 0);
-        try {
-            setPdfLoading(true);
-            const response = await exportPdfUsers();
-            const contentDisposition = response.headers['content-disposition'];
-            downloadFile(response.data, contentDisposition, "User_Records.pdf");
-        } catch {
-            message.error('Failed to generate PDF');
-        } finally {
-            setPdfLoading(false);
-            hide();
-        }
-    };
-
-    return (
-        <PageContainer title={'User Management'}>
-            <ProTable<UserDetails>
-                rowKey="id"
-                headerTitle="User List"
-                actionRef={actionRef}
-                loading={loading || isLoading}
-                tableLayout="fixed"
-                scroll={{ x: 1600 }}
-                columnsState={{
-                    persistenceKey: "user-management-columns",
-                    persistenceType: "localStorage",
-                }}
-                columns={columns}
-                pagination={{
-                }}
-                request={(params: {
-                    current?: number;
-                    pageSize?: number;
-                    [key: string]: unknown;
-                }) => {
-                    return fetchData({
-                        ...params,
-                        pageNumber: params.current ?? 1,
-                        pageSize: params.pageSize ?? 20,
-                    });
-                }}
-                toolbar={{
-                    actions: [
-                        <Button
-                            key="excel"
-                            loading={excelLoading}
-                            icon={<FileExcelOutlined />}
-                            onClick={() => {
-                                Modal.confirm({
-                                    title: "Export to Excel",
-                                    content: "Are you sure you want to export all user as Excel?",
-                                    okText: "Yes, Export",
-                                    cancelText: "Cancel",
-                                    onOk: handleExportExcel,
-                                });
-                            }}
-                        >
-                            Excel
-                        </Button>,
-
-                        <Button
-                            key="pdf"
-                            loading={pdfLoading}
-                            icon={<FilePdfOutlined />}
-                            danger
-                            onClick={() => {
-                                Modal.confirm({
-                                    title: "Export to PDF",
-                                    content: "Are you sure you want to export all user as PDF?",
-                                    okText: "Yes, Export",
-                                    cancelText: "Cancel",
-                                    onOk: handleExportPDF,
-                                });
-                            }}
-                        >
-                            PDF
-                        </Button>,
-                    ],
-                }}
-
-                search={{
-                    labelWidth: 'auto',
-                }}
+  const columns: ProColumns<UserDetails>[] = [
+    ...getBaseUserColumns({ positions, departments, roles }),
+    {
+      title: 'Action',
+      width: 130,
+      fixed: 'right',
+      align: 'center',
+      hideInSearch: true,
+      render: (_, record) => {
+        return (
+          <>
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => {
+                setSelectedUser(record);
+                setModalOpen(true);
+                setEditMode(true);
+              }}
+              loading={isUpdating}
             />
+            <Popconfirm
+              title="Delete this user?"
+              onConfirm={async () => {
+                handleDeleteUser(record.id);
+              }}
+            >
+              <Button type="link" danger icon={<DeleteOutlined />} loading={isDeleting} />
+            </Popconfirm>
+          </>
+        );
+      },
+    },
+  ];
 
-            <UserDetailsDrawerForm
-                departments={departments}
-                positions={positions}
-                roles={roles}
-                onCancel={() => {
-                    setModalOpen(false);
-                    setEditMode(false);
-                    setTimeout(() => setSelectedUser(undefined), 300);
-                }
-                }
-                onSubmit={async (value) => {
-                    const success = await handleUserUpdate(value as UserDetails);
-                    if (success) {
-                        if (actionRef.current) {
-                            actionRef.current.reload();
-                        }
-                        return true;
-                    }
-                    return false;
-                }}
-                visible={modalOpen}
-                initialValues={selectedUser || {}}
-                isEditMode={editMode}
-            />
-        </PageContainer>
-    );
+  const handleExportExcel = async () => {
+    const hide = message.loading('Generating Excel...', 0);
+    try {
+      setExcelLoading(true);
+      const response = await exportExcelUsers();
+      const contentDisposition = response.headers['content-disposition'];
+      downloadFile(response.data, contentDisposition, 'User_Records.xlsx');
+    } catch {
+      message.error('Failed to generate Excel');
+    } finally {
+      setExcelLoading(false);
+      hide();
+    }
+  };
+
+  const handleExportPDF = async () => {
+    const hide = message.loading('Generating Pdf...', 0);
+    try {
+      setPdfLoading(true);
+      const response = await exportPdfUsers();
+      const contentDisposition = response.headers['content-disposition'];
+      downloadFile(response.data, contentDisposition, 'User_Records.pdf');
+    } catch {
+      message.error('Failed to generate PDF');
+    } finally {
+      setPdfLoading(false);
+      hide();
+    }
+  };
+
+  return (
+    <PageContainer title={'User Management'}>
+      <ProTable<UserDetails>
+        rowKey="id"
+        headerTitle="User List"
+        actionRef={actionRef}
+        loading={isFetching || isLoading}
+        tableLayout="fixed"
+        scroll={{ x: 1600 }}
+        columnsState={{
+          persistenceKey: 'user-management-columns',
+          persistenceType: 'localStorage',
+        }}
+        columns={columns}
+        pagination={{}}
+        dataSource={userData?.data ?? []}
+        request={(params: { current?: number; pageSize?: number; [key: string]: unknown }) => {
+          setFilters({
+            ...params,
+            pageNumber: params.current ?? 1,
+            pageSize: params.pageSize ?? 20,
+          });
+          return Promise.resolve({
+            data: userData?.data ?? [],
+            success: true,
+            total: userData?.totalCount ?? 0,
+          });
+        }}
+        options={{
+          reload: () => refetch(),
+        }}
+        toolbar={{
+          actions: [
+            <Button
+              key="excel"
+              loading={excelLoading}
+              icon={<FileExcelOutlined />}
+              onClick={() => {
+                Modal.confirm({
+                  title: 'Export to Excel',
+                  content: 'Are you sure you want to export all user as Excel?',
+                  okText: 'Yes, Export',
+                  cancelText: 'Cancel',
+                  onOk: handleExportExcel,
+                });
+              }}
+            >
+              Excel
+            </Button>,
+
+            <Button
+              key="pdf"
+              loading={pdfLoading}
+              icon={<FilePdfOutlined />}
+              danger
+              onClick={() => {
+                Modal.confirm({
+                  title: 'Export to PDF',
+                  content: 'Are you sure you want to export all user as PDF?',
+                  okText: 'Yes, Export',
+                  cancelText: 'Cancel',
+                  onOk: handleExportPDF,
+                });
+              }}
+            >
+              PDF
+            </Button>,
+          ],
+        }}
+        search={{
+          labelWidth: 'auto',
+        }}
+      />
+
+      <UserDetailsDrawerForm
+        departments={departments}
+        positions={positions}
+        roles={roles}
+        onCancel={() => {
+          setModalOpen(false);
+          setEditMode(false);
+          setTimeout(() => setSelectedUser(undefined), 300);
+        }}
+        onSubmit={async (value) => {
+          const success = await handleUserUpdate(value as UserDetails);
+          if (success) {
+            queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
+            return true;
+          }
+          return false;
+        }}
+        visible={modalOpen}
+        initialValues={selectedUser || {}}
+        isEditMode={editMode}
+      />
+    </PageContainer>
+  );
 };
 
 export default UserManagement;

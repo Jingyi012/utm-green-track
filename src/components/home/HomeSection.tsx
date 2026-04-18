@@ -1,4 +1,3 @@
-'use client';
 import React from 'react';
 import { Card, Row, Col, Typography } from 'antd';
 import {
@@ -7,14 +6,14 @@ import {
   BulbOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageContainer, ProCard } from '@ant-design/pro-components';
 
 const { Title, Paragraph } = Typography;
 
 export default function HomeSection() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { hasRole } = useAuth();
   const features = [
     {
@@ -70,7 +69,7 @@ export default function HomeSection() {
             <Col xs={24} sm={12} md={6} key={i}>
               <Card
                 hoverable
-                onClick={() => router.push(f.path)}
+                onClick={() => void navigate({ href: f.path })}
                 style={{ textAlign: 'center', borderRadius: 12 }}
               >
                 {f.icon}

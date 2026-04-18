@@ -1,13 +1,14 @@
-'use client';
-
 import { App, ConfigProvider } from 'antd';
 import { createIntl, ProConfigProvider } from '@ant-design/pro-components';
 import enUSIntl from '@ant-design/pro-provider/lib/locale/en_US';
 import enUS from 'antd/locale/en_US';
-import { AntdRegistry } from '@ant-design/nextjs-registry';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './AuthContext';
+import { useState } from 'react';
+import { createAppQueryClient } from '@/lib/queryClient';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => createAppQueryClient());
   const myTranslationMap = {
     ...enUSIntl,
     tableForm: {
@@ -21,35 +22,35 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   const customIntl = createIntl('en_US', myTranslationMap);
 
   return (
-    <AntdRegistry>
-      <ConfigProvider
-        locale={enUS}
-        theme={{
-          token: {
-            colorPrimary: '#15803d',
-            colorPrimaryHover: '#388426', // Slightly lighter for hover state
-            colorPrimaryActive: '#1e4b14', // Darker for active state
-            colorBgContainer: '#ffffffff', // Neutral light background
-            colorText: '#1a1a1a', // Dark gray text
-            colorTextSecondary: '#4d4d4d', // Medium gray for secondary text
-            colorBorder: '#d9d9d9', // Light border color
-            borderRadius: 6, // Slightly rounded corners
-            fontSize: 14, // Base font size
+    <ConfigProvider
+      locale={enUS}
+      theme={{
+        token: {
+          colorPrimary: '#15803d',
+          colorPrimaryHover: '#388426',
+          colorPrimaryActive: '#1e4b14',
+          colorBgContainer: '#ffffffff',
+          colorText: '#1a1a1a',
+          colorTextSecondary: '#4d4d4d',
+          colorBorder: '#d9d9d9',
+          borderRadius: 6,
+          fontSize: 14,
+        },
+        components: {
+          Menu: {
+            itemActiveBg: '#c8edb8',
+            itemSelectedBg: '#c8edb8',
           },
-          components: {
-            Menu: {
-              itemActiveBg: '#c8edb8',
-              itemSelectedBg: '#c8edb8',
-            },
-          },
-        }}
-      >
+        },
+      }}
+    >
+      <QueryClientProvider client={queryClient}>
         <ProConfigProvider intl={customIntl}>
           <App>
             <AuthProvider>{children}</AuthProvider>
           </App>
         </ProConfigProvider>
-      </ConfigProvider>
-    </AntdRegistry>
+      </QueryClientProvider>
+    </ConfigProvider>
   );
 }

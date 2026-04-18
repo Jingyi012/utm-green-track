@@ -1,5 +1,3 @@
-'use client';
-
 import { Select, Space } from 'antd';
 
 const { Option } = Select;

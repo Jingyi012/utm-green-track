@@ -1,20 +1,23 @@
-'use client';
-
 import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { useLocation } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { getPageAccessRequirement } from '@/lib/utils/permissions';
 import ForbiddenPage from '@/components/layouts/forbiddenPage';
 
 export default function PageGuard({ children }: { children: React.ReactNode }) {
-  const { permissions, hasPermission, user } = useAuth();
-  const pathname = usePathname();
+  const { permissions, hasPermission, user, isReady } = useAuth();
+  const pathname = useLocation({ select: (location) => location.pathname });
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
     // If user is not authenticated, deny access
     if (!user) {
+      setAccessDenied(false);
       setAuthorized(false);
       return;
     }
@@ -36,10 +39,10 @@ export default function PageGuard({ children }: { children: React.ReactNode }) {
     // If no permission is required, allow access
     setAccessDenied(false);
     setAuthorized(true);
-  }, [pathname, permissions, hasPermission, user]);
+  }, [pathname, permissions, hasPermission, isReady, user]);
 
   // Show nothing while loading auth state
-  if (authorized === null) {
+  if (!isReady || authorized === null) {
     return null;
   }
 

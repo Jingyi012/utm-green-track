@@ -1,135 +1,138 @@
-import { NotificationType } from "../enum/notification";
-import { RequestStatus } from "../enum/status";
-import { WasteRecord } from "./wasteRecord";
+import { NotificationType } from '../enum/notification';
+import { RequestStatus } from '../enum/status';
+import { WasteRecord } from './wasteRecord';
 
 export interface WasteType {
-    id: string;
-    name: string;
+  id: string;
+  name: string;
 }
 
 export interface WasteTypeWithEmissionFactor extends WasteType {
-    emissionFactor: number;
+  emissionFactor: number;
 }
 
 export interface WasteTypeWithDisposalMethod extends WasteType {
-    disposalMethod: DisposalMethod
+  disposalMethod: DisposalMethod;
+}
+
+export interface CreateWasteType extends WasteTypeWithEmissionFactor {
+  disposalMethodId: string;
 }
 
 export interface DisposalMethod {
-    id: string;
-    name: string;
+  id: string;
+  name: string;
 }
 
 export interface DisposalMethodWithWasteType extends DisposalMethod {
-    wasteTypes: WasteTypeWithEmissionFactor[];
+  wasteTypes: WasteTypeWithEmissionFactor[];
 }
 
 export interface LoginResponse {
-    id: string;
-    userName: string;
-    email: string;
-    roles: string[];
-    jwToken: string;
+  id: string;
+  userName: string;
+  email: string;
+  roles: string[];
+  jwToken: string;
 }
 
-
 export interface UserDetails {
-    id: string;
-    name: string;
-    email: string;
-    contactNumber: string;
-    staffMatricNo: string;
-    departmentId: string;
-    department: string;
-    unit?: string
-    positionId: string;
-    position: string;
-    roleIds: string[]; //id list
-    status: number;
+  id: string;
+  name: string;
+  email: string;
+  contactNumber: string;
+  staffMatricNo: string;
+  departmentId: string;
+  department: string;
+  unit?: string;
+  positionId: string;
+  position: string;
+  roleIds: string[]; //id list
+  status: number;
 }
 
 export interface Position {
-    id: string;
-    name: string;
+  id: string;
+  name: string;
 }
 
 export interface Role {
-    id: string;
-    category: string;
-    name: string;
+  id: string;
+  category: string;
+  name: string;
 }
 
 export interface Campus {
-    id: string;
-    name: string;
+  id: string;
+  name: string;
 }
 
 export interface Department {
-    id: string;
-    name: string;
+  id: string;
+  name: string;
 }
 
 export interface Config {
-    key: string;
-    value: string;
+  key: string;
+  value: string;
 }
 
 export interface ProfileDropdownOptions {
-    departments: Department[],
-    positions: Position[],
-    roles: Role[],
-    isLoading?: boolean
+  departments: Department[];
+  positions: Position[];
+  roles: Role[];
+  isLoading?: boolean;
 }
 
 export interface WasteRecordDropdownOptions {
-    campuses: Campus[],
-    disposalMethods: DisposalMethodWithWasteType[],
-    isLoading?: boolean
+  campuses: Campus[];
+  disposalMethods: DisposalMethodWithWasteType[];
+  isLoading?: boolean;
 }
 
 export interface ChangeRequest {
-    id: string,
-    wasteRecordId?: string,
-    wasteRecord?: WasteRecord,
-    message: string,
-    status: RequestStatus,
-    userId: string,
-    user: string, // user name
-    matricNo: string,
-    createdAt: string
+  id: string;
+  wasteRecordId?: string;
+  wasteRecord?: WasteRecord;
+  message: string;
+  status: RequestStatus;
+  userId: string;
+  user: string; // user name
+  matricNo: string;
+  createdAt: string;
 }
 
 export interface Enquiry {
-    id: string,
-    subject: string,
-    userName: string,
-    status: number,
-    createdAt: string,
+  id: string;
+  subject: string;
+  userName: string;
+  status: number;
+  createdAt: string;
 }
 
 export interface EnquiryDetails extends Enquiry {
-    messages: EnquiryMessage[]
+  messages: EnquiryMessage[];
 }
 
 export interface EnquiryMessage {
-    id: string,
-    senderId: string,
-    senderName: string,
-    message: string,
-    createdAt: string
+  id: string;
+  senderId: string;
+  senderName: string;
+  message: string;
+  createdAt: string;
 }
 
 export interface EnquiryInput {
-    subject: string,
-    message: string
+  subject: string;
+  message: string;
 }
 
 export interface Notification {
-    id: string;
-    type: NotificationType
-    title: string;
-    message: string;
-    url?: string;
-    createdAt: Date;
-    isRead: boolean;
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  url?: string;
+  createdAt: Date;
+  isRead: boolean;
 }

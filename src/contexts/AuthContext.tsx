@@ -1,22 +1,16 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '@tanstack/react-router';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import { clearStoredUser, getStoredUser, setStoredUser, type AuthUser } from '@/lib/auth/session';
 
-type User = {
-  id: string;
-  userName: string;
-  email: string;
-  roles: string[];
-  jwToken: string;
-} | null;
+type User = AuthUser | null;
 
 interface AuthContextType {
   user: User;
   roles: string[];
   permissions: string[];
-  login: (data: User) => void;
+  isReady: boolean;
+  login: (data: AuthUser) => void;
   logout: () => void;
   hasRole: (role: string) => boolean;
   hasPermission: (permission: string) => boolean;
@@ -50,34 +44,31 @@ const parsePermissionsFromToken = (token: string): string[] => {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User>(null);
   const [permissions, setPermissions] = useState<string[]>([]);
-  const router = useRouter();
+  const [isReady, setIsReady] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
+    const parsedUser = getStoredUser();
+    if (parsedUser) {
       setUser(parsedUser);
-      // Parse permissions from JWT token
       const perms = parsePermissionsFromToken(parsedUser.jwToken);
       setPermissions(perms);
     }
+    setIsReady(true);
   }, []);
 
-  const login = (data: User) => {
-    if (data) {
-      localStorage.setItem('currentUser', JSON.stringify(data));
-      setUser(data);
-      // Parse permissions from JWT token
-      const perms = parsePermissionsFromToken(data.jwToken);
-      setPermissions(perms);
-    }
+  const login = (data: AuthUser) => {
+    setStoredUser(data);
+    setUser(data);
+    const perms = parsePermissionsFromToken(data.jwToken);
+    setPermissions(perms);
   };
 
   const logout = () => {
-    localStorage.removeItem('currentUser');
+    clearStoredUser();
     setUser(null);
     setPermissions([]);
-    router.replace('/login');
+    void navigate({ to: '/login', replace: true });
   };
 
   const hasRole = (role: string) => {
@@ -96,6 +87,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         user,
         roles: user?.roles ?? [],
         permissions,
+        isReady,
         login,
         logout,
         hasRole,

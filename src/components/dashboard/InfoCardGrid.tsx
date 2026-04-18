@@ -1,7 +1,4 @@
-'use client';
-
 import { Col, Row, Typography, Table, Divider, Collapse } from 'antd';
-import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import InfoCard from './InfoCard';
 import { BreakdownModal } from './BreakdownModal';
@@ -159,7 +156,7 @@ export default function InfoCardGrid({
 
   const cardData = [
     {
-      icon: <Image src="/icons/totalWasteGenerated.png" alt="" width={50} height={50} />,
+      icon: <img src="/icons/totalWasteGenerated.png" alt="" width={50} height={50} />,
       itemLabel: 'Total Waste Generated',
       value: format(totalWasteGenerated),
       unit: 'Tonnes',
@@ -167,7 +164,7 @@ export default function InfoCardGrid({
       onShowMore: () => setActiveBreakdown('generated'),
     },
     {
-      icon: <Image src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
+      icon: <img src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
       itemLabel: 'Total Waste Diverted',
       value: format(totalWasteRecycled),
       unit: 'Tonnes',
@@ -175,13 +172,13 @@ export default function InfoCardGrid({
       onShowMore: () => setActiveBreakdown('diverted'),
     },
     {
-      icon: <Image src="/icons/totalWasteToLandfill.png" alt="" width={50} height={50} />,
+      icon: <img src="/icons/totalWasteToLandfill.png" alt="" width={50} height={50} />,
       itemLabel: 'Total Waste to Landfill',
       value: format(totalWasteToLandfill),
       unit: 'Tonnes',
     },
     {
-      icon: <Image src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
+      icon: <img src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
       itemLabel: 'Waste Diversion Rate',
       value: formatRate(totalWasteRecycled, totalWasteGenerated),
       unit: '%',
@@ -189,7 +186,7 @@ export default function InfoCardGrid({
       onShowMore: () => setActiveBreakdown('diversionRate'),
     },
     {
-      icon: <Image src="/icons/totalGHGReduction.png" alt="" width={50} height={50} />,
+      icon: <img src="/icons/totalGHGReduction.png" alt="" width={50} height={50} />,
       itemLabel: 'Est. GHG Reduction',
       value: format(totalGhgReduction),
       unit: 'kg CO₂e',

@@ -1,12 +1,17 @@
-'use client';
-
 import { useWasteRecordDropdownOptions } from '@/hook/options';
-import { getAllConfig, updateConfig } from '@/lib/services/config';
+import { useConfigList, useUpdateConfig } from '@/hook/configurations';
 import { Config } from '@/lib/types/typing';
 import { EditOutlined } from '@ant-design/icons';
-import { ModalForm, ProColumns, ProFormText, ProTable } from '@ant-design/pro-components';
-import { App, Button, Select, Space, Typography } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import {
+  ModalForm,
+  PageContainer,
+  ProColumns,
+  ProFormDigit,
+  ProFormText,
+  ProTable,
+} from '@ant-design/pro-components';
+import { Alert, App, Button, Select, Space, Typography } from 'antd';
+import { useMemo, useState } from 'react';
 
 const LANDFILLING_COST_PREFIX = 'LandfillingCost';
 const UTM_POPULATION_PREFIX = 'UTMPopulation';
@@ -26,7 +31,13 @@ interface CampusYearConfigDefinition {
   prefix: string;
   defaultValue: string;
   valueLabel: string;
+  valueType: 'number' | 'string';
 }
+
+type ConfigFormValues = {
+  key: string;
+  value: string | number;
+};
 
 const CONFIG_DEFINITIONS: Record<'landfilling' | 'population', CampusYearConfigDefinition> = {
   landfilling: {
@@ -34,12 +45,14 @@ const CONFIG_DEFINITIONS: Record<'landfilling' | 'population', CampusYearConfigD
     prefix: LANDFILLING_COST_PREFIX,
     defaultValue: '146',
     valueLabel: 'Cost',
+    valueType: 'number',
   },
   population: {
     title: 'UTM Population by Campus and Year',
     prefix: UTM_POPULATION_PREFIX,
     defaultValue: '0',
     valueLabel: 'Population',
+    valueType: 'number',
   },
 };
 
@@ -64,146 +77,132 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
   const { message } = App.useApp();
   const { campuses, isLoading: isCampusLoading } = useWasteRecordDropdownOptions();
 
-  const [loading, setLoading] = useState<boolean>(false);
-  const [rows, setRows] = useState<CampusYearConfigRow[]>([]);
-  const [yearOptions, setYearOptions] = useState<number[]>([]);
   const [selectedYear, setSelectedYear] = useState<YearFilterValue>(new Date().getFullYear());
-  const [selectedConfig, setSelectedConfig] = useState<Config>();
-  const [modalOpen, setModalOpen] = useState<boolean>(false);
-  const [refreshSeed, setRefreshSeed] = useState<number>(0);
+  const [selectedConfig, setSelectedConfig] = useState<Config | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const currentYear = new Date().getFullYear();
-  const campusSignature = useMemo(
-    () => campuses.map((campus) => campus.name).join('|'),
-    [campuses],
+
+  const campusNames = useMemo(() => campuses.map((campus) => campus.name), [campuses]);
+
+  const yearsToDisplay = useMemo(
+    () => (selectedYear === 'all' ? buildYearOptions(currentYear) : [selectedYear]),
+    [currentYear, selectedYear],
   );
 
-  useEffect(() => {
-    const campusNames = campusSignature ? campusSignature.split('|') : [];
-    const availableYears = buildYearOptions(currentYear);
-    setYearOptions(availableYears);
+  const availableYears = useMemo(() => buildYearOptions(currentYear), [currentYear]);
 
+  const {
+    data: configList = [],
+    isFetching: isConfigFetching,
+    isError,
+    error,
+  } = useConfigList({
+    prefix: definition.prefix,
+    year: selectedYear === 'all' ? undefined : selectedYear,
+  });
+
+  const { mutateAsync: updateConfig, isPending: isUpdating } = useUpdateConfig();
+
+  const rows = useMemo<CampusYearConfigRow[]>(() => {
     if (campusNames.length === 0) {
-      setRows([]);
-      return;
+      return [];
     }
 
-    let cancelled = false;
+    const configMap = new Map(configList.map((item) => [item.key, item.value]));
 
-    const fetchConfigs = async () => {
-      setLoading(true);
-      try {
-        const response = await getAllConfig({
-          prefix: definition.prefix,
-          year: selectedYear === 'all' ? undefined : selectedYear,
-        });
+    return campusNames.flatMap((campusName) =>
+      yearsToDisplay.map((year) => {
+        const key = buildCampusYearKey(definition.prefix, campusName, year);
 
-        if (cancelled) return;
-        if (!response.success) {
-          setRows([]);
-          return;
-        }
+        return {
+          key,
+          campus: campusName,
+          year,
+          value: configMap.get(key) ?? definition.defaultValue,
+        };
+      }),
+    );
+  }, [campusNames, configList, definition.defaultValue, definition.prefix, yearsToDisplay]);
 
-        const configMap = new Map(response.data.map((item) => [item.key, item.value]));
-        const yearsToDisplay = selectedYear === 'all' ? availableYears : [selectedYear];
+  const loading = isCampusLoading || isConfigFetching || isUpdating;
 
-        const nextRows = campusNames.flatMap((campusName) =>
-          yearsToDisplay.map((year) => {
-            const key = buildCampusYearKey(definition.prefix, campusName, year);
-            return {
-              key,
-              campus: campusName,
-              year,
-              value: configMap.get(key) ?? definition.defaultValue,
-            };
-          }),
-        );
+  const closeModal = () => {
+    setSelectedConfig(null);
+    setModalOpen(false);
+  };
 
-        setRows(nextRows);
-      } catch {
-        if (!cancelled) {
-          setRows([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void fetchConfigs();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    campusSignature,
-    currentYear,
-    definition.defaultValue,
-    definition.prefix,
-    refreshSeed,
-    selectedYear,
-  ]);
-
-  const handleEditConfig = async (key: string, value: string) => {
+  const handleEditConfig = async (values: ConfigFormValues) => {
     try {
-      setLoading(true);
-      const response = await updateConfig({ key, value });
+      await updateConfig({
+        key: values.key,
+        value: String(values.value),
+      });
 
-      if (!response.success) {
-        message.error(response.message || 'Failed to update config');
-        return false;
-      }
-
-      message.success('Configuration updated successfully');
-      setRefreshSeed((prev) => prev + 1);
+      closeModal();
       return true;
-    } catch {
-      message.error('Failed to update config');
+    } catch (err: any) {
+      message.error(err?.message || 'Failed to update config');
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const columns: ProColumns<CampusYearConfigRow>[] = [
-    {
-      title: 'Campus',
-      dataIndex: 'campus',
-      width: 280,
-    },
-    {
-      title: 'Year',
-      dataIndex: 'year',
-      width: 120,
-      align: 'center',
-    },
-    {
-      title: definition.valueLabel,
-      dataIndex: 'value',
-      align: 'center',
-    },
-    {
-      title: 'Action',
-      valueType: 'option',
-      align: 'center',
-      render: (_: unknown, record) => (
-        <Button
-          icon={<EditOutlined />}
-          onClick={() => {
-            setSelectedConfig({ key: record.key, value: record.value });
-            setModalOpen(true);
-          }}
-        />
-      ),
-    },
-  ];
+  const columns: ProColumns<CampusYearConfigRow>[] = useMemo(
+    () => [
+      {
+        title: 'Campus',
+        dataIndex: 'campus',
+        width: 280,
+      },
+      {
+        title: 'Year',
+        dataIndex: 'year',
+        width: 120,
+        align: 'center',
+      },
+      {
+        title: definition.valueLabel,
+        dataIndex: 'value',
+        align: 'center',
+        render: (_, record) =>
+          definition.valueType === 'number' ? Number(record.value).toLocaleString() : record.value,
+      },
+      {
+        title: 'Action',
+        valueType: 'option',
+        align: 'center',
+        render: (_: unknown, record) => (
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => {
+              setSelectedConfig({
+                key: record.key,
+                value: record.value,
+              });
+              setModalOpen(true);
+            }}
+          />
+        ),
+      },
+    ],
+    [definition.valueLabel, definition.valueType],
+  );
 
   return (
     <>
+      {isError && (
+        <Alert
+          type="error"
+          showIcon
+          message="Unable to load configuration"
+          description={error instanceof Error ? error.message : 'Failed to fetch configuration'}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
       <ProTable<CampusYearConfigRow>
         headerTitle={definition.title}
-        loading={loading || isCampusLoading}
+        loading={loading}
         rowKey="key"
         dataSource={rows}
         columns={columns}
@@ -218,31 +217,43 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
               style={{ minWidth: 140 }}
               options={[
                 { label: 'All Years', value: 'all' },
-                ...yearOptions.map((year) => ({ label: String(year), value: year })),
+                ...availableYears.map((year) => ({
+                  label: String(year),
+                  value: year,
+                })),
               ]}
             />
           </Space>,
         ]}
       />
 
-      <ModalForm
+      <ModalForm<ConfigFormValues>
         title={`Edit ${definition.valueLabel}`}
         open={modalOpen}
-        initialValues={selectedConfig || {}}
+        initialValues={
+          selectedConfig
+            ? {
+                key: selectedConfig.key,
+                value:
+                  definition.valueType === 'number'
+                    ? Number(selectedConfig.value)
+                    : selectedConfig.value,
+              }
+            : {
+                key: '',
+                value: definition.valueType === 'number' ? 0 : '',
+              }
+        }
         modalProps={{
           destroyOnHidden: true,
-          onCancel: () => {
-            setSelectedConfig(undefined);
-            setModalOpen(false);
-          },
+          onCancel: closeModal,
         }}
         onOpenChange={(open) => {
           if (!open) {
-            setSelectedConfig(undefined);
-            setModalOpen(false);
+            closeModal();
           }
         }}
-        onFinish={async (values) => handleEditConfig(values.key, values.value)}
+        onFinish={handleEditConfig}
         submitter={{
           searchConfig: {
             submitText: 'Submit',
@@ -250,21 +261,39 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
         }}
       >
         <ProFormText label="Key" name="key" rules={[{ required: true }]} disabled />
-        <ProFormText
-          label={definition.valueLabel}
-          name="value"
-          rules={[{ required: true, message: `${definition.valueLabel} is required` }]}
-          placeholder={`Please enter ${definition.valueLabel.toLowerCase()}`}
-        />
+
+        {definition.valueType === 'number' ? (
+          <ProFormDigit
+            label={definition.valueLabel}
+            name="value"
+            rules={[{ required: true, message: `${definition.valueLabel} is required` }]}
+            fieldProps={{
+              min: 0,
+              precision: 2,
+            }}
+            placeholder={`Please enter ${definition.valueLabel.toLowerCase()}`}
+          />
+        ) : (
+          <ProFormText
+            label={definition.valueLabel}
+            name="value"
+            rules={[{ required: true, message: `${definition.valueLabel} is required` }]}
+            placeholder={`Please enter ${definition.valueLabel.toLowerCase()}`}
+          />
+        )}
       </ModalForm>
     </>
   );
 };
 
 export const LandfillingCostConfig: React.FC = () => (
-  <CampusYearConfigTable definition={CONFIG_DEFINITIONS.landfilling} />
+  <PageContainer title="Landfilling Cost Configuration" style={{ minHeight: '500px' }}>
+    <CampusYearConfigTable definition={CONFIG_DEFINITIONS.landfilling} />
+  </PageContainer>
 );
 
 export const UtmPopulationConfig: React.FC = () => (
-  <CampusYearConfigTable definition={CONFIG_DEFINITIONS.population} />
+  <PageContainer title="UTM Population Configuration" style={{ minHeight: '500px' }}>
+    <CampusYearConfigTable definition={CONFIG_DEFINITIONS.population} />
+  </PageContainer>
 );

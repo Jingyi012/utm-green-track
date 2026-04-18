@@ -1,4 +1,3 @@
-'use client';
 
 import { PageContainer } from '@ant-design/pro-components';
 import { Tabs } from 'antd';
@@ -58,3 +57,4 @@ export const GeneralConfigLayout: React.FC = () => {
     </PageContainer>
   );
 };
+

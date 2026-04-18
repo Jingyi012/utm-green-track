@@ -1,4 +1,3 @@
-'use client';
 import { Modal, Space } from 'antd';
 import dayjs from 'dayjs';
 import { ProForm, ProFormSelect } from '@ant-design/pro-components';
@@ -6,11 +5,7 @@ import { ProForm, ProFormSelect } from '@ant-design/pro-components';
 interface ExportWasteReportModalProps {
   open: boolean;
   onCancel: () => void;
-  onConfirm: (
-    year: number,
-    campusId?: string,
-    departmentId?: string,
-  ) => Promise<void>;
+  onConfirm: (year: number, campusId?: string, departmentId?: string) => Promise<void>;
   isAdmin?: boolean;
   campuses?: { id: string; name: string }[];
   departments?: { id: string; name: string }[];

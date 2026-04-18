@@ -1,5 +1,3 @@
-'use client';
-import Image from 'next/image';
 import { ReactNode } from 'react';
 
 interface AuthLayoutProps {
@@ -155,13 +153,12 @@ export default function AuthLayout({
           <div className="flex items-center space-x-6 mb-4 relative">
             <div className="relative">
               <div className="absolute inset-0 bg-white rounded-full opacity-90 scale-110 group-hover:scale-125 transition-transform duration-300"></div>
-              <Image
+              <img
                 src="/images/logo2.png"
                 alt="GreenTrack System Logo"
                 height={currentLogoSize.height}
                 width={currentLogoSize.width}
                 className="object-contain relative z-10 drop-shadow-lg hover:scale-105 transition-transform duration-300"
-                priority
               />
             </div>
           </div>
@@ -173,9 +170,7 @@ export default function AuthLayout({
             </h1>
             <div className="flex items-center justify-center space-x-2">
               <div className="w-2 h-2 bg-green-200 rounded-full animate-pulse"></div>
-              <p className="text-green-100 text-base md:text-lg font-medium">
-                {subtitle}
-              </p>
+              <p className="text-green-100 text-base md:text-lg font-medium">{subtitle}</p>
               <div
                 className="w-2 h-2 bg-green-200 rounded-full animate-pulse"
                 style={{ animationDelay: '1s' }}
@@ -210,9 +205,7 @@ export default function AuthLayout({
         </div>
 
         {/* Enhanced Footer */}
-        <footer
-          className={`mt-12 text-center relative ${containerSizes[containerSize]} mx-auto`}
-        >
+        <footer className={`mt-12 text-center relative ${containerSizes[containerSize]} mx-auto`}>
           {/* Decorative Elements */}
           <div className="flex justify-center mb-4">
             <div className="flex items-center space-x-2">
@@ -225,9 +218,7 @@ export default function AuthLayout({
           </div>
 
           <div className="space-y-2 text-gray-600">
-            <p className="font-medium">
-              © {new Date().getFullYear()} UTM GreenTrack System
-            </p>
+            <p className="font-medium">© {new Date().getFullYear()} UTM GreenTrack System</p>
             <p className="text-sm flex items-center justify-center space-x-2">
               <span>{footerIcon}</span>
               <span>{subtitle}</span>
@@ -237,9 +228,7 @@ export default function AuthLayout({
 
           {/* Custom Message */}
           <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
-            <p className="text-sm text-green-700 font-medium">
-              "{footerMessage}"
-            </p>
+            <p className="text-sm text-green-700 font-medium">"{footerMessage}"</p>
           </div>
 
           {/* Feature Cards (if enabled) */}
@@ -251,9 +240,7 @@ export default function AuthLayout({
                   className="bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-green-100 shadow-sm"
                 >
                   <div className="text-2xl mb-2">{card.icon}</div>
-                  <h3 className="text-sm font-semibold text-green-700">
-                    {card.title}
-                  </h3>
+                  <h3 className="text-sm font-semibold text-green-700">{card.title}</h3>
                   <p className="text-xs text-gray-600">{card.description}</p>
                 </div>
               ))}

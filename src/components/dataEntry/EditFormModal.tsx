@@ -1,5 +1,3 @@
-'use client';
-
 import { Modal, Button, Upload, App, Col, Row, Typography, UploadFile } from 'antd';
 import {
   ProForm,
@@ -114,18 +112,16 @@ export default function EditformModal({
                 label: department.name,
                 value: department.id,
               }))}
-              rules={[{ required: true, message: 'Please select faculty / department / college / PTJ' }]}
+              rules={[
+                { required: true, message: 'Please select faculty / department / college / PTJ' },
+              ]}
               showSearch
             />
           </Col>
         </Row>
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <ProFormText
-              name="unit"
-              label="Unit"
-              placeholder="Please enter unit"
-            />
+            <ProFormText name="unit" label="Unit" placeholder="Please enter unit" />
           </Col>
           <Col xs={24} md={12}>
             <ProFormText
@@ -240,5 +236,3 @@ export default function EditformModal({
     </Modal>
   );
 }
-
-

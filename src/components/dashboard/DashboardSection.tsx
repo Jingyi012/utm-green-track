@@ -1,4 +1,3 @@
-'use client';
 import { useEffect, useState } from 'react';
 import InfoCardGrid from './InfoCardGrid';
 import { App, Card, Col, Divider, Row, Select, Skeleton, Space, Splitter } from 'antd';
@@ -295,7 +294,7 @@ const DashboardSection: React.FC = () => {
       </Row>
       <br />
       <Skeleton loading={chartLoading}>
-        <InfoCardGrid {...summary} wasteTypeTotals={campusYearlySummary?.wasteTypeTotals} />
+        <InfoCardGrid {...summary} wasteTypeTotals={campusYearlySummary?.wasteTypeTotals ?? []} />
 
         <br />
 
