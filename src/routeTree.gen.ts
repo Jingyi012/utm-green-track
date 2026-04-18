@@ -37,6 +37,9 @@ import { Route as InternalConfigurationsLandfillingCostRouteImport } from './rou
 import { Route as InternalConfigurationsDisposalWasteRouteImport } from './routes/_internal/configurations/disposal-waste'
 import { Route as InternalConfigurationsDepartmentsRouteImport } from './routes/_internal/configurations/departments'
 import { Route as InternalDataEntryViewFormIndexRouteImport } from './routes/_internal/data-entry/view-form/index'
+import { Route as InternalWasteDataRequestsRecordRouteImport } from './routes/_internal/waste-data/requests/record'
+import { Route as InternalWasteDataManagementRecordRouteImport } from './routes/_internal/waste-data/management/record'
+import { Route as InternalWasteDataApprovalRecordRouteImport } from './routes/_internal/waste-data/approval/record'
 import { Route as InternalDataEntryViewFormRequestsRouteImport } from './routes/_internal/data-entry/view-form/requests'
 import { Route as InternalDataEntryViewFormRecordRouteImport } from './routes/_internal/data-entry/view-form/record'
 
@@ -193,6 +196,24 @@ const InternalDataEntryViewFormIndexRoute =
     path: '/data-entry/view-form/',
     getParentRoute: () => InternalRouteRoute,
   } as any)
+const InternalWasteDataRequestsRecordRoute =
+  InternalWasteDataRequestsRecordRouteImport.update({
+    id: '/record',
+    path: '/record',
+    getParentRoute: () => InternalWasteDataRequestsRoute,
+  } as any)
+const InternalWasteDataManagementRecordRoute =
+  InternalWasteDataManagementRecordRouteImport.update({
+    id: '/record',
+    path: '/record',
+    getParentRoute: () => InternalWasteDataManagementRoute,
+  } as any)
+const InternalWasteDataApprovalRecordRoute =
+  InternalWasteDataApprovalRecordRouteImport.update({
+    id: '/record',
+    path: '/record',
+    getParentRoute: () => InternalWasteDataApprovalRoute,
+  } as any)
 const InternalDataEntryViewFormRequestsRoute =
   InternalDataEntryViewFormRequestsRouteImport.update({
     id: '/data-entry/view-form/requests',
@@ -229,12 +250,15 @@ export interface FileRoutesByFullPath {
   '/settings/edit-profile': typeof InternalSettingsEditProfileRoute
   '/users/approval': typeof InternalUsersApprovalRoute
   '/users/management': typeof InternalUsersManagementRoute
-  '/waste-data/approval': typeof InternalWasteDataApprovalRoute
-  '/waste-data/management': typeof InternalWasteDataManagementRoute
-  '/waste-data/requests': typeof InternalWasteDataRequestsRoute
+  '/waste-data/approval': typeof InternalWasteDataApprovalRouteWithChildren
+  '/waste-data/management': typeof InternalWasteDataManagementRouteWithChildren
+  '/waste-data/requests': typeof InternalWasteDataRequestsRouteWithChildren
   '/configurations/': typeof InternalConfigurationsIndexRoute
   '/data-entry/view-form/record': typeof InternalDataEntryViewFormRecordRoute
   '/data-entry/view-form/requests': typeof InternalDataEntryViewFormRequestsRoute
+  '/waste-data/approval/record': typeof InternalWasteDataApprovalRecordRoute
+  '/waste-data/management/record': typeof InternalWasteDataManagementRecordRoute
+  '/waste-data/requests/record': typeof InternalWasteDataRequestsRecordRoute
   '/data-entry/view-form/': typeof InternalDataEntryViewFormIndexRoute
 }
 export interface FileRoutesByTo {
@@ -260,12 +284,15 @@ export interface FileRoutesByTo {
   '/settings/edit-profile': typeof InternalSettingsEditProfileRoute
   '/users/approval': typeof InternalUsersApprovalRoute
   '/users/management': typeof InternalUsersManagementRoute
-  '/waste-data/approval': typeof InternalWasteDataApprovalRoute
-  '/waste-data/management': typeof InternalWasteDataManagementRoute
-  '/waste-data/requests': typeof InternalWasteDataRequestsRoute
+  '/waste-data/approval': typeof InternalWasteDataApprovalRouteWithChildren
+  '/waste-data/management': typeof InternalWasteDataManagementRouteWithChildren
+  '/waste-data/requests': typeof InternalWasteDataRequestsRouteWithChildren
   '/configurations': typeof InternalConfigurationsIndexRoute
   '/data-entry/view-form/record': typeof InternalDataEntryViewFormRecordRoute
   '/data-entry/view-form/requests': typeof InternalDataEntryViewFormRequestsRoute
+  '/waste-data/approval/record': typeof InternalWasteDataApprovalRecordRoute
+  '/waste-data/management/record': typeof InternalWasteDataManagementRecordRoute
+  '/waste-data/requests/record': typeof InternalWasteDataRequestsRecordRoute
   '/data-entry/view-form': typeof InternalDataEntryViewFormIndexRoute
 }
 export interface FileRoutesById {
@@ -293,12 +320,15 @@ export interface FileRoutesById {
   '/_internal/settings/edit-profile': typeof InternalSettingsEditProfileRoute
   '/_internal/users/approval': typeof InternalUsersApprovalRoute
   '/_internal/users/management': typeof InternalUsersManagementRoute
-  '/_internal/waste-data/approval': typeof InternalWasteDataApprovalRoute
-  '/_internal/waste-data/management': typeof InternalWasteDataManagementRoute
-  '/_internal/waste-data/requests': typeof InternalWasteDataRequestsRoute
+  '/_internal/waste-data/approval': typeof InternalWasteDataApprovalRouteWithChildren
+  '/_internal/waste-data/management': typeof InternalWasteDataManagementRouteWithChildren
+  '/_internal/waste-data/requests': typeof InternalWasteDataRequestsRouteWithChildren
   '/_internal/configurations/': typeof InternalConfigurationsIndexRoute
   '/_internal/data-entry/view-form/record': typeof InternalDataEntryViewFormRecordRoute
   '/_internal/data-entry/view-form/requests': typeof InternalDataEntryViewFormRequestsRoute
+  '/_internal/waste-data/approval/record': typeof InternalWasteDataApprovalRecordRoute
+  '/_internal/waste-data/management/record': typeof InternalWasteDataManagementRecordRoute
+  '/_internal/waste-data/requests/record': typeof InternalWasteDataRequestsRecordRoute
   '/_internal/data-entry/view-form/': typeof InternalDataEntryViewFormIndexRoute
 }
 export interface FileRouteTypes {
@@ -332,6 +362,9 @@ export interface FileRouteTypes {
     | '/configurations/'
     | '/data-entry/view-form/record'
     | '/data-entry/view-form/requests'
+    | '/waste-data/approval/record'
+    | '/waste-data/management/record'
+    | '/waste-data/requests/record'
     | '/data-entry/view-form/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -363,6 +396,9 @@ export interface FileRouteTypes {
     | '/configurations'
     | '/data-entry/view-form/record'
     | '/data-entry/view-form/requests'
+    | '/waste-data/approval/record'
+    | '/waste-data/management/record'
+    | '/waste-data/requests/record'
     | '/data-entry/view-form'
   id:
     | '__root__'
@@ -395,6 +431,9 @@ export interface FileRouteTypes {
     | '/_internal/configurations/'
     | '/_internal/data-entry/view-form/record'
     | '/_internal/data-entry/view-form/requests'
+    | '/_internal/waste-data/approval/record'
+    | '/_internal/waste-data/management/record'
+    | '/_internal/waste-data/requests/record'
     | '/_internal/data-entry/view-form/'
   fileRoutesById: FileRoutesById
 }
@@ -605,6 +644,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InternalDataEntryViewFormIndexRouteImport
       parentRoute: typeof InternalRouteRoute
     }
+    '/_internal/waste-data/requests/record': {
+      id: '/_internal/waste-data/requests/record'
+      path: '/record'
+      fullPath: '/waste-data/requests/record'
+      preLoaderRoute: typeof InternalWasteDataRequestsRecordRouteImport
+      parentRoute: typeof InternalWasteDataRequestsRoute
+    }
+    '/_internal/waste-data/management/record': {
+      id: '/_internal/waste-data/management/record'
+      path: '/record'
+      fullPath: '/waste-data/management/record'
+      preLoaderRoute: typeof InternalWasteDataManagementRecordRouteImport
+      parentRoute: typeof InternalWasteDataManagementRoute
+    }
+    '/_internal/waste-data/approval/record': {
+      id: '/_internal/waste-data/approval/record'
+      path: '/record'
+      fullPath: '/waste-data/approval/record'
+      preLoaderRoute: typeof InternalWasteDataApprovalRecordRouteImport
+      parentRoute: typeof InternalWasteDataApprovalRoute
+    }
     '/_internal/data-entry/view-form/requests': {
       id: '/_internal/data-entry/view-form/requests'
       path: '/data-entry/view-form/requests'
@@ -621,6 +681,49 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface InternalWasteDataApprovalRouteChildren {
+  InternalWasteDataApprovalRecordRoute: typeof InternalWasteDataApprovalRecordRoute
+}
+
+const InternalWasteDataApprovalRouteChildren: InternalWasteDataApprovalRouteChildren =
+  {
+    InternalWasteDataApprovalRecordRoute: InternalWasteDataApprovalRecordRoute,
+  }
+
+const InternalWasteDataApprovalRouteWithChildren =
+  InternalWasteDataApprovalRoute._addFileChildren(
+    InternalWasteDataApprovalRouteChildren,
+  )
+
+interface InternalWasteDataManagementRouteChildren {
+  InternalWasteDataManagementRecordRoute: typeof InternalWasteDataManagementRecordRoute
+}
+
+const InternalWasteDataManagementRouteChildren: InternalWasteDataManagementRouteChildren =
+  {
+    InternalWasteDataManagementRecordRoute:
+      InternalWasteDataManagementRecordRoute,
+  }
+
+const InternalWasteDataManagementRouteWithChildren =
+  InternalWasteDataManagementRoute._addFileChildren(
+    InternalWasteDataManagementRouteChildren,
+  )
+
+interface InternalWasteDataRequestsRouteChildren {
+  InternalWasteDataRequestsRecordRoute: typeof InternalWasteDataRequestsRecordRoute
+}
+
+const InternalWasteDataRequestsRouteChildren: InternalWasteDataRequestsRouteChildren =
+  {
+    InternalWasteDataRequestsRecordRoute: InternalWasteDataRequestsRecordRoute,
+  }
+
+const InternalWasteDataRequestsRouteWithChildren =
+  InternalWasteDataRequestsRoute._addFileChildren(
+    InternalWasteDataRequestsRouteChildren,
+  )
 
 interface InternalRouteRouteChildren {
   InternalDashboardRoute: typeof InternalDashboardRoute
@@ -640,9 +743,9 @@ interface InternalRouteRouteChildren {
   InternalSettingsEditProfileRoute: typeof InternalSettingsEditProfileRoute
   InternalUsersApprovalRoute: typeof InternalUsersApprovalRoute
   InternalUsersManagementRoute: typeof InternalUsersManagementRoute
-  InternalWasteDataApprovalRoute: typeof InternalWasteDataApprovalRoute
-  InternalWasteDataManagementRoute: typeof InternalWasteDataManagementRoute
-  InternalWasteDataRequestsRoute: typeof InternalWasteDataRequestsRoute
+  InternalWasteDataApprovalRoute: typeof InternalWasteDataApprovalRouteWithChildren
+  InternalWasteDataManagementRoute: typeof InternalWasteDataManagementRouteWithChildren
+  InternalWasteDataRequestsRoute: typeof InternalWasteDataRequestsRouteWithChildren
   InternalConfigurationsIndexRoute: typeof InternalConfigurationsIndexRoute
   InternalDataEntryViewFormRecordRoute: typeof InternalDataEntryViewFormRecordRoute
   InternalDataEntryViewFormRequestsRoute: typeof InternalDataEntryViewFormRequestsRoute
@@ -672,9 +775,10 @@ const InternalRouteRouteChildren: InternalRouteRouteChildren = {
   InternalSettingsEditProfileRoute: InternalSettingsEditProfileRoute,
   InternalUsersApprovalRoute: InternalUsersApprovalRoute,
   InternalUsersManagementRoute: InternalUsersManagementRoute,
-  InternalWasteDataApprovalRoute: InternalWasteDataApprovalRoute,
-  InternalWasteDataManagementRoute: InternalWasteDataManagementRoute,
-  InternalWasteDataRequestsRoute: InternalWasteDataRequestsRoute,
+  InternalWasteDataApprovalRoute: InternalWasteDataApprovalRouteWithChildren,
+  InternalWasteDataManagementRoute:
+    InternalWasteDataManagementRouteWithChildren,
+  InternalWasteDataRequestsRoute: InternalWasteDataRequestsRouteWithChildren,
   InternalConfigurationsIndexRoute: InternalConfigurationsIndexRoute,
   InternalDataEntryViewFormRecordRoute: InternalDataEntryViewFormRecordRoute,
   InternalDataEntryViewFormRequestsRoute:

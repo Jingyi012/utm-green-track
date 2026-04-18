@@ -69,6 +69,9 @@ const invalidateRequestAndWasteRecordQueries = async (
   ]);
 };
 
+const REQUEST_BADGE_PATHS = ['/waste-data/requests'];
+const REQUEST_AND_WASTE_BADGE_PATHS = ['/waste-data/requests', '/waste-data/approval'];
+
 // Query Hooks
 export const useRequestList = (filters: RequestListFilters) => {
   return useQuery({
@@ -104,6 +107,7 @@ export const useMyRequestList = (filters: MyRequestListFilters) => {
 // Mutation Hooks
 export const useCreateRequest = () => {
   const queryClient = useQueryClient();
+  const refreshBadges = useBadgeRefresh();
 
   return useMutation({
     mutationFn: async (data: CreateRequestInput) => {
@@ -113,6 +117,7 @@ export const useCreateRequest = () => {
     onSuccess: async () => {
       message.success('Request submitted successfully');
       await invalidateRequestAndWasteRecordQueries(queryClient);
+      await refreshBadges(REQUEST_BADGE_PATHS);
     },
     onError: (error: Error) => {
       message.error(error.message || 'Failed to send request');
@@ -136,8 +141,7 @@ export const useUpdateRequestStatus = () => {
     onSuccess: async (_, variables) => {
       message.success(`Request status updated to ${requestStatusLabels[variables.status]}`);
       await invalidateRequestAndWasteRecordQueries(queryClient);
-      // Refresh badge immediately after approval
-      await refreshBadges(['/waste-data/requests']);
+      await refreshBadges(REQUEST_AND_WASTE_BADGE_PATHS);
     },
     onError: (_, variables) => {
       message.error(`Failed to update status to ${requestStatusLabels[variables.status]}`);
@@ -148,6 +152,7 @@ export const useUpdateRequestStatus = () => {
 
 export const useDeleteRequest = () => {
   const queryClient = useQueryClient();
+  const refreshBadges = useBadgeRefresh();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -157,6 +162,7 @@ export const useDeleteRequest = () => {
     onSuccess: async () => {
       message.success('Request deleted successfully');
       await invalidateRequestQueries(queryClient);
+      await refreshBadges(REQUEST_BADGE_PATHS);
     },
     onError: (error: Error) => {
       message.error(error.message || 'Failed to delete request');
@@ -167,6 +173,7 @@ export const useDeleteRequest = () => {
 
 export const useDeleteMyRequest = () => {
   const queryClient = useQueryClient();
+  const refreshBadges = useBadgeRefresh();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -178,6 +185,7 @@ export const useDeleteMyRequest = () => {
       await queryClient.invalidateQueries({
         queryKey: requestQueryKeys.myLists(),
       });
+      await refreshBadges(REQUEST_BADGE_PATHS);
     },
     onError: (error: Error) => {
       message.error(error.message || 'Failed to delete request');

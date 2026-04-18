@@ -99,16 +99,40 @@ export const proLayoutMenuData: AppMenuItem[] = [
         path: '/waste-data/approval',
         name: 'Approval',
         requiredPermission: ADMIN_OPERATION_PERMISSION,
+        children: [
+          {
+            path: '/waste-data/approval/record',
+            name: 'Waste Record Details',
+            requiredPermission: ADMIN_OPERATION_PERMISSION,
+            hideInMenu: true,
+          },
+        ],
       },
       {
         path: '/waste-data/management',
         name: 'Management',
         requiredPermission: ADMIN_OPERATION_PERMISSION,
+        children: [
+          {
+            path: '/waste-data/management/record',
+            name: 'Waste Record Details',
+            requiredPermission: ADMIN_OPERATION_PERMISSION,
+            hideInMenu: true,
+          },
+        ],
       },
       {
         path: '/waste-data/requests',
         name: 'Requests',
         requiredPermission: ADMIN_OPERATION_PERMISSION,
+        children: [
+          {
+            path: '/waste-data/requests/record',
+            name: 'Waste Record Details',
+            requiredPermission: ADMIN_OPERATION_PERMISSION,
+            hideInMenu: true,
+          },
+        ],
       },
     ],
   },

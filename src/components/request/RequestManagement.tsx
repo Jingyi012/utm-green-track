@@ -2,7 +2,7 @@ import { RequestStatus, requestStatusLabels } from '@/lib/enum/status';
 import { ChangeRequest } from '@/lib/types/typing';
 import { ActionType, PageContainer, ProColumns, ProTable } from '@ant-design/pro-components';
 import { FooterToolbar } from '@ant-design/pro-layout/es/components/FooterToolbar';
-import { Button, Popconfirm, Tooltip } from 'antd';
+import { Button, Popconfirm, Space, Tag, Tooltip } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useRequestList, useUpdateRequestStatus } from '@/hook/requests';
@@ -11,8 +11,10 @@ import {
   ClockCircleOutlined,
   CloseOutlined,
   EyeOutlined,
+  QuestionCircleOutlined,
 } from '@ant-design/icons';
 import { TableActionButton, TableActionGroup } from '@/components/table/TableAction';
+import { getWasteRecordStatusMeta } from '@/lib/utils/requestFlow';
 
 const renderEllipsisText = (value: string | undefined, maxWidth = 180) => {
   const text = value?.trim() || '-';
@@ -36,6 +38,17 @@ const renderEllipsisText = (value: string | undefined, maxWidth = 180) => {
   );
 };
 
+const renderTabWithTooltip = (label: string, description: string) => (
+  <Space size={6}>
+    <span>{label}</span>
+    <span onClick={(event) => event.stopPropagation()}>
+      <Tooltip title={description}>
+        <QuestionCircleOutlined style={{ color: 'rgba(0, 0, 0, 0.45)' }} />
+      </Tooltip>
+    </span>
+  </Space>
+);
+
 const RequestManagement: React.FC = () => {
   const navigate = useNavigate();
   const [selectedRows, setSelectedRows] = useState<ChangeRequest[]>([]);
@@ -50,6 +63,33 @@ const RequestManagement: React.FC = () => {
 
   const { data: requestData, isLoading, refetch } = useRequestList(filters);
   const { mutateAsync: updateRequestStatus, isPending: isUpdating } = useUpdateRequestStatus();
+
+  const tabList = useMemo(
+    () => [
+      {
+        key: RequestStatus.Pending.toString(),
+        tab: renderTabWithTooltip(
+          requestStatusLabels[RequestStatus.Pending],
+          'Approve when the requester should update the linked record. Reject when no record revision should happen.',
+        ),
+      },
+      {
+        key: RequestStatus.Approved.toString(),
+        tab: renderTabWithTooltip(
+          requestStatusLabels[RequestStatus.Approved],
+          'Approved requests should send the requester back to the linked waste record so they can revise and resubmit it.',
+        ),
+      },
+      {
+        key: RequestStatus.Rejected.toString(),
+        tab: renderTabWithTooltip(
+          requestStatusLabels[RequestStatus.Rejected],
+          'Rejected requests close the loop without changing the waste record unless you move them back to Pending.',
+        ),
+      },
+    ],
+    [],
+  );
 
   const handleStatusUpdate = async (requests: ChangeRequest[], status: RequestStatus) => {
     if (!requests.length) return;
@@ -118,7 +158,7 @@ const RequestManagement: React.FC = () => {
               icon={<EyeOutlined />}
               onClick={() =>
                 void navigate({
-                  href: `/data-entry/view-form/record?wasteRecordId=${record.wasteRecordId}`,
+                  href: `/waste-data/requests/record?wasteRecordId=${record.wasteRecordId}`,
                 })
               }
             >
@@ -149,6 +189,17 @@ const RequestManagement: React.FC = () => {
         },
       },
       {
+        title: 'Record Status',
+        width: 150,
+        align: 'center',
+        hideInSearch: true,
+        render: (_: unknown, record: ChangeRequest) => {
+          const statusMeta = getWasteRecordStatusMeta(record.wasteRecord?.status);
+
+          return statusMeta ? <Tag color={statusMeta.tone}>{statusMeta.label}</Tag> : '-';
+        },
+      },
+      {
         title: 'Action',
         width: 170,
         fixed: 'right',
@@ -158,16 +209,22 @@ const RequestManagement: React.FC = () => {
           if (record.status === RequestStatus.Pending) {
             return (
               <TableActionGroup>
-                <TableActionButton
-                  tone="success"
-                  icon={<CheckOutlined />}
-                  onClick={() => handleStatusUpdate([record], RequestStatus.Approved)}
-                  loading={isUpdating}
+                <Popconfirm
+                  title="Approve this request?"
+                  description="This should send the linked waste record into Revision Required so the requester can update it."
+                  onConfirm={() => handleStatusUpdate([record], RequestStatus.Approved)}
                 >
-                  Approve
-                </TableActionButton>
+                  <TableActionButton
+                    tone="success"
+                    icon={<CheckOutlined />}
+                    loading={isUpdating}
+                  >
+                    Approve
+                  </TableActionButton>
+                </Popconfirm>
                 <Popconfirm
                   title="Reject this request?"
+                  description="This will reject the request without asking the requester to revise the waste record."
                   onConfirm={() => handleStatusUpdate([record], RequestStatus.Rejected)}
                 >
                   <TableActionButton
@@ -183,14 +240,19 @@ const RequestManagement: React.FC = () => {
           }
 
           return (
-            <TableActionButton
-              tone="warning"
-              icon={<ClockCircleOutlined />}
-              onClick={() => handleStatusUpdate([record], RequestStatus.Pending)}
-              loading={isUpdating}
+            <Popconfirm
+              title="Move this request back to Pending?"
+              description="Use this when the request should return to the admin review queue."
+              onConfirm={() => handleStatusUpdate([record], RequestStatus.Pending)}
             >
-              Pending
-            </TableActionButton>
+              <TableActionButton
+                tone="warning"
+                icon={<ClockCircleOutlined />}
+                loading={isUpdating}
+              >
+                Pending
+              </TableActionButton>
+            </Popconfirm>
           );
         },
       },
@@ -209,20 +271,7 @@ const RequestManagement: React.FC = () => {
   return (
     <PageContainer
       title={'Request Management'}
-      tabList={[
-        {
-          key: RequestStatus.Pending.toString(),
-          tab: requestStatusLabels[RequestStatus.Pending],
-        },
-        {
-          key: RequestStatus.Approved.toString(),
-          tab: requestStatusLabels[RequestStatus.Approved],
-        },
-        {
-          key: RequestStatus.Rejected.toString(),
-          tab: requestStatusLabels[RequestStatus.Rejected],
-        },
-      ]}
+      tabList={tabList}
       onTabChange={(key) => {
         setStatusFilter(parseInt(key) as RequestStatus);
         setSelectedRows([]);
@@ -234,7 +283,7 @@ const RequestManagement: React.FC = () => {
         actionRef={actionRef}
         loading={isLoading}
         tableLayout="fixed"
-        scroll={{ x: 1300 }}
+        scroll={{ x: 1750 }}
         columnsState={{
           persistenceKey: 'request-management-columns',
           persistenceType: 'localStorage',

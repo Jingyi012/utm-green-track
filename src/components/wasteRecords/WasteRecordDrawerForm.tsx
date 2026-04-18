@@ -2,7 +2,6 @@ import { Col, Row, Form, Button, Upload, Typography, App } from 'antd';
 import {
   ProFormSelect,
   ProFormText,
-  DrawerForm,
   ProFormDigit,
   ProForm,
   ProFormDateTimePicker,
@@ -17,7 +16,7 @@ import {
   WasteTypeWithEmissionFactor,
 } from '@/lib/types/typing';
 import { WasteRecordStatus, wasteRecordStatusLabels } from '@/lib/enum/status';
-import { DeleteOutlined, EditOutlined, UploadOutlined } from '@ant-design/icons';
+import { UploadOutlined } from '@ant-design/icons';
 import { WasteRecord } from '@/lib/types/wasteRecord';
 import { useAuth } from '@/contexts/AuthContext';
 import dayjs from 'dayjs';
@@ -26,6 +25,7 @@ import {
   ATTACHMENT_ACCEPT_LABEL,
   validateAttachmentBeforeUpload,
 } from '@/lib/utils/attachmentValidation';
+
 const { Title } = Typography;
 export type FormValueType = Partial<WasteRecord>;
 
@@ -38,7 +38,6 @@ export type UpdateFormDrawerProps = {
   visible: boolean;
   initialValues: Partial<WasteRecord>;
   isEditMode?: boolean;
-  handleDelete?: () => Promise<void>;
 };
 
 const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
@@ -50,12 +49,10 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
   visible,
   initialValues,
   isEditMode = false,
-  handleDelete,
 }) => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const { isAdmin } = useAuth();
-  const [isEditing, setIsEditing] = useState<boolean>(false);
   const [selectedDisposalMethod, setSelectedDisposalMethod] = useState<string>();
   const [wasteTypes, setWasteTypes] = useState<WasteTypeWithEmissionFactor[]>([]);
 
@@ -103,10 +100,6 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
   };
 
   useEffect(() => {
-    setIsEditing(isEditMode);
-  }, [isEditMode]);
-
-  useEffect(() => {
     if (initialValues?.disposalMethodId) {
       const selectedMethod = disposalMethods.find((dm) => dm.id === initialValues.disposalMethodId);
       setWasteTypes(selectedMethod?.wasteTypes ?? []);
@@ -137,12 +130,15 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
   }, [visible, form, normalizedInitialValues]);
 
   const watchStatus = Form.useWatch('status', form);
+
+  if (!visible) {
+    return null;
+  }
+
   return (
-    <DrawerForm
-      title={'Waste Record'}
-      open={visible}
-      width={800}
+    <ProForm<FormValueType>
       form={form}
+      layout="vertical"
       onFinish={async (values) => {
         const payload: FormValueType = {
           ...values,
@@ -151,52 +147,25 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
 
         const success = await onSubmit(payload);
         if (success) {
-          setIsEditing(false);
-          onCancel();
-        }
-      }}
-      onOpenChange={(open) => {
-        if (!open) {
-          setIsEditing(false);
           onCancel();
         }
       }}
       submitter={
-        isEditing
+        isEditMode
           ? {
               searchConfig: {
                 submitText: 'Submit',
                 resetText: 'Cancel',
               },
+              resetButtonProps: {
+                onClick: (event) => {
+                  event.preventDefault();
+                  onCancel();
+                },
+              },
             }
           : false
       }
-      drawerProps={{
-        destroyOnHidden: true,
-        extra: (
-          <>
-            <Button
-              type="text"
-              icon={
-                <EditOutlined style={{ color: isEditing ? '#1890ff' : 'rgba(0, 0, 0, 0.45)' }} />
-              }
-              onClick={() => {
-                setIsEditing((prev) => {
-                  if (prev) {
-                    form.resetFields();
-                  }
-                  return !prev;
-                });
-              }}
-            />
-            <Button
-              type="text"
-              icon={<DeleteOutlined style={{ color: '#ff1818ff' }} />}
-              onClick={handleDelete}
-            />
-          </>
-        ),
-      }}
       initialValues={normalizedInitialValues}
     >
       <ProCard title="Waste Record Details" bordered collapsible>
@@ -213,7 +182,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                 label: r.name,
                 value: r.id,
               }))}
-              disabled={!isEditing}
+              disabled={!isEditMode}
               fieldProps={{
                 showSearch: true,
                 optionFilterProp: 'label',
@@ -232,7 +201,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
               rules={[
                 { required: true, message: 'Please select faculty / department / college / PTJ' },
               ]}
-              disabled={!isEditing}
+              disabled={!isEditMode}
               showSearch
             />
           </Col>
@@ -243,7 +212,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
               name="unit"
               label="Unit"
               placeholder="Please enter unit"
-              disabled={!isEditing}
+              disabled={!isEditMode}
             />
           </Col>
           <Col xs={24} md={12}>
@@ -252,7 +221,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
               label="Location"
               placeholder="Please enter location"
               rules={[{ required: true, message: 'Please enter location' }]}
-              disabled={!isEditing}
+              disabled={!isEditMode}
             />
           </Col>
         </Row>
@@ -264,7 +233,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
               label="Name of Program/Initiative (if any)"
               placeholder="Please enter program / initiative name"
               rules={[]}
-              disabled={!isEditing}
+              disabled={!isEditMode}
             />
           </Col>
           <Col xs={24} md={12}>
@@ -273,7 +242,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
               label="Date of Program/ Initiative"
               placeholder="Please enter date of program / initiative"
               rules={[]}
-              disabled={!isEditing}
+              disabled={!isEditMode}
             />
           </Col>
         </Row>
@@ -297,7 +266,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                 showSearch: true,
                 optionFilterProp: 'label',
               }}
-              disabled={!isEditing}
+              disabled={!isEditMode}
             />
           </Col>
           <Col span={12}>
@@ -315,7 +284,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                 showSearch: true,
                 optionFilterProp: 'label',
               }}
-              disabled={!isEditing || !selectedDisposalMethod}
+              disabled={!isEditMode || !selectedDisposalMethod}
             />
           </Col>
         </Row>
@@ -327,7 +296,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
               label="Waste Weight (kg)"
               placeholder="Please enter waste weight"
               rules={[{ required: true, message: 'Please enter waste weight' }]}
-              disabled={!isEditing}
+              disabled={!isEditMode}
             />
           </Col>
           <Col span={12}>
@@ -355,7 +324,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                     value: WasteRecordStatus.RevisionRequired,
                   },
                 ]}
-                disabled={!isEditing || !isAdmin}
+                disabled={!isEditMode || !isAdmin}
               />
             )}
           </Col>
@@ -379,7 +348,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
                       ]
                     : []
                 }
-                disabled={!isAdmin || !isEditing}
+                disabled={!isAdmin || !isEditMode}
               />
             </Col>
           </Row>
@@ -404,13 +373,13 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
               return validateAttachmentBeforeUpload(file, message.error);
             }}
             onRemove={() => {}}
-            disabled={!isEditing}
+            disabled={!isEditMode}
           >
-            {isEditing && <Button icon={<UploadOutlined />}>Click to Upload</Button>}
+            {isEditMode && <Button icon={<UploadOutlined />}>Click to Upload</Button>}
           </Upload>
         </ProForm.Item>
       </ProCard>
-    </DrawerForm>
+    </ProForm>
   );
 };
 

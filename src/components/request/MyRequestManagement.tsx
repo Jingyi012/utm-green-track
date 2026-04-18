@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Popconfirm, Tooltip } from 'antd';
+import { Button, Popconfirm, Space, Tag, Tooltip, Typography } from 'antd';
 import { useNavigate } from '@tanstack/react-router';
 import { RequestStatus, requestStatusLabels } from '@/lib/enum/status';
 import { ChangeRequest } from '@/lib/types/typing';
 import { dateTimeFormatter } from '@/lib/utils/formatter';
 import { ActionType, PageContainer, ProColumns, ProTable } from '@ant-design/pro-components';
 import { useDeleteMyRequest, useMyRequestList } from '@/hook/requests';
-import { DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EyeOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TableActionButton } from '@/components/table/TableAction';
+import { getRequestFlowSummary, getWasteRecordStatusMeta } from '@/lib/utils/requestFlow';
 
 const renderEllipsisText = (value: string | undefined, maxWidth = 220) => {
   const text = value?.trim() || '-';
@@ -31,6 +32,17 @@ const renderEllipsisText = (value: string | undefined, maxWidth = 220) => {
   );
 };
 
+const renderTabWithTooltip = (label: string, description: string) => (
+  <Space size={6}>
+    <span>{label}</span>
+    <span onClick={(event) => event.stopPropagation()}>
+      <Tooltip title={description}>
+        <QuestionCircleOutlined style={{ color: 'rgba(0, 0, 0, 0.45)' }} />
+      </Tooltip>
+    </span>
+  </Space>
+);
+
 const MyRequestManagement: React.FC = () => {
   const navigate = useNavigate();
   const actionRef = useRef<ActionType | undefined>(undefined);
@@ -44,6 +56,33 @@ const MyRequestManagement: React.FC = () => {
 
   const { data: requestData, isLoading } = useMyRequestList(filters);
   const { mutateAsync: deleteMyRequest, isPending: isDeleting } = useDeleteMyRequest();
+
+  const tabList = useMemo(
+    () => [
+      {
+        key: RequestStatus.Pending.toString(),
+        tab: renderTabWithTooltip(
+          requestStatusLabels[RequestStatus.Pending],
+          'Your request is waiting for admin review. You can still delete it while it remains pending.',
+        ),
+      },
+      {
+        key: RequestStatus.Approved.toString(),
+        tab: renderTabWithTooltip(
+          requestStatusLabels[RequestStatus.Approved],
+          'Open the linked waste record, review the admin comment if present, then update and resubmit the record.',
+        ),
+      },
+      {
+        key: RequestStatus.Rejected.toString(),
+        tab: renderTabWithTooltip(
+          requestStatusLabels[RequestStatus.Rejected],
+          'Rejected requests do not change the waste record. Review the request details before submitting a new one.',
+        ),
+      },
+    ],
+    [],
+  );
 
   const handleDeletePending = async (requestId: string) => {
     try {
@@ -127,6 +166,32 @@ const MyRequestManagement: React.FC = () => {
         },
       },
       {
+        title: 'Record Status',
+        width: 150,
+        align: 'center',
+        search: false,
+        render: (_: unknown, record: ChangeRequest) => {
+          const statusMeta = getWasteRecordStatusMeta(record.wasteRecord?.status);
+
+          return statusMeta ? <Tag color={statusMeta.tone}>{statusMeta.label}</Tag> : '-';
+        },
+      },
+      {
+        title: 'Next Step',
+        width: 280,
+        search: false,
+        render: (_: unknown, record: ChangeRequest) => {
+          const flowSummary = getRequestFlowSummary(record);
+
+          return (
+            <Space direction="vertical" size={2}>
+              <Tag color={flowSummary.tone}>{flowSummary.label}</Tag>
+              <Typography.Text type="secondary">{flowSummary.description}</Typography.Text>
+            </Space>
+          );
+        },
+      },
+      {
         title: 'Action',
         key: 'action',
         width: 140,
@@ -173,17 +238,7 @@ const MyRequestManagement: React.FC = () => {
           { title: 'My Request Changes' },
         ],
       }}
-      tabList={[
-        { key: RequestStatus.Pending.toString(), tab: requestStatusLabels[RequestStatus.Pending] },
-        {
-          key: RequestStatus.Approved.toString(),
-          tab: requestStatusLabels[RequestStatus.Approved],
-        },
-        {
-          key: RequestStatus.Rejected.toString(),
-          tab: requestStatusLabels[RequestStatus.Rejected],
-        },
-      ]}
+      tabList={tabList}
       onTabChange={(key) => setStatusFilter(parseInt(key, 10) as RequestStatus)}
     >
       <ProTable<ChangeRequest>
@@ -192,7 +247,7 @@ const MyRequestManagement: React.FC = () => {
         actionRef={actionRef}
         loading={isLoading}
         tableLayout="fixed"
-        scroll={{ x: 1050 }}
+        scroll={{ x: 1550 }}
         columns={columns}
         search={false}
         pagination={{

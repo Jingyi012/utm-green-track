@@ -4,6 +4,7 @@ import {
   getWasteRecordsPaginated,
   getWasteRecordById,
   updateWasteRecord,
+  updateWasteRecordApprovalStatus,
   deleteWasteRecord,
   uploadAttachments,
   deleteAttachment,
@@ -17,7 +18,7 @@ import {
 import { WasteRecord, WasteRecordFilter } from '@/lib/types/wasteRecord';
 import { PagedResponse } from '@/lib/types/apiResponse';
 import { UploadFile } from 'antd';
-import { WasteRecordStatus } from '@/lib/enum/status';
+import { WasteRecordStatus, wasteRecordStatusLabels } from '@/lib/enum/status';
 import { downloadFile } from '@/lib/utils/downloadFile';
 import { useBadgeRefresh } from '@/contexts/BadgeContext';
 
@@ -78,6 +79,12 @@ export type DeleteAttachmentInput = {
 export type ExportWasteRecordInput = {
   year: number;
   month: number;
+};
+
+export type UpdateWasteRecordApprovalInput = {
+  wasteRecordIds: string[];
+  status: WasteRecordStatus;
+  comment?: string;
 };
 
 const invalidateWasteRecordListQueries = async (queryClient: ReturnType<typeof useQueryClient>) => {
@@ -329,6 +336,32 @@ export const useSaveWasteRecord = () => {
     },
     onError: (error: Error) => {
       message.error(error.message || 'Failed to update waste record');
+    },
+    throwOnError: true,
+  });
+};
+
+export const useUpdateWasteRecordApprovalStatus = () => {
+  const queryClient = useQueryClient();
+  const refreshBadges = useBadgeRefresh();
+
+  return useMutation({
+    mutationFn: async ({ wasteRecordIds, status, comment }: UpdateWasteRecordApprovalInput) => {
+      const response = await updateWasteRecordApprovalStatus({
+        wasteRecordIds,
+        status,
+        comment,
+      });
+
+      return response;
+    },
+    onSuccess: async (_, variables) => {
+      message.success(`Waste record status updated to ${wasteRecordStatusLabels[variables.status]}`);
+      await invalidateWasteRecordListQueries(queryClient);
+      await refreshBadges(['/waste-data/approval']);
+    },
+    onError: (_, variables) => {
+      message.error(`Failed to update status to ${wasteRecordStatusLabels[variables.status]}`);
     },
     throwOnError: true,
   });

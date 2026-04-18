@@ -10,7 +10,6 @@ import {
 } from '@ant-design/pro-components';
 import { Alert, App, Button } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import WasteRecordDrawerForm from './WasteRecordDrawerForm';
 import { WasteRecord, WasteRecordFilter } from '@/lib/types/wasteRecord';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -26,7 +25,6 @@ import { getBaseColumns } from './columns';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import {
   useWasteRecordList,
-  useSaveWasteRecord,
   useDeleteWasteRecord,
   useExportWasteRecordExcel,
   useExportWasteRecordPdf,
@@ -47,8 +45,6 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
   const { departments } = useProfileDropdownOptions();
   const { campuses, disposalMethods, isLoading } = useWasteRecordDropdownOptions();
   const [selectedRecord, setSelectedRecord] = useState<WasteRecord>();
-  const [modalDrawerOpen, setModalDrawerOpen] = useState<boolean>(false);
-  const [editMode, setEditMode] = useState<boolean>(false);
   const [filters, setFilters] = useState<WasteRecordFilter>({
     pageNumber: 1,
     pageSize: 20,
@@ -62,7 +58,6 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
   const [changeRequestModalOpen, setChangeRequestModalOpen] = useState<boolean>(false);
 
   const { data: wasteRecordData, isLoading: isFetching } = useWasteRecordList(filters);
-  const { mutateAsync: saveWasteRecord } = useSaveWasteRecord();
   const { mutateAsync: deleteWasteRecord, isPending: isDeleting } = useDeleteWasteRecord();
   const { mutateAsync: exportWasteRecordExcel, isPending: isExportingExcel } =
     useExportWasteRecordExcel();
@@ -137,45 +132,17 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
     });
   };
 
-  const handleWasteRecordUpdate = async (wasteRecord: WasteRecord) => {
-    try {
-      await saveWasteRecord({
-        id: wasteRecord.id,
-        campusId: wasteRecord.campusId,
-        departmentId: wasteRecord.departmentId,
-        disposalMethodId: wasteRecord.disposalMethodId,
-        wasteTypeId: wasteRecord.wasteTypeId,
-        location: wasteRecord.location,
-        unit: wasteRecord.unit,
-        program: wasteRecord.program,
-        programDate: wasteRecord.programDate,
-        wasteWeight: wasteRecord.wasteWeight,
-        status: wasteRecord.status,
-        date: wasteRecord.date,
-        comment: wasteRecord.comment,
-        uploadedAttachments: wasteRecord.uploadedAttachments,
-        originalAttachmentIds:
-          selectedRecord?.attachments?.map((attachment) => attachment.id) ?? [],
-        isAdmin,
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  const confirmDeletion = async (wasteRecord: WasteRecord) => {
+  const confirmDeletion = (wasteRecord: WasteRecord) => {
     modal.confirm({
       title: 'Confirm Deletion',
       content: 'Are you sure you want to delete this waste record?',
       okText: 'Yes',
       cancelText: 'Cancel',
-      onOk: async () => handleWasteRecordDelete(wasteRecord),
+      okButtonProps: { danger: true, loading: isDeleting },
+      onOk: async () => {
+        await deleteWasteRecord({ id: wasteRecord.id });
+      },
     });
-  };
-
-  const handleWasteRecordDelete = (wasteRecord: WasteRecord) => {
-    return deleteWasteRecord({ id: wasteRecord.id });
   };
 
   const columns: ProColumns<WasteRecord>[] = useMemo(
@@ -189,7 +156,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
       {
         title: 'Action',
         align: 'center',
-        width: 320,
+        width: 250,
         fixed: 'right',
         hideInSearch: true,
         render: (_, record) => {
@@ -199,7 +166,11 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
                 tone="view"
                 icon={<EyeOutlined />}
                 onClick={() =>
-                  void navigate({ href: `/data-entry/view-form/record?wasteRecordId=${record.id}` })
+                  void navigate({
+                    href: isViewForm
+                      ? `/data-entry/view-form/record?wasteRecordId=${record.id}`
+                      : `/waste-data/management/record?wasteRecordId=${record.id}`,
+                  })
                 }
               >
                 View
@@ -209,11 +180,13 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
                   <TableActionButton
                     tone="edit"
                     icon={<EditOutlined />}
-                    onClick={() => {
-                      setSelectedRecord(record);
-                      setModalDrawerOpen(true);
-                      setEditMode(true);
-                    }}
+                    onClick={() =>
+                      void navigate({
+                        href: isViewForm
+                          ? `/data-entry/view-form/record?wasteRecordId=${record.id}&mode=edit`
+                          : `/waste-data/management/record?wasteRecordId=${record.id}&mode=edit`,
+                      })
+                    }
                   >
                     Edit
                   </TableActionButton>
@@ -221,9 +194,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
                     tone="danger"
                     icon={<DeleteOutlined />}
                     loading={isDeleting}
-                    onClick={() => {
-                      confirmDeletion(record);
-                    }}
+                    onClick={() => confirmDeletion(record)}
                   >
                     Delete
                   </TableActionButton>
@@ -344,25 +315,6 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
           layout: 'vertical',
           labelWidth: 'auto',
         }}
-      />
-
-      <WasteRecordDrawerForm
-        campuses={campuses}
-        departments={departments}
-        disposalMethods={disposalMethods}
-        onCancel={() => {
-          setModalDrawerOpen(false);
-          setEditMode(false);
-          setTimeout(() => setSelectedRecord(undefined), 300);
-        }}
-        onSubmit={async (value) => {
-          const success = await handleWasteRecordUpdate(value as WasteRecord);
-          return success;
-        }}
-        visible={modalDrawerOpen}
-        initialValues={selectedRecord || {}}
-        isEditMode={editMode}
-        handleDelete={async () => confirmDeletion(selectedRecord!)}
       />
 
       <ExportWasteRecordModal

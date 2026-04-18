@@ -1,9 +1,5 @@
 import { useProfileDropdownOptions, useWasteRecordDropdownOptions } from '@/hook/options';
 import { wasteRecordStatusLabels, WasteRecordStatus } from '@/lib/enum/status';
-import {
-  getWasteRecordsPaginated,
-  updateWasteRecordApprovalStatus,
-} from '@/lib/services/wasteRecord';
 import { WasteRecord, WasteRecordFilter } from '@/lib/types/wasteRecord';
 import {
   ActionType,
@@ -14,22 +10,36 @@ import {
   ProTable,
 } from '@ant-design/pro-components';
 import { FooterToolbar } from '@ant-design/pro-layout/es/components/FooterToolbar';
-import { Button, App } from 'antd';
-import { useEffect, useRef, useState } from 'react';
+import { Alert, Button, Space, Tooltip } from 'antd';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CommentButton } from './CommentButton';
 import { getBaseColumns } from './columns';
 import {
   CheckOutlined,
   CloseOutlined,
   ExclamationOutlined,
+  EyeOutlined,
+  QuestionCircleOutlined,
 } from '@ant-design/icons';
 import { TableActionButton, TableActionGroup } from '@/components/table/TableAction';
+import { useNavigate } from '@tanstack/react-router';
+import { useUpdateWasteRecordApprovalStatus, useWasteRecordList } from '@/hook/wasteRecords';
+
+const renderTabWithTooltip = (label: string, description: string) => (
+  <Space size={6}>
+    <span>{label}</span>
+    <span onClick={(event) => event.stopPropagation()}>
+      <Tooltip title={description}>
+        <QuestionCircleOutlined style={{ color: 'rgba(0, 0, 0, 0.45)' }} />
+      </Tooltip>
+    </span>
+  </Space>
+);
 
 const WasteRecordApproval: React.FC = () => {
-  const { message } = App.useApp();
+  const navigate = useNavigate();
   const { departments } = useProfileDropdownOptions();
   const { campuses, disposalMethods, isLoading } = useWasteRecordDropdownOptions();
-  const [loading, setLoading] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<WasteRecordStatus>(WasteRecordStatus.New);
   const [selectedRows, setSelectedRows] = useState<WasteRecord[]>([]);
   const actionRef = useRef<ActionType | undefined>(undefined);
@@ -37,29 +47,16 @@ const WasteRecordApproval: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalStatus, setModalStatus] = useState<WasteRecordStatus | null>(null);
   const [modalRecords, setModalRecords] = useState<WasteRecord[]>([]);
+  const [filters, setFilters] = useState<WasteRecordFilter>({
+    pageNumber: 1,
+    pageSize: 20,
+    status: WasteRecordStatus.New,
+    isAdmin: true,
+  });
 
-  const fetchData = async (filter: WasteRecordFilter) => {
-    setLoading(true);
-    try {
-      const res = await getWasteRecordsPaginated({
-        ...filter,
-      });
-      return {
-        data: res.data,
-        success: res.success,
-        total: res.totalCount,
-      };
-    } catch {
-      message.error('Failed to fetch waste records');
-      return {
-        data: [],
-        success: false,
-        total: 0,
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: wasteRecordData, isLoading: isFetching } = useWasteRecordList(filters);
+  const { mutateAsync: updateApprovalStatus, isPending: isUpdating } =
+    useUpdateWasteRecordApprovalStatus();
 
   const handleStatusUpdate = async (
     records: WasteRecord[],
@@ -68,41 +65,108 @@ const WasteRecordApproval: React.FC = () => {
   ) => {
     if (!records.length) return;
     try {
-      const wasteRecordIds = records.map((record) => record.id);
-      const res = await updateWasteRecordApprovalStatus({ wasteRecordIds, status, comment });
-      if (res.success) {
-        message.success(`Waste record status updated to ${wasteRecordStatusLabels[status]}`);
-      } else {
-        message.error(`Failed to update status to ${wasteRecordStatusLabels[status]}`);
-      }
+      await updateApprovalStatus({
+        wasteRecordIds: records.map((record) => record.id),
+        status,
+        comment,
+      });
       setSelectedRows([]);
-      actionRef.current?.reload();
     } catch {
-      message.error(`Failed to update status to ${wasteRecordStatusLabels[status]}`);
+      return;
     }
   };
+
+  const openStatusModal = (records: WasteRecord[], status: WasteRecordStatus) => {
+    if (!records.length) return;
+
+    setModalStatus(status);
+    setModalRecords(records);
+    setModalOpen(true);
+  };
+
+  const tabList = useMemo(
+    () => [
+      {
+        key: WasteRecordStatus.New.toString(),
+        tab: renderTabWithTooltip(
+          wasteRecordStatusLabels[WasteRecordStatus.New],
+          'Verify clean records directly. Use Revision Required for fixable issues and Rejected for invalid submissions.',
+        ),
+      },
+      {
+        key: WasteRecordStatus.Verified.toString(),
+        tab: renderTabWithTooltip(
+          wasteRecordStatusLabels[WasteRecordStatus.Verified],
+          'Verified records are complete submissions. Move them back to Revision Required only when follow-up changes are needed.',
+        ),
+      },
+      {
+        key: WasteRecordStatus.Rejected.toString(),
+        tab: renderTabWithTooltip(
+          wasteRecordStatusLabels[WasteRecordStatus.Rejected],
+          'Rejected records remain visible for reference. Verify only when the submitted data is now acceptable.',
+        ),
+      },
+      {
+        key: WasteRecordStatus.RevisionRequired.toString(),
+        tab: renderTabWithTooltip(
+          wasteRecordStatusLabels[WasteRecordStatus.RevisionRequired],
+          'These comments are visible to the requester. Once the updates are correct, verify the record to close the loop.',
+        ),
+      },
+    ],
+    [],
+  );
+
+  const modalSummary = useMemo(() => {
+    if (modalStatus === WasteRecordStatus.RevisionRequired) {
+      return {
+        type: 'warning' as const,
+        message: 'Tell the requester exactly what to fix',
+        description:
+          modalRecords.length > 1
+            ? 'The same revision note will be applied to all selected records.'
+            : 'Explain the incorrect fields, the expected values, and any missing evidence.',
+      };
+    }
+
+    return {
+      type: 'error' as const,
+      message: 'Explain why the record is being rejected',
+      description:
+        modalRecords.length > 1
+          ? 'The same rejection reason will be applied to all selected records.'
+          : 'Use rejection for submissions that should not proceed, not for minor corrections.',
+    };
+  }, [modalRecords.length, modalStatus]);
 
   const columns: ProColumns<WasteRecord>[] = [
     ...getBaseColumns({ campuses, departments, disposalMethods, showUserColumn: true }),
     {
       title: 'Action',
-      width: 300,
+      width: 280,
       fixed: 'right',
       align: 'center',
       hideInSearch: true,
       render: (_, record) => {
-        const openCommentModal = (status: WasteRecordStatus) => {
-          setModalStatus(status);
-          setModalRecords([record]);
-          setModalOpen(true);
-        };
-
         if (record.status === WasteRecordStatus.New) {
           return (
             <TableActionGroup>
               <TableActionButton
+                tone="view"
+                icon={<EyeOutlined />}
+                onClick={() =>
+                  void navigate({
+                    href: `/waste-data/approval/record?wasteRecordId=${record.id}`,
+                  })
+                }
+              >
+                View
+              </TableActionButton>
+              <TableActionButton
                 tone="success"
                 icon={<CheckOutlined />}
+                loading={isUpdating}
                 onClick={() => handleStatusUpdate([record], WasteRecordStatus.Verified)}
               >
                 Verify
@@ -110,14 +174,16 @@ const WasteRecordApproval: React.FC = () => {
               <TableActionButton
                 tone="danger"
                 icon={<CloseOutlined />}
-                onClick={() => openCommentModal(WasteRecordStatus.Rejected)}
+                loading={isUpdating}
+                onClick={() => openStatusModal([record], WasteRecordStatus.Rejected)}
               >
                 Reject
               </TableActionButton>
               <TableActionButton
                 tone="warning"
                 icon={<ExclamationOutlined />}
-                onClick={() => openCommentModal(WasteRecordStatus.RevisionRequired)}
+                loading={isUpdating}
+                onClick={() => openStatusModal([record], WasteRecordStatus.RevisionRequired)}
               >
                 Revision
               </TableActionButton>
@@ -129,16 +195,29 @@ const WasteRecordApproval: React.FC = () => {
           return (
             <TableActionGroup>
               <TableActionButton
+                tone="view"
+                icon={<EyeOutlined />}
+                onClick={() =>
+                  void navigate({
+                    href: `/waste-data/approval/record?wasteRecordId=${record.id}`,
+                  })
+                }
+              >
+                View
+              </TableActionButton>
+              <TableActionButton
                 tone="warning"
                 icon={<ExclamationOutlined />}
-                onClick={() => openCommentModal(WasteRecordStatus.RevisionRequired)}
+                loading={isUpdating}
+                onClick={() => openStatusModal([record], WasteRecordStatus.RevisionRequired)}
               >
                 Revision
               </TableActionButton>
               <TableActionButton
                 tone="danger"
                 icon={<CloseOutlined />}
-                onClick={() => openCommentModal(WasteRecordStatus.Rejected)}
+                loading={isUpdating}
+                onClick={() => openStatusModal([record], WasteRecordStatus.Rejected)}
               >
                 Reject
               </TableActionButton>
@@ -150,8 +229,20 @@ const WasteRecordApproval: React.FC = () => {
           return (
             <TableActionGroup>
               <TableActionButton
+                tone="view"
+                icon={<EyeOutlined />}
+                onClick={() =>
+                  void navigate({
+                    href: `/waste-data/approval/record?wasteRecordId=${record.id}`,
+                  })
+                }
+              >
+                View
+              </TableActionButton>
+              <TableActionButton
                 tone="success"
                 icon={<CheckOutlined />}
+                loading={isUpdating}
                 onClick={() => handleStatusUpdate([record], WasteRecordStatus.Verified)}
               >
                 Verify
@@ -159,7 +250,8 @@ const WasteRecordApproval: React.FC = () => {
               <TableActionButton
                 tone="warning"
                 icon={<ExclamationOutlined />}
-                onClick={() => openCommentModal(WasteRecordStatus.RevisionRequired)}
+                loading={isUpdating}
+                onClick={() => openStatusModal([record], WasteRecordStatus.RevisionRequired)}
               >
                 Revision
               </TableActionButton>
@@ -172,8 +264,20 @@ const WasteRecordApproval: React.FC = () => {
           return (
             <TableActionGroup>
               <TableActionButton
+                tone="view"
+                icon={<EyeOutlined />}
+                onClick={() =>
+                  void navigate({
+                    href: `/waste-data/approval/record?wasteRecordId=${record.id}`,
+                  })
+                }
+              >
+                View
+              </TableActionButton>
+              <TableActionButton
                 tone="success"
                 icon={<CheckOutlined />}
+                loading={isUpdating}
                 onClick={() => handleStatusUpdate([record], WasteRecordStatus.Verified)}
               >
                 Verify
@@ -181,7 +285,8 @@ const WasteRecordApproval: React.FC = () => {
               <TableActionButton
                 tone="danger"
                 icon={<CloseOutlined />}
-                onClick={() => openCommentModal(WasteRecordStatus.Rejected)}
+                loading={isUpdating}
+                onClick={() => openStatusModal([record], WasteRecordStatus.Rejected)}
               >
                 Reject
               </TableActionButton>
@@ -196,31 +301,18 @@ const WasteRecordApproval: React.FC = () => {
   ];
 
   useEffect(() => {
-    actionRef.current?.reloadAndRest?.();
+    setFilters((prev) => ({
+      ...prev,
+      status: statusFilter,
+      pageNumber: 1,
+    }));
   }, [statusFilter]);
 
   return (
     <PageContainer
       title={'Waste Record Approval Management'}
       loading={isLoading}
-      tabList={[
-        {
-          key: WasteRecordStatus.New.toString(),
-          tab: wasteRecordStatusLabels[WasteRecordStatus.New],
-        },
-        {
-          key: WasteRecordStatus.Verified.toString(),
-          tab: wasteRecordStatusLabels[WasteRecordStatus.Verified],
-        },
-        {
-          key: WasteRecordStatus.Rejected.toString(),
-          tab: wasteRecordStatusLabels[WasteRecordStatus.Rejected],
-        },
-        {
-          key: WasteRecordStatus.RevisionRequired.toString(),
-          tab: wasteRecordStatusLabels[WasteRecordStatus.RevisionRequired],
-        },
-      ]}
+      tabList={tabList}
       onTabChange={(key) => {
         setStatusFilter(parseInt(key) as WasteRecordStatus);
         setSelectedRows([]);
@@ -230,22 +322,30 @@ const WasteRecordApproval: React.FC = () => {
         rowKey="id"
         headerTitle="Waste Record List"
         actionRef={actionRef}
-        loading={loading || isLoading}
+        loading={isFetching || isLoading}
         tableLayout="fixed"
-        scroll={{ x: 2200 }}
+        scroll={{ x: 2500 }}
         columnsState={{
           persistenceKey: 'waste-record-approval-columns',
           persistenceType: 'localStorage',
         }}
         columns={columns}
+        dataSource={wasteRecordData?.data ?? []}
         pagination={{ showSizeChanger: true }}
         request={(params: { current?: number; pageSize?: number; [key: string]: unknown }) => {
-          return fetchData({
+          setFilters((prev) => ({
+            ...prev,
             ...params,
             pageNumber: params.current ?? 1,
             pageSize: params.pageSize ?? 20,
             status: statusFilter,
             isAdmin: true,
+          }));
+
+          return Promise.resolve({
+            data: wasteRecordData?.data ?? [],
+            success: true,
+            total: wasteRecordData?.totalCount ?? 0,
           });
         }}
         search={{
@@ -271,8 +371,22 @@ const WasteRecordApproval: React.FC = () => {
         >
           <Button
             onClick={async () => handleStatusUpdate(selectedRows, WasteRecordStatus.Verified)}
+            loading={isUpdating}
           >
             Batch Approve
+          </Button>
+          <Button
+            onClick={() => openStatusModal(selectedRows, WasteRecordStatus.RevisionRequired)}
+            loading={isUpdating}
+          >
+            Batch Revision
+          </Button>
+          <Button
+            danger
+            onClick={() => openStatusModal(selectedRows, WasteRecordStatus.Rejected)}
+            loading={isUpdating}
+          >
+            Batch Reject
           </Button>
         </FooterToolbar>
       )}
@@ -294,11 +408,26 @@ const WasteRecordApproval: React.FC = () => {
           },
         }}
       >
+        <Alert
+          type={modalSummary.type}
+          showIcon
+          message={modalSummary.message}
+          description={modalSummary.description}
+          style={{ marginBottom: 16 }}
+        />
         <ProFormTextArea
           name="comment"
           label="Comment"
-          placeholder="Please enter a reason"
-          rules={[{ required: true, message: 'Comment is required' }]}
+          placeholder={
+            modalStatus === WasteRecordStatus.Rejected
+              ? 'Explain why this record is being rejected'
+              : 'Explain exactly what must be revised'
+          }
+          rules={[
+            { required: true, message: 'Comment is required' },
+            { min: 10, message: 'Please provide at least 10 characters' },
+          ]}
+          fieldProps={{ showCount: true, maxLength: 500, autoSize: { minRows: 4, maxRows: 8 } }}
         />
       </ModalForm>
     </PageContainer>
