@@ -10,7 +10,7 @@ import {
   ProFormText,
   ProTable,
 } from '@ant-design/pro-components';
-import { Alert, App, Button, Select, Space, Typography } from 'antd';
+import { Alert, Button, Select, Space, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
 const LANDFILLING_COST_PREFIX = 'LandfillingCost';
@@ -74,7 +74,6 @@ const buildYearOptions = (currentYear: number): number[] =>
 const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }> = ({
   definition,
 }) => {
-  const { message } = App.useApp();
   const { campuses, isLoading: isCampusLoading } = useWasteRecordDropdownOptions();
 
   const [selectedYear, setSelectedYear] = useState<YearFilterValue>(new Date().getFullYear());
@@ -141,8 +140,7 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
 
       closeModal();
       return true;
-    } catch (err: any) {
-      message.error(err?.message || 'Failed to update config');
+    } catch {
       return false;
     }
   };

@@ -10,15 +10,12 @@ import {
   ProTable,
 } from '@ant-design/pro-components';
 import { FooterToolbar } from '@ant-design/pro-layout/es/components/FooterToolbar';
-import { App, Button } from 'antd';
+import { Button } from 'antd';
 import { useState, useEffect, useRef } from 'react';
 import { getBaseUserColumns } from './columns';
-import { useUserList, useUpdateUserApprovalStatus, userQueryKeys } from '@/hook/users';
-import { useQueryClient } from '@tanstack/react-query';
+import { useUserList, useUpdateUserApprovalStatus } from '@/hook/users';
 
 const UserApproval: React.FC = () => {
-  const { message } = App.useApp();
-  const queryClient = useQueryClient();
   const { positions, departments, roles, isLoading } = useProfileDropdownOptions();
   const [statusFilter, setStatusFilter] = useState<UserStatus>(UserStatus.Pending);
   const [selectedRows, setSelectedRows] = useState<UserDetails[]>([]);
@@ -33,7 +30,7 @@ const UserApproval: React.FC = () => {
   const [rejectingUsers, setRejectingUsers] = useState<UserDetails[]>([]);
 
   const { data: userData, isLoading: isFetching } = useUserList(filters);
-  const { mutate: updateApprovalMutate, isPending: isUpdating } = useUpdateUserApprovalStatus();
+  const { mutateAsync: updateApprovalStatus, isPending: isUpdating } = useUpdateUserApprovalStatus();
 
   const openRejectModal = (users: UserDetails[]) => {
     setRejectingUsers(users);
@@ -47,20 +44,15 @@ const UserApproval: React.FC = () => {
     rejectedReason?: string,
   ) => {
     if (!users.length) return;
-    const userIds = users.map((u) => u.id);
-    updateApprovalMutate(
-      { userIds, status, rejectedReason },
-      {
-        onSuccess: () => {
-          message.success(`User status updated to ${userStatusLabels[status]}`);
-          setSelectedRows([]);
-          queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
-        },
-        onError: () => {
-          message.error(`Failed to update status to ${userStatusLabels[status]}`);
-        },
-      },
-    );
+    return updateApprovalStatus({
+      userIds: users.map((user) => user.id),
+      status,
+      rejectedReason,
+    })
+      .then(() => {
+        setSelectedRows([]);
+      })
+      .catch(() => undefined);
   };
 
   const columns: ProColumns<UserDetails>[] = [
@@ -223,11 +215,7 @@ const UserApproval: React.FC = () => {
         }}
         onOpenChange={setRejectModalOpen}
         onFinish={async (values) => {
-          await new Promise<void>((resolve) => {
-            handleStatusUpdate(rejectingUsers, UserStatus.Rejected, values.rejectedReason);
-            // Give mutation time to complete
-            setTimeout(resolve, 100);
-          });
+          await handleStatusUpdate(rejectingUsers, UserStatus.Rejected, values.rejectedReason);
           return true;
         }}
         submitter={{

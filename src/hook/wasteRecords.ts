@@ -11,10 +11,14 @@ import {
   getCampusYearlySummary,
   getYearlyDataAnalytics,
   getLifetimeDataAnalytics,
+  exportExcelWasteRecords,
+  exportPdfWasteRecords,
 } from '@/lib/services/wasteRecord';
 import { WasteRecord, WasteRecordFilter } from '@/lib/types/wasteRecord';
 import { PagedResponse } from '@/lib/types/apiResponse';
 import { UploadFile } from 'antd';
+import { WasteRecordStatus } from '@/lib/enum/status';
+import { downloadFile } from '@/lib/utils/downloadFile';
 
 // Query Keys
 export const wasteRecordQueryKeys = {
@@ -33,6 +37,82 @@ export const wasteRecordQueryKeys = {
   lifetimeAnalytics: (campusId: string) =>
     [...wasteRecordQueryKeys.all, 'lifetime-analytics', campusId] as const,
 } as const;
+
+export type UpdateWasteRecordInput = {
+  id: string;
+  campusId?: string;
+  departmentId?: string;
+  disposalMethodId?: string;
+  wasteTypeId?: string;
+  location?: string;
+  unit?: string;
+  program?: string;
+  programDate?: string;
+  wasteWeight?: number;
+  status?: number;
+  date?: string;
+  comment?: string;
+};
+
+export type SaveWasteRecordInput = UpdateWasteRecordInput & {
+  uploadedAttachments?: UploadFile[];
+  originalAttachmentIds?: string[];
+  isAdmin?: boolean;
+};
+
+export type DeleteWasteRecordInput = {
+  id: string;
+};
+
+export type UploadAttachmentsInput = {
+  fileList: UploadFile[];
+  wasteRecordId: string;
+};
+
+export type DeleteAttachmentInput = {
+  id: string;
+  wasteRecordId: string;
+};
+
+export type ExportWasteRecordInput = {
+  year: number;
+  month: number;
+};
+
+const invalidateWasteRecordListQueries = async (
+  queryClient: ReturnType<typeof useQueryClient>,
+) => {
+  await queryClient.invalidateQueries({
+    queryKey: wasteRecordQueryKeys.lists(),
+  });
+};
+
+const invalidateWasteRecordDetailQuery = async (
+  queryClient: ReturnType<typeof useQueryClient>,
+  id: string,
+) => {
+  await queryClient.invalidateQueries({
+    queryKey: wasteRecordQueryKeys.detail(id),
+  });
+};
+
+const extractAttachmentChanges = (
+  uploadedAttachments: UploadFile[] = [],
+  originalAttachmentIds: string[] = [],
+) => {
+  const newAttachments = uploadedAttachments.filter((file) => Boolean(file.originFileObj));
+  const currentAttachmentIds = uploadedAttachments
+    .filter((file) => !file.originFileObj)
+    .map((file) => file.uid);
+  const attachmentIdsToDelete = originalAttachmentIds.filter(
+    (id) => !currentAttachmentIds.includes(id),
+  );
+
+  return {
+    newAttachments,
+    attachmentIdsToDelete,
+  };
+};
 
 // Query Hooks
 export const useWasteRecordList = (filters: WasteRecordFilter) => {
@@ -120,18 +200,19 @@ export const useUpdateWasteRecord = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { id: string; updatedData: any }) => {
-      const response = await updateWasteRecord(data.id, data.updatedData);
+    mutationFn: async ({ id, ...updatedData }: UpdateWasteRecordInput) => {
+      const response = await updateWasteRecord(id, { id, ...updatedData });
       return response;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       message.success('Waste record updated successfully');
-      queryClient.invalidateQueries({
-        queryKey: wasteRecordQueryKeys.lists(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: wasteRecordQueryKeys.detail(variables.id),
-      });
+      await Promise.all([
+        invalidateWasteRecordListQueries(queryClient),
+        invalidateWasteRecordDetailQuery(queryClient, variables.id),
+      ]);
+    },
+    onError: (error: Error) => {
+      message.error(error.message || 'Failed to update waste record');
     },
     throwOnError: true,
   });
@@ -141,15 +222,16 @@ export const useDeleteWasteRecord = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id }: DeleteWasteRecordInput) => {
       const response = await deleteWasteRecord(id);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       message.success('Waste record deleted successfully');
-      queryClient.invalidateQueries({
-        queryKey: wasteRecordQueryKeys.lists(),
-      });
+      await invalidateWasteRecordListQueries(queryClient);
+    },
+    onError: (error: Error) => {
+      message.error(error.message || 'Failed to delete waste record');
     },
     throwOnError: true,
   });
@@ -159,15 +241,16 @@ export const useUploadAttachments = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { fileList: UploadFile[]; wasteRecordId: string }) => {
-      const response = await uploadAttachments(data.fileList, data.wasteRecordId);
+    mutationFn: async ({ fileList, wasteRecordId }: UploadAttachmentsInput) => {
+      const response = await uploadAttachments(fileList, wasteRecordId);
       return response;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       message.success('Attachments uploaded successfully');
-      queryClient.invalidateQueries({
-        queryKey: wasteRecordQueryKeys.detail(variables.wasteRecordId),
-      });
+      await invalidateWasteRecordDetailQuery(queryClient, variables.wasteRecordId);
+    },
+    onError: (error: Error) => {
+      message.error(error.message || 'Failed to upload attachments');
     },
     throwOnError: true,
   });
@@ -177,16 +260,102 @@ export const useDeleteAttachment = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id }: DeleteAttachmentInput) => {
       const response = await deleteAttachment(id);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: async (_, variables) => {
       message.success('Attachment deleted successfully');
-      queryClient.invalidateQueries({
-        queryKey: wasteRecordQueryKeys.lists(),
-      });
+      await Promise.all([
+        invalidateWasteRecordListQueries(queryClient),
+        invalidateWasteRecordDetailQuery(queryClient, variables.wasteRecordId),
+      ]);
+    },
+    onError: (error: Error) => {
+      message.error(error.message || 'Failed to delete attachment');
     },
     throwOnError: true,
   });
 };
+
+export const useSaveWasteRecord = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      uploadedAttachments = [],
+      originalAttachmentIds = [],
+      isAdmin = true,
+      id,
+      ...updatedData
+    }: SaveWasteRecordInput) => {
+      const { newAttachments, attachmentIdsToDelete } = extractAttachmentChanges(
+        uploadedAttachments,
+        originalAttachmentIds,
+      );
+      const normalizedPayload = isAdmin
+        ? updatedData
+        : { ...updatedData, status: WasteRecordStatus.New };
+
+      await updateWasteRecord(id, { id, ...normalizedPayload });
+
+      if (newAttachments.length > 0) {
+        await uploadAttachments(newAttachments, id);
+      }
+
+      if (attachmentIdsToDelete.length > 0) {
+        await Promise.all(attachmentIdsToDelete.map((attachmentId) => deleteAttachment(attachmentId)));
+      }
+
+      return { id };
+    },
+    onSuccess: async (_, variables) => {
+      message.success('Waste record updated successfully');
+      await Promise.all([
+        invalidateWasteRecordListQueries(queryClient),
+        invalidateWasteRecordDetailQuery(queryClient, variables.id),
+      ]);
+    },
+    onError: (error: Error) => {
+      message.error(error.message || 'Failed to update waste record');
+    },
+    throwOnError: true,
+  });
+};
+
+const useExportWasteRecords = (format: 'excel' | 'pdf') => {
+  return useMutation({
+    mutationFn: async ({ year, month }: ExportWasteRecordInput) => {
+      const hide = message.loading(
+        format === 'excel' ? 'Generating Excel...' : 'Generating Pdf...',
+        0,
+      );
+
+      try {
+        const response =
+          format === 'excel'
+            ? await exportExcelWasteRecords({ year, month })
+            : await exportPdfWasteRecords({ year, month });
+        const contentDisposition = response.headers['content-disposition'];
+
+        downloadFile(
+          response.data,
+          contentDisposition,
+          format === 'excel' ? 'Waste_Records.xlsx' : 'Waste_Records.pdf',
+        );
+      } finally {
+        hide();
+      }
+    },
+    onError: () => {
+      message.error(
+        format === 'excel' ? 'Failed to generate Excel' : 'Failed to generate PDF',
+      );
+    },
+    throwOnError: true,
+  });
+};
+
+export const useExportWasteRecordExcel = () => useExportWasteRecords('excel');
+
+export const useExportWasteRecordPdf = () => useExportWasteRecords('pdf');

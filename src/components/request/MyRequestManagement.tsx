@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { App, Button, Popconfirm, Tooltip } from 'antd';
+import { Button, Popconfirm, Tooltip } from 'antd';
 import { useNavigate } from '@tanstack/react-router';
 import { RequestStatus, requestStatusLabels } from '@/lib/enum/status';
-import { deleteMyRequest, getMyRequest } from '@/lib/services/requestService';
 import { ChangeRequest } from '@/lib/types/typing';
 import { dateTimeFormatter } from '@/lib/utils/formatter';
 import { ActionType, PageContainer, ProColumns, ProTable } from '@ant-design/pro-components';
+import { useDeleteMyRequest, useMyRequestList } from '@/hook/requests';
 
 const renderEllipsisText = (value: string | undefined, maxWidth = 220) => {
   const text = value?.trim() || '-';
@@ -30,48 +30,24 @@ const renderEllipsisText = (value: string | undefined, maxWidth = 220) => {
 };
 
 const MyRequestManagement: React.FC = () => {
-  const { message } = App.useApp();
   const navigate = useNavigate();
   const actionRef = useRef<ActionType | undefined>(undefined);
 
-  const [loading, setLoading] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<RequestStatus>(RequestStatus.Pending);
+  const [filters, setFilters] = useState({
+    pageNumber: 1,
+    pageSize: 20,
+    status: RequestStatus.Pending,
+  });
 
-  const fetchData = async (filter: { pageNumber: number; pageSize: number; status?: number }) => {
-    setLoading(true);
-    try {
-      const res = await getMyRequest(filter);
-      return {
-        data: res.data,
-        success: res.success,
-        total: res.totalCount,
-      };
-    } catch {
-      message.error('Failed to fetch your requests');
-      return {
-        data: [],
-        success: false,
-        total: 0,
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: requestData, isLoading } = useMyRequestList(filters);
+  const { mutateAsync: deleteMyRequest, isPending: isDeleting } = useDeleteMyRequest();
 
   const handleDeletePending = async (requestId: string) => {
     try {
-      setLoading(true);
-      const res = await deleteMyRequest(requestId);
-      if (res.success) {
-        message.success('Pending request deleted');
-        actionRef.current?.reload();
-      } else {
-        message.error(res.message || 'Failed to delete request');
-      }
+      await deleteMyRequest(requestId);
     } catch {
-      message.error('Failed to delete request');
-    } finally {
-      setLoading(false);
+      return;
     }
   };
 
@@ -163,7 +139,7 @@ const MyRequestManagement: React.FC = () => {
               cancelText="Cancel"
               okButtonProps={{ danger: true }}
             >
-              <Button type="link" danger>
+              <Button type="link" danger loading={isDeleting}>
                 Delete
               </Button>
             </Popconfirm>
@@ -172,11 +148,15 @@ const MyRequestManagement: React.FC = () => {
           ),
       },
     ],
-    [navigate],
+    [handleDeletePending, isDeleting, navigate],
   );
 
   useEffect(() => {
-    actionRef.current?.reloadAndRest?.();
+    setFilters((prev) => ({
+      ...prev,
+      status: statusFilter,
+      pageNumber: 1,
+    }));
   }, [statusFilter]);
 
   return (
@@ -207,7 +187,7 @@ const MyRequestManagement: React.FC = () => {
         rowKey="id"
         headerTitle="Request List"
         actionRef={actionRef}
-        loading={loading}
+        loading={isLoading}
         tableLayout="fixed"
         scroll={{ x: 1050 }}
         columns={columns}
@@ -216,13 +196,20 @@ const MyRequestManagement: React.FC = () => {
           showSizeChanger: true,
           defaultPageSize: 20,
         }}
-        request={(params: { current?: number; pageSize?: number }) =>
-          fetchData({
+        dataSource={requestData?.data ?? []}
+        request={(params: { current?: number; pageSize?: number }) => {
+          setFilters({
             pageNumber: params.current ?? 1,
             pageSize: params.pageSize ?? 20,
             status: statusFilter,
-          })
-        }
+          });
+
+          return Promise.resolve({
+            data: requestData?.data ?? [],
+            success: true,
+            total: requestData?.totalCount ?? 0,
+          });
+        }}
       />
     </PageContainer>
   );

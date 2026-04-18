@@ -1,17 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Drawer, List, Input, Button, Tag, Spin, App, theme } from 'antd';
-import { EnquiryDetails } from '@/lib/types/typing';
-import { getEnquiryById, replyEnquiry } from '@/lib/services/enquiry';
+import { Drawer, List, Input, Button, Tag, Spin, theme } from 'antd';
 import { EnquiryStatus, enquiryStatusLabels } from '@/lib/enum/status';
 import { useAuth } from '@/contexts/AuthContext';
 import { dateTimeFormatter } from '@/lib/utils/formatter';
+import { useEnquiryDetail, useReplyEnquiry } from '@/hook/enquiry';
 
 interface EnquiryDetailDrawerProps {
   enquiryId: string | null;
   open: boolean;
   onClose: () => void;
   currentUserId: string;
-  updateStatus: (id: string, status: number) => void;
+  updateStatus: (id: string, status: number) => Promise<void> | void;
 }
 
 export const EnquiryDetailDrawer: React.FC<EnquiryDetailDrawerProps> = ({
@@ -25,62 +24,30 @@ export const EnquiryDetailDrawer: React.FC<EnquiryDetailDrawerProps> = ({
     token: { colorPrimary },
   } = theme.useToken();
   const { hasRole } = useAuth();
-  const { message } = App.useApp();
-  const [loading, setLoading] = useState(false);
-  const [sendLoading, setSendLoading] = useState(false);
-  const [details, setDetails] = useState<EnquiryDetails | null>(null);
   const [reply, setReply] = useState('');
+  const { data: details, isLoading: loading, refetch } = useEnquiryDetail(enquiryId, open);
+  const { mutateAsync: replyToEnquiry, isPending: sendLoading } = useReplyEnquiry();
 
-  const fetchDetails = async () => {
-    if (!enquiryId) {
-      setDetails(null);
+  useEffect(() => {
+    if (!open) {
+      setReply('');
+    }
+  }, [open]);
+
+  const handleSend = async () => {
+    if (!reply.trim() || !enquiryId) {
       return;
     }
 
     try {
-      setLoading(true);
-      const res = await getEnquiryById(enquiryId);
-      if (res.success) {
-        setDetails(res.data);
-      } else {
-        message.error(res.message || 'Failed to fetch enquiry details');
-      }
-    } catch (err) {
-      message.error(err?.response?.data?.message || 'Failed to fetch enquiry details');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (open && enquiryId) {
-      fetchDetails();
-    } else if (!open) {
-      setDetails(null);
-      setReply('');
-    }
-  }, [open, enquiryId]);
-
-  const handleSend = async () => {
-    try {
-      setSendLoading(true);
-      if (!reply.trim() || !enquiryId) return;
-
-      const res = await replyEnquiry({
+      await replyToEnquiry({
         enquiryId,
         message: reply,
       });
-
-      if (res.success) {
-        fetchDetails();
-        setReply('');
-      } else {
-        message.error(res.message || 'Failed to reply, please try again');
-      }
-    } catch (err) {
-      message.error('Failed to reply, please try again');
-    } finally {
-      setSendLoading(false);
+      await refetch();
+      setReply('');
+    } catch {
+      return;
     }
   };
 
@@ -103,7 +70,7 @@ export const EnquiryDetailDrawer: React.FC<EnquiryDetailDrawerProps> = ({
                         ? EnquiryStatus.Closed
                         : EnquiryStatus.Open;
                     await updateStatus(details.id, newStatus);
-                    setDetails({ ...details, status: newStatus });
+                    await refetch();
                   }}
                 >
                   {details.status === EnquiryStatus.Open ? 'Close' : 'Reopen'}

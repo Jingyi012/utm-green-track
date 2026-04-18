@@ -7,13 +7,7 @@ import {
   deleteWasteType,
 } from '@/lib/services/wasteType';
 import { getAllConfig, updateConfig } from '@/lib/services/config';
-import {
-  Config,
-  CreateWasteType,
-  Department,
-  WasteType,
-  WasteTypeWithEmissionFactor,
-} from '@/lib/types/typing';
+import { Config, CreateWasteType } from '@/lib/types/typing';
 import { disposalMethodQueryKeys } from '@/hook/disposalMethods';
 
 // ============= WASTE TYPE QUERY KEYS =============
@@ -59,6 +53,29 @@ async function invalidateWasteTypeRelatedQueries(queryClient: ReturnType<typeof 
   ]);
 }
 
+async function invalidateConfigQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  await queryClient.invalidateQueries({
+    queryKey: configQueryKeys.lists(),
+  });
+}
+
+const getErrorMessage = (error: unknown, fallbackMessage: string) => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as { message?: unknown }).message === 'string'
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  return fallbackMessage;
+};
+
 // ============= WASTE TYPE QUERY HOOKS =============
 export const useWasteTypeList = () => {
   return useQuery({
@@ -97,8 +114,8 @@ export const useCreateWasteType = () => {
       message.success('Waste type created successfully');
       await invalidateWasteTypeRelatedQueries(queryClient);
     },
-    onError: (error: any) => {
-      message.error(error?.message || 'Failed to create waste type');
+    onError: (error: unknown) => {
+      message.error(getErrorMessage(error, 'Failed to create waste type'));
     },
     throwOnError: true,
   });
@@ -115,8 +132,8 @@ export const useUpdateWasteType = () => {
       message.success('Waste type updated successfully');
       await invalidateWasteTypeRelatedQueries(queryClient);
     },
-    onError: (error: any) => {
-      message.error(error?.message || 'Failed to update waste type');
+    onError: (error: unknown) => {
+      message.error(getErrorMessage(error, 'Failed to update waste type'));
     },
     throwOnError: true,
   });
@@ -133,8 +150,8 @@ export const useDeleteWasteType = () => {
       message.success('Waste type deleted successfully');
       await invalidateWasteTypeRelatedQueries(queryClient);
     },
-    onError: (error: any) => {
-      message.error(error?.message || 'Failed to delete waste type');
+    onError: (error: unknown) => {
+      message.error(getErrorMessage(error, 'Failed to delete waste type'));
     },
     throwOnError: true,
   });
@@ -150,12 +167,10 @@ export const useUpdateConfig = () => {
     },
     onSuccess: async () => {
       message.success('Configuration updated successfully');
-      await queryClient.invalidateQueries({
-        queryKey: configQueryKeys.lists(),
-      });
+      await invalidateConfigQueries(queryClient);
     },
-    onError: (error: any) => {
-      message.error(error?.message || 'Failed to update configuration');
+    onError: (error: unknown) => {
+      message.error(getErrorMessage(error, 'Failed to update configuration'));
     },
     throwOnError: true,
   });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ProCard,
   ProTable,
@@ -6,14 +6,13 @@ import {
   ProFormDigit,
   PageContainer,
 } from '@ant-design/pro-components';
-import { Alert, App, Button, Form } from 'antd';
+import { Alert, Button, Form } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { WasteTypeWithEmissionFactor } from '@/lib/types/typing';
 import { useDisposalMethodList } from '@/hook/disposalMethods';
 import { useUpdateWasteType } from '@/hook/configurations';
 
 export default function DisposalWasteConfig() {
-  const { message } = App.useApp();
   const [editingWaste, setEditingWaste] = useState<WasteTypeWithEmissionFactor | null>(null);
   const [wasteTypeModalFormOpen, setWasteTypeModalFormOpen] = useState(false);
 
@@ -33,10 +32,7 @@ export default function DisposalWasteConfig() {
   };
 
   const handleUpdateWasteType = async (emissionFactor: number) => {
-    if (!editingWaste) {
-      message.error('No waste type selected');
-      return false;
-    }
+    if (!editingWaste) return false;
 
     try {
       await updateWasteTypeMutation({
@@ -47,11 +43,39 @@ export default function DisposalWasteConfig() {
 
       closeModal();
       return true;
-    } catch (err: any) {
-      message.error(err?.message || 'Failed to update waste type');
+    } catch {
       return false;
     }
   };
+
+  const columns = useMemo(
+    () => [
+      {
+        title: 'Waste Type',
+        dataIndex: 'name',
+        width: 350,
+      },
+      {
+        title: 'Emission Factor (kg CO2eq/ton)',
+        dataIndex: 'emissionFactor',
+      },
+      {
+        title: 'Actions',
+        valueType: 'option' as const,
+        render: (_: unknown, record: WasteTypeWithEmissionFactor) => [
+          <Button
+            key="edit"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setEditingWaste(record);
+              setWasteTypeModalFormOpen(true);
+            }}
+          />,
+        ],
+      },
+    ],
+    [],
+  );
 
   return (
     <PageContainer
@@ -80,31 +104,7 @@ export default function DisposalWasteConfig() {
               pagination={false}
               search={false}
               toolBarRender={false}
-              columns={[
-                {
-                  title: 'Waste Type',
-                  dataIndex: 'name',
-                  width: 350,
-                },
-                {
-                  title: 'Emission Factor (kg CO₂eq/ton)',
-                  dataIndex: 'emissionFactor',
-                },
-                {
-                  title: 'Actions',
-                  valueType: 'option',
-                  render: (_, record) => [
-                    <Button
-                      key="edit"
-                      icon={<EditOutlined />}
-                      onClick={() => {
-                        setEditingWaste(record);
-                        setWasteTypeModalFormOpen(true);
-                      }}
-                    />,
-                  ],
-                },
-              ]}
+              columns={columns}
             />
           </ProCard>
         ))}

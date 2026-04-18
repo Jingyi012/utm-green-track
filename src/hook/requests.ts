@@ -2,18 +2,24 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { message } from 'antd';
 import {
   getAllRequest,
+  getMyRequest,
+  createRequest,
   updateRequestResolveStatus,
   deleteRequest,
+  deleteMyRequest,
 } from '@/lib/services/requestService';
 import { ChangeRequest } from '@/lib/types/typing';
 import { PagedResponse } from '@/lib/types/apiResponse';
-import { RequestStatus } from '@/lib/enum/status';
+import { RequestStatus, requestStatusLabels } from '@/lib/enum/status';
+import { wasteRecordQueryKeys } from '@/hook/wasteRecords';
 
 // Query Keys
 export const requestQueryKeys = {
   all: ['requests'] as const,
   lists: () => [...requestQueryKeys.all, 'list'] as const,
   list: (filters: RequestListFilters) => [...requestQueryKeys.lists(), { ...filters }] as const,
+  myLists: () => [...requestQueryKeys.all, 'my-list'] as const,
+  myList: (filters: MyRequestListFilters) => [...requestQueryKeys.myLists(), { ...filters }] as const,
 } as const;
 
 export interface RequestListFilters {
@@ -22,6 +28,44 @@ export interface RequestListFilters {
   matricNo?: string;
   status?: number;
 }
+
+export interface MyRequestListFilters {
+  pageNumber?: number;
+  pageSize?: number;
+  status?: number;
+}
+
+export type CreateRequestInput = {
+  wasteRecordId?: string;
+  message: string;
+};
+
+export type UpdateRequestStatusInput = {
+  requestIds: string[];
+  status: RequestStatus;
+};
+
+const invalidateRequestQueries = async (queryClient: ReturnType<typeof useQueryClient>) => {
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: requestQueryKeys.lists(),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: requestQueryKeys.myLists(),
+    }),
+  ]);
+};
+
+const invalidateRequestAndWasteRecordQueries = async (
+  queryClient: ReturnType<typeof useQueryClient>,
+) => {
+  await Promise.all([
+    invalidateRequestQueries(queryClient),
+    queryClient.invalidateQueries({
+      queryKey: wasteRecordQueryKeys.lists(),
+    }),
+  ]);
+};
 
 // Query Hooks
 export const useRequestList = (filters: RequestListFilters) => {
@@ -35,22 +79,63 @@ export const useRequestList = (filters: RequestListFilters) => {
   });
 };
 
+export const useMyRequestList = (filters: MyRequestListFilters) => {
+  return useQuery({
+    queryKey: requestQueryKeys.myList(filters),
+    queryFn: async () => {
+      try {
+        const response = await getMyRequest(filters);
+        return response as PagedResponse<ChangeRequest[]>;
+      } catch (error) {
+        if (error instanceof Error) {
+          message.error(error.message || 'Failed to fetch your requests');
+        } else {
+          message.error('Failed to fetch your requests');
+        }
+        throw error;
+      }
+    },
+    throwOnError: false,
+  });
+};
+
 // Mutation Hooks
+export const useCreateRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateRequestInput) => {
+      const response = await createRequest(data);
+      return response;
+    },
+    onSuccess: async () => {
+      message.success('Request submitted successfully');
+      await invalidateRequestAndWasteRecordQueries(queryClient);
+    },
+    onError: (error: Error) => {
+      message.error(error.message || 'Failed to send request');
+    },
+    throwOnError: true,
+  });
+};
+
 export const useUpdateRequestStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { requestIds: string[]; status: RequestStatus }) => {
+    mutationFn: async ({ requestIds, status }: UpdateRequestStatusInput) => {
       const response = await updateRequestResolveStatus({
-        requestIds: data.requestIds,
-        status: data.status,
+        requestIds,
+        status,
       });
       return response;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: requestQueryKeys.lists(),
-      });
+    onSuccess: async (_, variables) => {
+      message.success(`Request status updated to ${requestStatusLabels[variables.status]}`);
+      await invalidateRequestAndWasteRecordQueries(queryClient);
+    },
+    onError: (_, variables) => {
+      message.error(`Failed to update status to ${requestStatusLabels[variables.status]}`);
     },
     throwOnError: true,
   });
@@ -64,11 +149,33 @@ export const useDeleteRequest = () => {
       const response = await deleteRequest(id);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       message.success('Request deleted successfully');
-      queryClient.invalidateQueries({
-        queryKey: requestQueryKeys.lists(),
+      await invalidateRequestQueries(queryClient);
+    },
+    onError: (error: Error) => {
+      message.error(error.message || 'Failed to delete request');
+    },
+    throwOnError: true,
+  });
+};
+
+export const useDeleteMyRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await deleteMyRequest(id);
+      return response;
+    },
+    onSuccess: async () => {
+      message.success('Pending request deleted');
+      await queryClient.invalidateQueries({
+        queryKey: requestQueryKeys.myLists(),
       });
+    },
+    onError: (error: Error) => {
+      message.error(error.message || 'Failed to delete request');
     },
     throwOnError: true,
   });

@@ -24,6 +24,12 @@ export type UpdateDepartmentInput = {
   name: string;
 };
 
+const invalidateDepartmentQueries = async (queryClient: ReturnType<typeof useQueryClient>) => {
+  await queryClient.invalidateQueries({
+    queryKey: departmentQueryKeys.lists(),
+  });
+};
+
 // Query Hooks
 export const useDepartmentList = () => {
   return useQuery({
@@ -47,9 +53,7 @@ export const useCreateDepartment = () => {
     },
     onSuccess: async () => {
       message.success('Department created successfully');
-      await queryClient.invalidateQueries({
-        queryKey: departmentQueryKeys.lists(),
-      });
+      await invalidateDepartmentQueries(queryClient);
     },
     onError: (error: any) => {
       message.error(error?.message || 'Failed to create department');
@@ -67,9 +71,10 @@ export const useUpdateDepartment = () => {
     },
     onSuccess: async () => {
       message.success('Department updated successfully');
-      await queryClient.invalidateQueries({
-        queryKey: departmentQueryKeys.lists(),
-      });
+      await invalidateDepartmentQueries(queryClient);
+    },
+    onError: (error: any) => {
+      message.error(error?.message || 'Failed to update department');
     },
     throwOnError: true,
   });
@@ -84,9 +89,10 @@ export const useDeleteDepartment = () => {
     },
     onSuccess: async () => {
       message.success('Department deleted successfully');
-      await queryClient.invalidateQueries({
-        queryKey: departmentQueryKeys.lists(),
-      });
+      await invalidateDepartmentQueries(queryClient);
+    },
+    onError: (error: any) => {
+      message.error(error?.message || 'Failed to delete department');
     },
     throwOnError: true,
   });

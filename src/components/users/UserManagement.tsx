@@ -13,12 +13,10 @@ import {
 import { getBaseUserColumns } from './columns';
 import { downloadFile } from '@/lib/utils/downloadFile';
 import { exportExcelUsers, exportPdfUsers } from '@/lib/services/user';
-import { useUserList, useUpdateUser, useDeleteUser, userQueryKeys } from '@/hook/users';
-import { useQueryClient } from '@tanstack/react-query';
+import { useUserList, useUpdateUser, useDeleteUser } from '@/hook/users';
 
 const UserManagement: React.FC = () => {
   const { message } = App.useApp();
-  const queryClient = useQueryClient();
   const { positions, departments, roles, isLoading } = useProfileDropdownOptions();
   const [selectedUser, setSelectedUser] = useState<UserDetails>();
   const [modalOpen, setModalOpen] = useState<boolean>(false);
@@ -33,43 +31,30 @@ const UserManagement: React.FC = () => {
   const actionRef = useRef<ActionType | undefined>(undefined);
 
   const { data: userData, isLoading: isFetching, refetch } = useUserList(filters);
-  const { mutate: updateUserMutate, isPending: isUpdating } = useUpdateUser();
-  const { mutate: deleteUserMutate, isPending: isDeleting } = useDeleteUser();
+  const { mutateAsync: updateUser, isPending: isUpdating } = useUpdateUser();
+  const { mutateAsync: deleteUser, isPending: isDeleting } = useDeleteUser();
 
   const handleUserUpdate = async (user: UserDetails) => {
-    return new Promise<boolean>((resolve) => {
-      updateUserMutate(
-        {
-          id: user.id,
-          updatedData: {
-            userId: user.id,
-            name: user.name,
-            email: user.email,
-            contactNumber: user.contactNumber,
-            staffMatricNo: user.staffMatricNo,
-            departmentId: user.departmentId,
-            positionId: user.positionId,
-            roleIds: user.roleIds,
-            status: user.status,
-          },
-        },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
-            resolve(true);
-          },
-          onError: () => resolve(false),
-        },
-      );
-    });
+    try {
+      await updateUser({
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        contactNumber: user.contactNumber,
+        staffMatricNo: user.staffMatricNo,
+        departmentId: user.departmentId,
+        positionId: user.positionId,
+        roleIds: user.roleIds,
+        status: user.status,
+      });
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleDeleteUser = (userId: string) => {
-    deleteUserMutate(userId, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
-      },
-    });
+    return deleteUser(userId);
   };
 
   const columns: ProColumns<UserDetails>[] = [
@@ -222,11 +207,7 @@ const UserManagement: React.FC = () => {
         }}
         onSubmit={async (value) => {
           const success = await handleUserUpdate(value as UserDetails);
-          if (success) {
-            queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
-            return true;
-          }
-          return false;
+          return success;
         }}
         visible={modalOpen}
         initialValues={selectedUser || {}}

@@ -7,7 +7,7 @@ import {
   ProFormText,
   ProTable,
 } from '@ant-design/pro-components';
-import { App, Button, Popconfirm, Space } from 'antd';
+import { Button, Popconfirm, Space } from 'antd';
 import { useMemo, useState } from 'react';
 import {
   useCreateDepartment,
@@ -24,8 +24,6 @@ type DepartmentFormValues = {
 };
 
 export const DepartmentConfig: React.FC = () => {
-  const { message } = App.useApp();
-
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
 
@@ -76,8 +74,8 @@ export const DepartmentConfig: React.FC = () => {
               onConfirm={async () => {
                 try {
                   await deleteDepartment(record.id);
-                } catch (error: any) {
-                  message.error(error?.message || 'Failed to delete department');
+                } catch {
+                  return;
                 }
               }}
             >
@@ -87,7 +85,7 @@ export const DepartmentConfig: React.FC = () => {
         ),
       },
     ],
-    [deleteDepartment, message],
+    [deleteDepartment],
   );
 
   return (
@@ -141,10 +139,7 @@ export const DepartmentConfig: React.FC = () => {
         onFinish={async (values) => {
           try {
             if (isEditMode) {
-              if (!values.id) {
-                message.error('Department id is missing');
-                return false;
-              }
+              if (!values.id) return false;
 
               await updateDepartment({
                 id: values.id,
@@ -158,11 +153,7 @@ export const DepartmentConfig: React.FC = () => {
 
             closeModal();
             return true;
-          } catch (error: any) {
-            message.error(
-              error?.message ||
-                (isEditMode ? 'Failed to update department' : 'Failed to create department'),
-            );
+          } catch {
             return false;
           }
         }}

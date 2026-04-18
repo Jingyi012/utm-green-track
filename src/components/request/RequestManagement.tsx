@@ -2,11 +2,10 @@ import { RequestStatus, requestStatusLabels } from '@/lib/enum/status';
 import { ChangeRequest } from '@/lib/types/typing';
 import { ActionType, PageContainer, ProColumns, ProTable } from '@ant-design/pro-components';
 import { FooterToolbar } from '@ant-design/pro-layout/es/components/FooterToolbar';
-import { App, Button, Popconfirm, Tooltip } from 'antd';
-import { useState, useRef, useEffect } from 'react';
+import { Button, Popconfirm, Tooltip } from 'antd';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useRequestList, useUpdateRequestStatus, requestQueryKeys } from '@/hook/requests';
-import { useQueryClient } from '@tanstack/react-query';
+import { useRequestList, useUpdateRequestStatus } from '@/hook/requests';
 
 const renderEllipsisText = (value: string | undefined, maxWidth = 180) => {
   const text = value?.trim() || '-';
@@ -31,9 +30,7 @@ const renderEllipsisText = (value: string | undefined, maxWidth = 180) => {
 };
 
 const RequestManagement: React.FC = () => {
-  const { message } = App.useApp();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [selectedRows, setSelectedRows] = useState<ChangeRequest[]>([]);
   const actionRef = useRef<ActionType | undefined>(undefined);
   const [statusFilter, setStatusFilter] = useState<RequestStatus>(RequestStatus.Pending);
@@ -45,151 +42,147 @@ const RequestManagement: React.FC = () => {
   });
 
   const { data: requestData, isLoading, refetch } = useRequestList(filters);
-  const { mutate: updateStatusMutate, isPending: isUpdating } = useUpdateRequestStatus();
+  const { mutateAsync: updateRequestStatus, isPending: isUpdating } = useUpdateRequestStatus();
 
-  const handleStatusUpdate = (requests: ChangeRequest[], status: RequestStatus) => {
+  const handleStatusUpdate = async (requests: ChangeRequest[], status: RequestStatus) => {
     if (!requests.length) return;
-    const requestIds = requests.map((u) => u.id);
-    updateStatusMutate(
-      { requestIds, status },
-      {
-        onSuccess: () => {
-          message.success(`Request status updated to ${requestStatusLabels[status]}`);
-          setSelectedRows([]);
-          queryClient.invalidateQueries({ queryKey: requestQueryKeys.lists() });
-        },
-        onError: () => {
-          message.error(`Failed to update status to ${requestStatusLabels[status]}`);
-        },
-      },
-    );
+    try {
+      await updateRequestStatus({
+        requestIds: requests.map((request) => request.id),
+        status,
+      });
+      setSelectedRows([]);
+    } catch {
+      return;
+    }
   };
 
-  const columns: ProColumns<ChangeRequest>[] = [
-    {
-      title: 'No.',
-      render: (_: unknown, __: ChangeRequest, index: number, action?: ActionType) => {
-        const current = action?.pageInfo?.current ?? 1;
-        const pageSize = action?.pageInfo?.pageSize ?? 10;
-        return (current - 1) * pageSize + index + 1;
+  const columns: ProColumns<ChangeRequest>[] = useMemo(
+    () => [
+      {
+        title: 'No.',
+        render: (_: unknown, __: ChangeRequest, index: number, action?: ActionType) => {
+          const current = action?.pageInfo?.current ?? 1;
+          const pageSize = action?.pageInfo?.pageSize ?? 10;
+          return (current - 1) * pageSize + index + 1;
+        },
+        width: 60,
+        align: 'center',
+        hideInSearch: true,
       },
-      width: 60,
-      align: 'center',
-      hideInSearch: true,
-    },
-    {
-      title: 'User',
-      dataIndex: 'user',
-      width: 180,
-      ellipsis: true,
-      align: 'center',
-      render: (_: unknown, record: ChangeRequest) => renderEllipsisText(record.user, 160),
-      hideInSearch: true,
-    },
-    {
-      title: 'Staff / Matric No.',
-      dataIndex: 'matricNo',
-      width: 170,
-      ellipsis: true,
-      align: 'center',
-      render: (_: unknown, record: ChangeRequest) => renderEllipsisText(record.matricNo, 150),
-    },
-    {
-      title: 'Message',
-      dataIndex: 'message',
-      width: 260,
-      ellipsis: true,
-      align: 'center',
-      render: (_: unknown, record: ChangeRequest) => renderEllipsisText(record.message, 240),
-      hideInSearch: true,
-    },
-    {
-      title: 'Related Waste Record',
-      dataIndex: 'wasteRecord',
-      width: 180,
-      align: 'center',
-      hideInSearch: true,
-      render: (_: unknown, record: ChangeRequest) => {
-        if (!record.wasteRecordId) return '-';
+      {
+        title: 'User',
+        dataIndex: 'user',
+        width: 180,
+        ellipsis: true,
+        align: 'center',
+        render: (_: unknown, record: ChangeRequest) => renderEllipsisText(record.user, 160),
+        hideInSearch: true,
+      },
+      {
+        title: 'Staff / Matric No.',
+        dataIndex: 'matricNo',
+        width: 170,
+        ellipsis: true,
+        align: 'center',
+        render: (_: unknown, record: ChangeRequest) => renderEllipsisText(record.matricNo, 150),
+      },
+      {
+        title: 'Message',
+        dataIndex: 'message',
+        width: 260,
+        ellipsis: true,
+        align: 'center',
+        render: (_: unknown, record: ChangeRequest) => renderEllipsisText(record.message, 240),
+        hideInSearch: true,
+      },
+      {
+        title: 'Related Waste Record',
+        dataIndex: 'wasteRecord',
+        width: 180,
+        align: 'center',
+        hideInSearch: true,
+        render: (_: unknown, record: ChangeRequest) => {
+          if (!record.wasteRecordId) return '-';
 
-        return (
-          <Button
-            type="link"
-            onClick={() =>
-              void navigate({
-                href: `/data-entry/view-form/record?wasteRecordId=${record.wasteRecordId}`,
-              })
-            }
-          >
-            View Record
-          </Button>
-        );
-      },
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      width: 130,
-      align: 'center',
-      hideInSearch: true,
-      valueEnum: {
-        [RequestStatus.Pending]: {
-          text: requestStatusLabels[RequestStatus.Pending],
-          status: 'Default',
-        },
-        [RequestStatus.Approved]: {
-          text: requestStatusLabels[RequestStatus.Approved],
-          status: 'Success',
-        },
-        [RequestStatus.Rejected]: {
-          text: requestStatusLabels[RequestStatus.Rejected],
-          status: 'Error',
-        },
-      },
-    },
-    {
-      title: 'Action',
-      width: 170,
-      fixed: 'right',
-      align: 'center',
-      hideInSearch: true,
-      render: (_, record) => {
-        if (record.status === RequestStatus.Pending) {
           return (
-            <>
-              <Button
-                type="link"
-                onClick={() => handleStatusUpdate([record], RequestStatus.Approved)}
-                loading={isUpdating}
-              >
-                Approve
-              </Button>
-              <Popconfirm
-                title="Reject this request?"
-                onConfirm={() => handleStatusUpdate([record], RequestStatus.Rejected)}
-              >
-                <Button type="link" danger loading={isUpdating}>
-                  Reject
+            <Button
+              type="link"
+              onClick={() =>
+                void navigate({
+                  href: `/data-entry/view-form/record?wasteRecordId=${record.wasteRecordId}`,
+                })
+              }
+            >
+              View Record
+            </Button>
+          );
+        },
+      },
+      {
+        title: 'Status',
+        dataIndex: 'status',
+        width: 130,
+        align: 'center',
+        hideInSearch: true,
+        valueEnum: {
+          [RequestStatus.Pending]: {
+            text: requestStatusLabels[RequestStatus.Pending],
+            status: 'Default',
+          },
+          [RequestStatus.Approved]: {
+            text: requestStatusLabels[RequestStatus.Approved],
+            status: 'Success',
+          },
+          [RequestStatus.Rejected]: {
+            text: requestStatusLabels[RequestStatus.Rejected],
+            status: 'Error',
+          },
+        },
+      },
+      {
+        title: 'Action',
+        width: 170,
+        fixed: 'right',
+        align: 'center',
+        hideInSearch: true,
+        render: (_, record) => {
+          if (record.status === RequestStatus.Pending) {
+            return (
+              <>
+                <Button
+                  type="link"
+                  onClick={() => handleStatusUpdate([record], RequestStatus.Approved)}
+                  loading={isUpdating}
+                >
+                  Approve
                 </Button>
-              </Popconfirm>
-            </>
-          );
-        } else {
+                <Popconfirm
+                  title="Reject this request?"
+                  onConfirm={() => handleStatusUpdate([record], RequestStatus.Rejected)}
+                >
+                  <Button type="link" danger loading={isUpdating}>
+                    Reject
+                  </Button>
+                </Popconfirm>
+              </>
+            );
+          }
+
           return (
-            <>
-              <Button
-                type="link"
-                onClick={() => handleStatusUpdate([record], RequestStatus.Pending)}
-                loading={isUpdating}
-              >
-                Pending
-              </Button>
-            </>
+            <Button
+              type="link"
+              onClick={() => handleStatusUpdate([record], RequestStatus.Pending)}
+              loading={isUpdating}
+            >
+              Pending
+            </Button>
           );
-        }
+        },
       },
-    },
-  ];
+    ],
+    [handleStatusUpdate, isUpdating, navigate],
+  );
 
   useEffect(() => {
     setFilters((prev) => ({

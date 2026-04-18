@@ -4,9 +4,11 @@ import {
   createEnquiry,
   deleteEnquiry,
   getAllEnquiry,
+  getEnquiryById,
+  replyEnquiry,
   updateEnquiryStatus,
 } from '@/lib/services/enquiry';
-import { Enquiry, EnquiryInput } from '@/lib/types/typing';
+import { Enquiry, EnquiryDetails, EnquiryInput } from '@/lib/types/typing';
 import { PagedResponse } from '@/lib/types/apiResponse';
 
 // Query Keys
@@ -25,6 +27,24 @@ export interface EnquiryListFilters {
   status?: number;
 }
 
+export type CreateEnquiryInput = Pick<EnquiryInput, 'subject' | 'message'>;
+
+export type UpdateEnquiryStatusInput = {
+  enquiryId: string;
+  status: number;
+};
+
+export type ReplyEnquiryInput = {
+  enquiryId: string;
+  message: string;
+};
+
+const invalidateEnquiryQueries = async (queryClient: ReturnType<typeof useQueryClient>) => {
+  await queryClient.invalidateQueries({
+    queryKey: enquiryQueryKeys.lists(),
+  });
+};
+
 // Query Hooks
 export const useEnquiryList = (filters: EnquiryListFilters) => {
   return useQuery({
@@ -38,23 +58,45 @@ export const useEnquiryList = (filters: EnquiryListFilters) => {
   });
 };
 
+export const useEnquiryDetail = (id: string | null, enabled = true) => {
+  return useQuery({
+    queryKey: enquiryQueryKeys.detail(id ?? ''),
+    queryFn: async () => {
+      try {
+        const response = await getEnquiryById(id!);
+        return response.data as EnquiryDetails;
+      } catch (error) {
+        if (error instanceof Error) {
+          message.error(error.message || 'Failed to fetch enquiry details');
+        } else {
+          message.error('Failed to fetch enquiry details');
+        }
+        throw error;
+      }
+    },
+    enabled: enabled && Boolean(id),
+    throwOnError: false,
+  });
+};
+
 // Mutation Hooks
 export const useCreateEnquiry = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: EnquiryInput) => {
+    mutationFn: async (data: CreateEnquiryInput) => {
       const response = await createEnquiry({
         subject: data.subject,
         message: data.message,
       });
       return response;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       message.success('Enquiry created successfully');
-      queryClient.invalidateQueries({
-        queryKey: enquiryQueryKeys.lists(),
-      });
+      await invalidateEnquiryQueries(queryClient);
+    },
+    onError: (error: Error) => {
+      message.error(error.message || 'Failed to create enquiry');
     },
     throwOnError: true,
   });
@@ -64,15 +106,40 @@ export const useUpdateEnquiryStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { enquiryId: string; status: number }) => {
+    mutationFn: async (data: UpdateEnquiryStatusInput) => {
       const response = await updateEnquiryStatus(data);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       message.success('Enquiry status updated');
-      queryClient.invalidateQueries({
-        queryKey: enquiryQueryKeys.lists(),
-      });
+      await invalidateEnquiryQueries(queryClient);
+    },
+    onError: (error: Error) => {
+      message.error(error.message || 'Failed to update enquiry status');
+    },
+    throwOnError: true,
+  });
+};
+
+export const useReplyEnquiry = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: ReplyEnquiryInput) => {
+      const response = await replyEnquiry(data);
+      return response;
+    },
+    onSuccess: async (_, variables) => {
+      message.success('Reply sent successfully');
+      await Promise.all([
+        invalidateEnquiryQueries(queryClient),
+        queryClient.invalidateQueries({
+          queryKey: enquiryQueryKeys.detail(variables.enquiryId),
+        }),
+      ]);
+    },
+    onError: (error: Error) => {
+      message.error(error.message || 'Failed to reply, please try again');
     },
     throwOnError: true,
   });
@@ -86,11 +153,12 @@ export const useDeleteEnquiry = () => {
       const response = await deleteEnquiry(id);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       message.success('Enquiry deleted successfully');
-      queryClient.invalidateQueries({
-        queryKey: enquiryQueryKeys.lists(),
-      });
+      await invalidateEnquiryQueries(queryClient);
+    },
+    onError: (error: Error) => {
+      message.error(error.message || 'Failed to delete enquiry');
     },
     throwOnError: true,
   });
