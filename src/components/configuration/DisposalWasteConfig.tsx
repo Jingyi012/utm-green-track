@@ -11,6 +11,7 @@ import { EditOutlined } from '@ant-design/icons';
 import { WasteTypeWithEmissionFactor } from '@/lib/types/typing';
 import { useDisposalMethodList } from '@/hook/disposalMethods';
 import { useUpdateWasteType } from '@/hook/configurations';
+import { TableActionButton } from '@/components/table/TableAction';
 
 export default function DisposalWasteConfig() {
   const [editingWaste, setEditingWaste] = useState<WasteTypeWithEmissionFactor | null>(null);
@@ -63,14 +64,17 @@ export default function DisposalWasteConfig() {
         title: 'Actions',
         valueType: 'option' as const,
         render: (_: unknown, record: WasteTypeWithEmissionFactor) => [
-          <Button
+          <TableActionButton
             key="edit"
+            tone="edit"
             icon={<EditOutlined />}
             onClick={() => {
               setEditingWaste(record);
               setWasteTypeModalFormOpen(true);
             }}
-          />,
+          >
+            Edit
+          </TableActionButton>,
         ],
       },
     ],

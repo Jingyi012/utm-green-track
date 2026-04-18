@@ -12,6 +12,7 @@ import {
 } from '@ant-design/pro-components';
 import { Alert, Button, Select, Space, Typography } from 'antd';
 import { useMemo, useState } from 'react';
+import { TableActionButton } from '@/components/table/TableAction';
 
 const LANDFILLING_COST_PREFIX = 'LandfillingCost';
 const UTM_POPULATION_PREFIX = 'UTMPopulation';
@@ -170,7 +171,8 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
         valueType: 'option',
         align: 'center',
         render: (_: unknown, record) => (
-          <Button
+          <TableActionButton
+            tone="edit"
             icon={<EditOutlined />}
             onClick={() => {
               setSelectedConfig({
@@ -179,7 +181,9 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
               });
               setModalOpen(true);
             }}
-          />
+          >
+            Edit
+          </TableActionButton>
         ),
       },
     ],

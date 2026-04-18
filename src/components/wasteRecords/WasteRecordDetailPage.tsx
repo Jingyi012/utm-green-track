@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { App, Card, Col, Row, Space, Spin, Typography } from 'antd';
+import { App, Card, Col, Empty, Row, Space, Spin, Typography } from 'antd';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { PageContainer, ProCard } from '@ant-design/pro-components';
 import { WasteRecord } from '@/lib/types/wasteRecord';
@@ -28,7 +28,7 @@ const WasteRecordDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (!wasteRecordId) {
-      message.error('Waste record id is missing');
+      <Empty description>No Waste Record Found</Empty>;
       return;
     }
 

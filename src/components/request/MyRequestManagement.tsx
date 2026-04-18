@@ -6,6 +6,8 @@ import { ChangeRequest } from '@/lib/types/typing';
 import { dateTimeFormatter } from '@/lib/utils/formatter';
 import { ActionType, PageContainer, ProColumns, ProTable } from '@ant-design/pro-components';
 import { useDeleteMyRequest, useMyRequestList } from '@/hook/requests';
+import { DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { TableActionButton } from '@/components/table/TableAction';
 
 const renderEllipsisText = (value: string | undefined, maxWidth = 220) => {
   const text = value?.trim() || '-';
@@ -88,8 +90,9 @@ const MyRequestManagement: React.FC = () => {
         search: false,
         render: (_: unknown, record: ChangeRequest) =>
           record.wasteRecordId ? (
-            <Button
-              type="link"
+            <TableActionButton
+              tone="view"
+              icon={<EyeOutlined />}
               onClick={() =>
                 void navigate({
                   href: `/data-entry/view-form/record?wasteRecordId=${record.wasteRecordId}`,
@@ -97,7 +100,7 @@ const MyRequestManagement: React.FC = () => {
               }
             >
               Open Record
-            </Button>
+            </TableActionButton>
           ) : (
             '-'
           ),
@@ -139,9 +142,9 @@ const MyRequestManagement: React.FC = () => {
               cancelText="Cancel"
               okButtonProps={{ danger: true }}
             >
-              <Button type="link" danger loading={isDeleting}>
+              <TableActionButton tone="danger" icon={<DeleteOutlined />} loading={isDeleting}>
                 Delete
-              </Button>
+              </TableActionButton>
             </Popconfirm>
           ) : (
             '-'

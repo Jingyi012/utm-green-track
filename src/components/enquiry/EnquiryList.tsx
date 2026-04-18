@@ -6,7 +6,13 @@ import { useMemo, useRef, useState } from 'react';
 import { EnquiryDetailDrawer } from './EnquiryDetailDrawer';
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateEnquiryModal } from './CreateEnquiryModal';
-import { PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  EyeOutlined,
+  PlusOutlined,
+  RedoOutlined,
+  StopOutlined,
+} from '@ant-design/icons';
 import { dateTimeFormatter } from '@/lib/utils/formatter';
 import {
   useEnquiryList,
@@ -14,6 +20,7 @@ import {
   useUpdateEnquiryStatus,
   useDeleteEnquiry,
 } from '@/hook/enquiry';
+import { TableActionButton, TableActionGroup } from '@/components/table/TableAction';
 
 export const EnquiryList: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -110,42 +117,46 @@ export const EnquiryList: React.FC = () => {
         hideInSearch: true,
         align: 'center' as const,
         render: (_, record: Enquiry) => (
-          <Space size="middle">
-            <Button type="link" onClick={() => setSelectedId(record.id)}>
+          <TableActionGroup>
+            <TableActionButton
+              tone="view"
+              icon={<EyeOutlined />}
+              onClick={() => setSelectedId(record.id)}
+            >
               View
-            </Button>
+            </TableActionButton>
 
             {record.status === EnquiryStatus.Open && hasRole('Admin') && (
-              <Button
-                variant="link"
-                color="cyan"
+              <TableActionButton
+                tone="warning"
+                icon={<StopOutlined />}
                 loading={isUpdatingStatus}
                 onClick={() => handleEnquiryStatusUpdate(record.id, EnquiryStatus.Closed)}
               >
                 Close
-              </Button>
+              </TableActionButton>
             )}
 
             {record.status === EnquiryStatus.Closed && hasRole('Admin') && (
-              <Button
-                variant="link"
-                color="orange"
+              <TableActionButton
+                tone="success"
+                icon={<RedoOutlined />}
                 loading={isUpdatingStatus}
                 onClick={() => handleEnquiryStatusUpdate(record.id, EnquiryStatus.Open)}
               >
                 Reopen
-              </Button>
+              </TableActionButton>
             )}
 
             <Popconfirm
               title="Are you sure you want to delete this enquiry?"
               onConfirm={() => handleDeleteEnquiry(record.id)}
             >
-              <Button type="link" danger loading={isDeleting}>
+              <TableActionButton tone="danger" icon={<DeleteOutlined />} loading={isDeleting}>
                 Delete
-              </Button>
+              </TableActionButton>
             </Popconfirm>
-          </Space>
+          </TableActionGroup>
         ),
       },
     ],

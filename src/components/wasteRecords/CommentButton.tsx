@@ -1,5 +1,7 @@
 import { Button, Modal } from 'antd';
 import { useState } from 'react';
+import { MessageOutlined } from '@ant-design/icons';
+import { TableActionButton } from '@/components/table/TableAction';
 
 export const CommentButton: React.FC<{ comment?: string }> = ({ comment }) => {
     const [visible, setVisible] = useState(false);
@@ -8,9 +10,13 @@ export const CommentButton: React.FC<{ comment?: string }> = ({ comment }) => {
 
     return (
         <>
-            <Button type="link" size="small" onClick={() => setVisible(true)}>
+            <TableActionButton
+                tone="default"
+                icon={<MessageOutlined />}
+                onClick={() => setVisible(true)}
+            >
                 View Comment
-            </Button>
+            </TableActionButton>
 
             <Modal
                 title="Comment"

@@ -9,6 +9,7 @@ import {
   useUpdateRolePermissions,
 } from '@/hook/rolePermission';
 import type { AvailablePermission, Role } from '@/lib/services/rolePermission';
+import { TableActionButton } from '@/components/table/TableAction';
 
 type PageRule = {
   path: string;
@@ -212,14 +213,14 @@ export default function RolePermissions() {
       width: 150,
       search: false,
       render: (_, row) => [
-        <Button
+        <TableActionButton
           key={`manage-${row.id}`}
-          type="primary"
+          tone="primary"
           onClick={() => handleOpenDrawer(row)}
           disabled={row.isLocked}
         >
           Manage
-        </Button>,
+        </TableActionButton>,
       ],
     },
   ];

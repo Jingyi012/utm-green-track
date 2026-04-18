@@ -14,3 +14,121 @@ body {
   font-size: 14px;
   box-sizing: content-box;
 }
+
+.table-action-group {
+  justify-content: center;
+}
+
+.table-action-button.ant-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding-inline: 10px;
+  font-weight: 500;
+  box-shadow: none;
+}
+
+.table-action-button.ant-btn-sm {
+  font-size: 12px;
+}
+
+.table-action-button.ant-btn .anticon {
+  font-size: 12px;
+}
+
+.table-action-button.ant-btn:disabled,
+.table-action-button.ant-btn[disabled],
+.table-action-button.ant-btn.ant-btn-disabled {
+  color: #8a8f98;
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  box-shadow: none;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.table-action-button--default.ant-btn {
+  color: #38523b;
+  background: #f5f8f5;
+  border-color: #d8e3d7;
+}
+
+.table-action-button--default.ant-btn:not(:disabled):hover {
+  color: #2c661f;
+  background: #edf5ec;
+  border-color: #b8ccb3;
+}
+
+.table-action-button--primary.ant-btn {
+  color: #2c661f;
+  background: #edf7ea;
+  border-color: #b9d7af;
+}
+
+.table-action-button--primary.ant-btn:not(:disabled):hover {
+  color: #214d17;
+  background: #e2f1de;
+  border-color: #96bf89;
+}
+
+.table-action-button--view.ant-btn {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.table-action-button--view.ant-btn:not(:disabled):hover {
+  color: #1e40af;
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.table-action-button--edit.ant-btn {
+  color: #5b21b6;
+  background: #f5f3ff;
+  border-color: #d8b4fe;
+}
+
+.table-action-button--edit.ant-btn:not(:disabled):hover {
+  color: #4c1d95;
+  background: #ede9fe;
+  border-color: #c084fc;
+}
+
+.table-action-button--success.ant-btn {
+  color: #166534;
+  background: #ecfdf3;
+  border-color: #a7f3c0;
+}
+
+.table-action-button--success.ant-btn:not(:disabled):hover {
+  color: #14532d;
+  background: #dcfce7;
+  border-color: #6ee7b7;
+}
+
+.table-action-button--warning.ant-btn {
+  color: #b45309;
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+
+.table-action-button--warning.ant-btn:not(:disabled):hover {
+  color: #92400e;
+  background: #ffedd5;
+  border-color: #fb923c;
+}
+
+.table-action-button--danger.ant-btn {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.table-action-button--danger.ant-btn:not(:disabled):hover {
+  color: #991b1b;
+  background: #fee2e2;
+  border-color: #f87171;
+}

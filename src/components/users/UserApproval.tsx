@@ -14,6 +14,8 @@ import { Button } from 'antd';
 import { useState, useEffect, useRef } from 'react';
 import { getBaseUserColumns } from './columns';
 import { useUserList, useUpdateUserApprovalStatus } from '@/hook/users';
+import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { TableActionButton, TableActionGroup } from '@/components/table/TableAction';
 
 const UserApproval: React.FC = () => {
   const { positions, departments, roles, isLoading } = useProfileDropdownOptions();
@@ -59,56 +61,58 @@ const UserApproval: React.FC = () => {
     ...getBaseUserColumns({ positions, departments, roles }),
     {
       title: 'Action',
-      width: 170,
+      width: 230,
       fixed: 'right',
       align: 'center',
       hideInSearch: true,
       render: (_, record) => {
         if (record.status === UserStatus.Pending) {
           return (
-            <>
-              <Button
-                type="link"
+            <TableActionGroup>
+              <TableActionButton
+                tone="success"
+                icon={<CheckOutlined />}
                 onClick={() => handleStatusUpdate([record], UserStatus.Approved)}
                 loading={isUpdating}
               >
                 Approve
-              </Button>
+              </TableActionButton>
 
-              <Button
-                type="link"
-                danger
+              <TableActionButton
+                tone="danger"
+                icon={<CloseOutlined />}
                 onClick={() => openRejectModal([record])}
                 loading={isUpdating}
               >
                 Reject
-              </Button>
-            </>
+              </TableActionButton>
+            </TableActionGroup>
           );
         }
 
         if (record.status === UserStatus.Approved) {
           return (
-            <Button
-              type="link"
-              danger
+            <TableActionButton
+              tone="danger"
+              icon={<CloseOutlined />}
               onClick={() => openRejectModal([record])}
               loading={isUpdating}
             >
               Reject
-            </Button>
+            </TableActionButton>
           );
         }
 
         if (record.status === UserStatus.Rejected) {
           return (
-            <Button
-              type="link"
+            <TableActionButton
+              tone="success"
+              icon={<CheckOutlined />}
               onClick={() => handleStatusUpdate([record], UserStatus.Approved)}
               loading={isUpdating}
             >
               Approve
-            </Button>
+            </TableActionButton>
           );
         }
 

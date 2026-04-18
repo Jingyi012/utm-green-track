@@ -14,6 +14,7 @@ import { getBaseUserColumns } from './columns';
 import { downloadFile } from '@/lib/utils/downloadFile';
 import { exportExcelUsers, exportPdfUsers } from '@/lib/services/user';
 import { useUserList, useUpdateUser, useDeleteUser } from '@/hook/users';
+import { TableActionButton, TableActionGroup } from '@/components/table/TableAction';
 
 const UserManagement: React.FC = () => {
   const { message } = App.useApp();
@@ -61,15 +62,15 @@ const UserManagement: React.FC = () => {
     ...getBaseUserColumns({ positions, departments, roles }),
     {
       title: 'Action',
-      width: 130,
+      width: 210,
       fixed: 'right',
       align: 'center',
       hideInSearch: true,
       render: (_, record) => {
         return (
-          <>
-            <Button
-              type="link"
+          <TableActionGroup>
+            <TableActionButton
+              tone="edit"
               icon={<EditOutlined />}
               onClick={() => {
                 setSelectedUser(record);
@@ -77,16 +78,24 @@ const UserManagement: React.FC = () => {
                 setEditMode(true);
               }}
               loading={isUpdating}
-            />
+            >
+              Edit
+            </TableActionButton>
             <Popconfirm
               title="Delete this user?"
               onConfirm={async () => {
                 handleDeleteUser(record.id);
               }}
             >
-              <Button type="link" danger icon={<DeleteOutlined />} loading={isDeleting} />
+              <TableActionButton
+                tone="danger"
+                icon={<DeleteOutlined />}
+                loading={isDeleting}
+              >
+                Delete
+              </TableActionButton>
             </Popconfirm>
-          </>
+          </TableActionGroup>
         );
       },
     },

@@ -17,6 +17,7 @@ import {
   DeleteOutlined,
   EyeOutlined,
   EditOutlined,
+  FormOutlined,
   FileExcelOutlined,
   FilePdfOutlined,
 } from '@ant-design/icons';
@@ -31,6 +32,7 @@ import {
   useExportWasteRecordPdf,
 } from '@/hook/wasteRecords';
 import { useCreateRequest } from '@/hook/requests';
+import { TableActionButton, TableActionGroup } from '@/components/table/TableAction';
 
 interface WasteRecordManagementProps {
   isViewForm?: boolean;
@@ -64,7 +66,8 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
   const { mutateAsync: deleteWasteRecord, isPending: isDeleting } = useDeleteWasteRecord();
   const { mutateAsync: exportWasteRecordExcel, isPending: isExportingExcel } =
     useExportWasteRecordExcel();
-  const { mutateAsync: exportWasteRecordPdf, isPending: isExportingPdf } = useExportWasteRecordPdf();
+  const { mutateAsync: exportWasteRecordPdf, isPending: isExportingPdf } =
+    useExportWasteRecordPdf();
   const { mutateAsync: createRequest, isPending: isSubmittingRequest } = useCreateRequest();
 
   const handleExportExcel = async (year: number, month: number) => {
@@ -151,7 +154,8 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         date: wasteRecord.date,
         comment: wasteRecord.comment,
         uploadedAttachments: wasteRecord.uploadedAttachments,
-        originalAttachmentIds: selectedRecord?.attachments?.map((attachment) => attachment.id) ?? [],
+        originalAttachmentIds:
+          selectedRecord?.attachments?.map((attachment) => attachment.id) ?? [],
         isAdmin,
       });
       return true;
@@ -185,55 +189,61 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
       {
         title: 'Action',
         align: 'center',
-        width: 220,
+        width: 320,
         fixed: 'right',
         hideInSearch: true,
         render: (_, record) => {
           return (
-            <>
-              <Button
-                type="link"
+            <TableActionGroup>
+              <TableActionButton
+                tone="view"
                 icon={<EyeOutlined />}
                 onClick={() =>
                   void navigate({ href: `/data-entry/view-form/record?wasteRecordId=${record.id}` })
                 }
-              ></Button>
+              >
+                View
+              </TableActionButton>
               {(isAdmin || record.status == WasteRecordStatus.RevisionRequired) && (
                 <>
-                  <Button
-                    type="link"
+                  <TableActionButton
+                    tone="edit"
                     icon={<EditOutlined />}
                     onClick={() => {
                       setSelectedRecord(record);
                       setModalDrawerOpen(true);
                       setEditMode(true);
                     }}
-                  />
-                  <Button
-                    type="link"
-                    danger
+                  >
+                    Edit
+                  </TableActionButton>
+                  <TableActionButton
+                    tone="danger"
                     icon={<DeleteOutlined />}
                     loading={isDeleting}
                     onClick={() => {
                       confirmDeletion(record);
                     }}
-                  />
+                  >
+                    Delete
+                  </TableActionButton>
                 </>
               )}
               {!isAdmin &&
                 record.status != WasteRecordStatus.Verified &&
                 record.status != WasteRecordStatus.RevisionRequired && (
-                  <Button
-                    type="link"
+                  <TableActionButton
+                    tone="warning"
+                    icon={<FormOutlined />}
                     onClick={() => {
                       setSelectedRecord(record);
                       setChangeRequestModalOpen(true);
                     }}
                   >
                     Request Changes
-                  </Button>
+                  </TableActionButton>
                 )}
-            </>
+            </TableActionGroup>
           );
         },
       },

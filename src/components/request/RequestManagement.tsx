@@ -6,6 +6,13 @@ import { Button, Popconfirm, Tooltip } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useRequestList, useUpdateRequestStatus } from '@/hook/requests';
+import {
+  CheckOutlined,
+  ClockCircleOutlined,
+  CloseOutlined,
+  EyeOutlined,
+} from '@ant-design/icons';
+import { TableActionButton, TableActionGroup } from '@/components/table/TableAction';
 
 const renderEllipsisText = (value: string | undefined, maxWidth = 180) => {
   const text = value?.trim() || '-';
@@ -106,8 +113,9 @@ const RequestManagement: React.FC = () => {
           if (!record.wasteRecordId) return '-';
 
           return (
-            <Button
-              type="link"
+            <TableActionButton
+              tone="view"
+              icon={<EyeOutlined />}
               onClick={() =>
                 void navigate({
                   href: `/data-entry/view-form/record?wasteRecordId=${record.wasteRecordId}`,
@@ -115,7 +123,7 @@ const RequestManagement: React.FC = () => {
               }
             >
               View Record
-            </Button>
+            </TableActionButton>
           );
         },
       },
@@ -149,34 +157,40 @@ const RequestManagement: React.FC = () => {
         render: (_, record) => {
           if (record.status === RequestStatus.Pending) {
             return (
-              <>
-                <Button
-                  type="link"
+              <TableActionGroup>
+                <TableActionButton
+                  tone="success"
+                  icon={<CheckOutlined />}
                   onClick={() => handleStatusUpdate([record], RequestStatus.Approved)}
                   loading={isUpdating}
                 >
                   Approve
-                </Button>
+                </TableActionButton>
                 <Popconfirm
                   title="Reject this request?"
                   onConfirm={() => handleStatusUpdate([record], RequestStatus.Rejected)}
                 >
-                  <Button type="link" danger loading={isUpdating}>
+                  <TableActionButton
+                    tone="danger"
+                    icon={<CloseOutlined />}
+                    loading={isUpdating}
+                  >
                     Reject
-                  </Button>
+                  </TableActionButton>
                 </Popconfirm>
-              </>
+              </TableActionGroup>
             );
           }
 
           return (
-            <Button
-              type="link"
+            <TableActionButton
+              tone="warning"
+              icon={<ClockCircleOutlined />}
               onClick={() => handleStatusUpdate([record], RequestStatus.Pending)}
               loading={isUpdating}
             >
               Pending
-            </Button>
+            </TableActionButton>
           );
         },
       },

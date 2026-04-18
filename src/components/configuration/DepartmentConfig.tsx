@@ -15,6 +15,7 @@ import {
   useDepartmentList,
   useUpdateDepartment,
 } from '@/hook/departments';
+import { TableActionButton, TableActionGroup } from '@/components/table/TableAction';
 
 type ModalMode = 'create' | 'edit' | null;
 
@@ -57,16 +58,19 @@ export const DepartmentConfig: React.FC = () => {
       {
         title: 'Action',
         valueType: 'option',
-        width: 120,
+        width: 190,
         render: (_text, record) => (
-          <Space>
-            <Button
+          <TableActionGroup>
+            <TableActionButton
+              tone="edit"
               icon={<EditOutlined />}
               onClick={() => {
                 setSelectedDepartment(record);
                 setModalMode('edit');
               }}
-            />
+            >
+              Edit
+            </TableActionButton>
             <Popconfirm
               title="Delete this department?"
               okText="Yes"
@@ -79,9 +83,11 @@ export const DepartmentConfig: React.FC = () => {
                 }
               }}
             >
-              <Button danger icon={<DeleteOutlined />} />
+              <TableActionButton tone="danger" icon={<DeleteOutlined />}>
+                Delete
+              </TableActionButton>
             </Popconfirm>
-          </Space>
+          </TableActionGroup>
         ),
       },
     ],

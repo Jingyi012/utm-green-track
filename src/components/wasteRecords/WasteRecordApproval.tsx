@@ -14,10 +14,16 @@ import {
   ProTable,
 } from '@ant-design/pro-components';
 import { FooterToolbar } from '@ant-design/pro-layout/es/components/FooterToolbar';
-import { App, Button } from 'antd';
-import { useState, useEffect, useRef } from 'react';
+import { Button, App } from 'antd';
+import { useEffect, useRef, useState } from 'react';
 import { CommentButton } from './CommentButton';
 import { getBaseColumns } from './columns';
+import {
+  CheckOutlined,
+  CloseOutlined,
+  ExclamationOutlined,
+} from '@ant-design/icons';
+import { TableActionButton, TableActionGroup } from '@/components/table/TableAction';
 
 const WasteRecordApproval: React.FC = () => {
   const { message } = App.useApp();
@@ -55,7 +61,6 @@ const WasteRecordApproval: React.FC = () => {
     }
   };
 
-  // Batch or single approve/reject
   const handleStatusUpdate = async (
     records: WasteRecord[],
     status: WasteRecordStatus,
@@ -63,7 +68,7 @@ const WasteRecordApproval: React.FC = () => {
   ) => {
     if (!records.length) return;
     try {
-      const wasteRecordIds = records.map((u) => u.id);
+      const wasteRecordIds = records.map((record) => record.id);
       const res = await updateWasteRecordApprovalStatus({ wasteRecordIds, status, comment });
       if (res.success) {
         message.success(`Waste record status updated to ${wasteRecordStatusLabels[status]}`);
@@ -81,7 +86,7 @@ const WasteRecordApproval: React.FC = () => {
     ...getBaseColumns({ campuses, departments, disposalMethods, showUserColumn: true }),
     {
       title: 'Action',
-      width: 200,
+      width: 300,
       fixed: 'right',
       align: 'center',
       hideInSearch: true,
@@ -94,95 +99,94 @@ const WasteRecordApproval: React.FC = () => {
 
         if (record.status === WasteRecordStatus.New) {
           return (
-            <>
-              <Button
-                type="link"
+            <TableActionGroup>
+              <TableActionButton
+                tone="success"
+                icon={<CheckOutlined />}
                 onClick={() => handleStatusUpdate([record], WasteRecordStatus.Verified)}
               >
                 Verify
-              </Button>
-
-              {/* Reject → needs comment */}
-              <Button
-                type="link"
-                danger
+              </TableActionButton>
+              <TableActionButton
+                tone="danger"
+                icon={<CloseOutlined />}
                 onClick={() => openCommentModal(WasteRecordStatus.Rejected)}
               >
                 Reject
-              </Button>
-
-              {/* Revision Required → needs comment */}
-              <Button
-                type="link"
-                style={{ color: '#fa8c16' }}
+              </TableActionButton>
+              <TableActionButton
+                tone="warning"
+                icon={<ExclamationOutlined />}
                 onClick={() => openCommentModal(WasteRecordStatus.RevisionRequired)}
               >
                 Revision
-              </Button>
-            </>
+              </TableActionButton>
+            </TableActionGroup>
           );
         }
 
         if (record.status === WasteRecordStatus.Verified) {
           return (
-            <>
-              <Button
-                type="link"
-                style={{ color: '#fa8c16' }}
+            <TableActionGroup>
+              <TableActionButton
+                tone="warning"
+                icon={<ExclamationOutlined />}
                 onClick={() => openCommentModal(WasteRecordStatus.RevisionRequired)}
               >
                 Revision
-              </Button>
-              <Button
-                type="link"
-                danger
+              </TableActionButton>
+              <TableActionButton
+                tone="danger"
+                icon={<CloseOutlined />}
                 onClick={() => openCommentModal(WasteRecordStatus.Rejected)}
               >
                 Reject
-              </Button>
-            </>
+              </TableActionButton>
+            </TableActionGroup>
           );
         }
 
         if (record.status === WasteRecordStatus.Rejected) {
           return (
-            <>
-              <Button
-                type="link"
+            <TableActionGroup>
+              <TableActionButton
+                tone="success"
+                icon={<CheckOutlined />}
                 onClick={() => handleStatusUpdate([record], WasteRecordStatus.Verified)}
               >
                 Verify
-              </Button>
-              <Button
-                type="link"
-                style={{ color: '#fa8c16' }}
+              </TableActionButton>
+              <TableActionButton
+                tone="warning"
+                icon={<ExclamationOutlined />}
                 onClick={() => openCommentModal(WasteRecordStatus.RevisionRequired)}
               >
                 Revision
-              </Button>
+              </TableActionButton>
               <CommentButton comment={record.comment} />
-            </>
+            </TableActionGroup>
           );
         }
 
         if (record.status === WasteRecordStatus.RevisionRequired) {
           return (
-            <>
-              <Button
-                type="link"
+            <TableActionGroup>
+              <TableActionButton
+                tone="success"
+                icon={<CheckOutlined />}
                 onClick={() => handleStatusUpdate([record], WasteRecordStatus.Verified)}
               >
                 Verify
-              </Button>
-              <Button
-                type="link"
-                danger
+              </TableActionButton>
+              <TableActionButton
+                tone="danger"
+                icon={<CloseOutlined />}
                 onClick={() => openCommentModal(WasteRecordStatus.Rejected)}
               >
                 Reject
-              </Button>
+              </TableActionButton>
               <CommentButton comment={record.comment} />
-            </>
+            </TableActionGroup>
           );
         }
 
@@ -251,13 +255,12 @@ const WasteRecordApproval: React.FC = () => {
         rowSelection={
           statusFilter === WasteRecordStatus.New
             ? {
-                onChange: (_, selectedRows) => setSelectedRows(selectedRows),
+                onChange: (_, rows) => setSelectedRows(rows),
               }
             : undefined
         }
       />
 
-      {/* Batch approve toolbar */}
       {statusFilter === WasteRecordStatus.New && selectedRows.length > 0 && (
         <FooterToolbar
           extra={
