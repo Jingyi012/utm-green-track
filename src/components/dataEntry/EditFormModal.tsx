@@ -1,6 +1,7 @@
 import { Modal, Button, Upload, App, Col, Row, Typography, UploadFile } from 'antd';
 import {
   ProForm,
+  ProFormDatePicker,
   ProFormDateTimePicker,
   ProFormDigit,
   ProFormSelect,
@@ -10,6 +11,7 @@ import { UploadOutlined } from '@ant-design/icons';
 import { WasteTypeWithEmissionFactor } from '@/lib/types/typing';
 import { useState, useEffect } from 'react';
 import { WasteRecordDraftInput } from '@/lib/types/wasteRecord';
+import dayjs from 'dayjs';
 import {
   ATTACHMENT_ACCEPT_ATTRIBUTE,
   ATTACHMENT_ACCEPT_LABEL,
@@ -18,7 +20,9 @@ import {
 
 const { Title } = Typography;
 
-type FormValues = Partial<WasteRecordDraftInput> & {
+type FormValues = Omit<Partial<WasteRecordDraftInput>, 'date' | 'programDate'> & {
+  date?: unknown;
+  programDate?: unknown;
   attachments?: UploadFile[];
 };
 
@@ -34,6 +38,35 @@ type Props = {
   }[];
   onClose: () => void;
   onSave: (values: Partial<WasteRecordDraftInput>, recordKey: string) => void;
+};
+
+const toPickerValue = (value?: string | null) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed : undefined;
+};
+
+const toIsoString = (value: unknown): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  if (dayjs.isDayjs(value)) {
+    return value.toISOString();
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  return undefined;
 };
 
 export default function EditformModal({
@@ -52,7 +85,11 @@ export default function EditformModal({
 
   useEffect(() => {
     if (record) {
-      form.setFieldsValue(record);
+      form.setFieldsValue({
+        ...record,
+        date: toPickerValue(record.date),
+        programDate: toPickerValue(record.programDate),
+      });
       const method = disposalMethods.find((item) => item.id === record.disposalMethodId);
       setWasteTypes(method?.wasteTypes ?? []);
       setSelectedDisposalMethod(record.disposalMethodId);
@@ -71,7 +108,14 @@ export default function EditformModal({
       return;
     }
 
-    onSave(values, record.key);
+    onSave(
+      {
+        ...values,
+        date: toIsoString(values.date) ?? record.date,
+        programDate: toIsoString(values.programDate),
+      },
+      record.key,
+    );
     onClose();
   };
 
@@ -88,6 +132,15 @@ export default function EditformModal({
         <Title level={5}>Basic Information</Title>
         <Row gutter={16}>
           <Col xs={24} md={12}>
+            <ProFormDatePicker
+              name="date"
+              label="Record Date"
+              placeholder="Please select record date"
+              rules={[{ required: true, message: 'Please select record date' }]}
+              fieldProps={{ allowClear: false, format: 'DD/MM/YYYY' }}
+            />
+          </Col>
+          <Col xs={24} md={12}>
             <ProFormSelect
               name="campusId"
               label="UTM Campus"
@@ -103,6 +156,8 @@ export default function EditformModal({
               }}
             />
           </Col>
+        </Row>
+        <Row gutter={16}>
           <Col xs={24} md={12}>
             <ProFormSelect
               name="departmentId"

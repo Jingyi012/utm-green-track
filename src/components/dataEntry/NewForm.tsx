@@ -2,9 +2,11 @@ import { useMemo, useState } from 'react';
 import { App, Button, Card, Col, Row, Space, Table, Typography, Upload, UploadFile } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { Key } from 'react';
+import dayjs from 'dayjs';
 import {
   PageContainer,
   ProForm,
+  ProFormDatePicker,
   ProFormDateTimePicker,
   ProFormDigit,
   ProFormList,
@@ -35,6 +37,7 @@ type WasteItemFormValue = {
 };
 
 type WasteEntryFormValues = {
+  date?: string;
   campusId: string;
   departmentId: string;
   unit?: string;
@@ -51,6 +54,26 @@ type WastePairMeta = {
 
 const getWastePairKey = (disposalMethodId: string, wasteTypeId: string): string =>
   `${disposalMethodId}${WASTE_PAIR_SEPARATOR}${wasteTypeId}`;
+
+const toIsoString = (value: unknown): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  if (dayjs.isDayjs(value)) {
+    return value.toISOString();
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  return undefined;
+};
 
 export default function WasteEntryForm() {
   const [form] = ProForm.useForm<WasteEntryFormValues>();
@@ -95,6 +118,7 @@ export default function WasteEntryForm() {
 
   const resetWholeForm = (): void => {
     form.resetFields();
+    form.setFieldValue('date', dayjs());
     form.setFieldValue('wasteItems', [{}]);
   };
 
@@ -112,9 +136,11 @@ export default function WasteEntryForm() {
       }
 
       const normalizedProgram = values.program?.trim() || undefined;
-      const normalizedProgramDate = normalizedProgram ? values.programDate : undefined;
+      const normalizedProgramDate = normalizedProgram ? toIsoString(values.programDate) : undefined;
+      const normalizedDate = toIsoString(values.date) ?? new Date().toISOString();
 
       const sharedRecord = {
+        date: normalizedDate,
         campusId: values.campusId,
         departmentId: values.departmentId,
         unit: values.unit,
@@ -123,7 +149,6 @@ export default function WasteEntryForm() {
         programDate: normalizedProgramDate,
       };
 
-      const displayDate = new Date().toLocaleDateString('en-GB');
       const now = Date.now();
       let skippedInvalidPair = 0;
 
@@ -136,7 +161,7 @@ export default function WasteEntryForm() {
 
         const newRow: WasteRecordDraftInput = {
           key: `${now}-${index}`,
-          date: displayDate,
+          date: sharedRecord.date,
           campusId: sharedRecord.campusId,
           departmentId: sharedRecord.departmentId,
           unit: sharedRecord.unit,
@@ -230,7 +255,7 @@ export default function WasteEntryForm() {
         try {
           const wasteRecords: WasteRecordInput[] = tableData.map((record) => ({
             ...record,
-            date: new Date().toISOString(),
+            date: record.date,
             attachments: (record.attachments ?? [])
               .map((file) => file.originFileObj)
               .filter((file): file is NonNullable<UploadFile['originFileObj']> => Boolean(file)),
@@ -267,6 +292,7 @@ export default function WasteEntryForm() {
       title: 'Date',
       dataIndex: 'date',
       width: 100,
+      render: (date: string) => dateTimeFormatter(date),
     },
     {
       title: 'UTM Campus',
@@ -374,7 +400,7 @@ export default function WasteEntryForm() {
           layout="vertical"
           submitter={false}
           onFinish={handleAdd}
-          initialValues={{ wasteItems: [{}] }}
+          initialValues={{ date: dayjs(), wasteItems: [{}] }}
         >
           <Title level={5}>Basic Information</Title>
           <Row gutter={16}>
@@ -406,9 +432,6 @@ export default function WasteEntryForm() {
                 fieldProps={{ showSearch: true, optionFilterProp: 'label' }}
               />
             </Col>
-          </Row>
-
-          <Row gutter={16}>
             <Col xs={24} md={12}>
               <ProFormText name="unit" label="Unit" placeholder="Please enter unit" />
             </Col>
@@ -418,6 +441,21 @@ export default function WasteEntryForm() {
                 label="Location"
                 placeholder="Please enter location"
                 rules={[{ required: true, message: 'Please enter location' }]}
+              />
+            </Col>
+
+            <Col xs={24} md={12}>
+              <ProFormDatePicker
+                name="date"
+                label="Date"
+                placeholder="Please select record date"
+                rules={[{ required: true, message: 'Please select record date' }]}
+                width="xl"
+                fieldProps={{
+                  allowClear: false,
+                  format: 'DD/MM/YYYY',
+                  style: { width: '100%' },
+                }}
               />
             </Col>
           </Row>
@@ -518,10 +556,15 @@ export default function WasteEntryForm() {
               />
             </Col>
             <Col xs={24} md={12}>
-              <ProFormDateTimePicker
+              <ProFormDatePicker
                 name="programDate"
                 label="Date of Program / Initiative"
                 placeholder="Please enter date of program / initiative"
+                fieldProps={{
+                  allowClear: false,
+                  format: 'DD/MM/YYYY',
+                  style: { width: '100%' },
+                }}
               />
             </Col>
           </Row>
