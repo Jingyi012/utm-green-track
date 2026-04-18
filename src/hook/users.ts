@@ -4,6 +4,7 @@ import { getAllUsers, updateUserApprovalStatus, deleteUser, updateUser } from '@
 import { UserDetails } from '@/lib/types/typing';
 import { PagedResponse } from '@/lib/types/apiResponse';
 import { userStatusLabels } from '@/lib/enum/status';
+import { useBadgeRefresh } from '@/contexts/BadgeContext';
 
 // Query Keys
 export const userQueryKeys = {
@@ -62,6 +63,7 @@ export const useUserList = (filters: UserListFilters) => {
 // Mutation Hooks
 export const useUpdateUserApprovalStatus = () => {
   const queryClient = useQueryClient();
+  const refreshBadges = useBadgeRefresh();
 
   return useMutation({
     mutationFn: async (data: UpdateUserApprovalStatusInput) => {
@@ -71,6 +73,8 @@ export const useUpdateUserApprovalStatus = () => {
     onSuccess: async (_, variables) => {
       message.success(`User status updated to ${userStatusLabels[variables.status ?? 0]}`);
       await invalidateUserQueries(queryClient);
+      // Refresh badge immediately after user approval/rejection
+      await refreshBadges(['/users/approval']);
     },
     onError: (_, variables) => {
       message.error(`Failed to update status to ${userStatusLabels[variables.status ?? 0]}`);

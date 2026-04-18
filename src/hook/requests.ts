@@ -12,6 +12,7 @@ import { ChangeRequest } from '@/lib/types/typing';
 import { PagedResponse } from '@/lib/types/apiResponse';
 import { RequestStatus, requestStatusLabels } from '@/lib/enum/status';
 import { wasteRecordQueryKeys } from '@/hook/wasteRecords';
+import { useBadgeRefresh } from '@/contexts/BadgeContext';
 
 // Query Keys
 export const requestQueryKeys = {
@@ -19,7 +20,8 @@ export const requestQueryKeys = {
   lists: () => [...requestQueryKeys.all, 'list'] as const,
   list: (filters: RequestListFilters) => [...requestQueryKeys.lists(), { ...filters }] as const,
   myLists: () => [...requestQueryKeys.all, 'my-list'] as const,
-  myList: (filters: MyRequestListFilters) => [...requestQueryKeys.myLists(), { ...filters }] as const,
+  myList: (filters: MyRequestListFilters) =>
+    [...requestQueryKeys.myLists(), { ...filters }] as const,
 } as const;
 
 export interface RequestListFilters {
@@ -121,6 +123,7 @@ export const useCreateRequest = () => {
 
 export const useUpdateRequestStatus = () => {
   const queryClient = useQueryClient();
+  const refreshBadges = useBadgeRefresh();
 
   return useMutation({
     mutationFn: async ({ requestIds, status }: UpdateRequestStatusInput) => {
@@ -133,6 +136,8 @@ export const useUpdateRequestStatus = () => {
     onSuccess: async (_, variables) => {
       message.success(`Request status updated to ${requestStatusLabels[variables.status]}`);
       await invalidateRequestAndWasteRecordQueries(queryClient);
+      // Refresh badge immediately after approval
+      await refreshBadges(['/waste-data/requests']);
     },
     onError: (_, variables) => {
       message.error(`Failed to update status to ${requestStatusLabels[variables.status]}`);

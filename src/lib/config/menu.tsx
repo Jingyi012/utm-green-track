@@ -154,7 +154,7 @@ export const proLayoutMenuData: AppMenuItem[] = [
       },
       {
         path: '/configurations/disposal-waste',
-        name: 'Disposal/Waste Types',
+        name: 'Emission Factor',
         requiredPermission: ADMIN_OPERATION_PERMISSION,
       },
       {

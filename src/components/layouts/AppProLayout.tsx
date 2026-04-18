@@ -4,7 +4,7 @@ import { Dropdown, Avatar, Badge } from 'antd';
 import { NotificationBell } from '../notification/NotificationBell';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { filterMenuByPermissions } from '@/lib/utils/menuFilter';
 import { getAllEnquiry } from '@/lib/services/enquiry';
 import { getAllRequest } from '@/lib/services/requestService';
@@ -12,6 +12,8 @@ import { getAllUsers } from '@/lib/services/user';
 import { getWasteRecordsPaginated } from '@/lib/services/wasteRecord';
 import { EnquiryStatus, RequestStatus, UserStatus, WasteRecordStatus } from '@/lib/enum/status';
 import { PERMISSIONS } from '@/lib/utils/permissions';
+import { useBadgeRefreshSetter } from '@/contexts/BadgeContext';
+import { AppMenuItem } from '@/lib/config/menu';
 
 interface AppProLayoutProps {
   children: React.ReactNode;
@@ -22,6 +24,9 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
   const pathname = useLocation({ select: (location) => location.pathname });
   const { user, logout, permissions } = useAuth();
   const [menuBadgeCounts, setMenuBadgeCounts] = useState<Record<string, number>>({});
+  const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshFunctionRef = useRef<((paths?: string[]) => Promise<void>) | null>(null);
+  const setBadgeRefreshFunction = useBadgeRefreshSetter();
 
   const initials = user?.userName ? user.userName[0].toUpperCase() : 'U';
   const canManageAdminItems = permissions.includes(PERMISSIONS.ADMIN_OPERATION.WRITE);
@@ -31,6 +36,111 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
     return filterMenuByPermissions(proLayoutMenuData, permissions);
   }, [permissions]);
 
+  // Helper function to get all paths in a menu tree for a parent path
+  const getChildPaths = useCallback((parentPath: string, menuItems: AppMenuItem[]): string[] => {
+    const paths: string[] = [];
+    const traverse = (items: AppMenuItem[], currentParentPath: string) => {
+      for (const item of items) {
+        if (item.path?.startsWith(parentPath + '/')) {
+          paths.push(item.path);
+        }
+        if (item.children) {
+          traverse(item.children, item.path || '');
+        }
+      }
+    };
+    traverse(menuItems, parentPath);
+    return paths;
+  }, []);
+
+  // Calculate parent badge counts from children
+  const getParentBadgeCount = useCallback(
+    (parentPath: string): number => {
+      const childPaths = getChildPaths(parentPath, filteredMenu);
+      return childPaths.reduce((sum, path) => sum + (menuBadgeCounts[path] ?? 0), 0);
+    },
+    [menuBadgeCounts, filteredMenu, getChildPaths],
+  );
+
+  const loadMenuBadgeCounts = useCallback(async () => {
+    const nextCounts: Record<string, number> = {};
+
+    const enquiryPromise = getAllEnquiry({
+      pageNumber: 1,
+      pageSize: 1,
+      status: EnquiryStatus.Open,
+    });
+
+    const adminPromises = canManageAdminItems
+      ? Promise.all([
+          getAllRequest({ pageNumber: 1, pageSize: 1, status: RequestStatus.Pending }),
+          getWasteRecordsPaginated({
+            pageNumber: 1,
+            pageSize: 1,
+            status: WasteRecordStatus.New,
+            isAdmin: true,
+          }),
+          getAllUsers({ pageNumber: 1, pageSize: 1, status: UserStatus.Pending }),
+        ])
+      : null;
+
+    try {
+      const enquiryResult = await enquiryPromise;
+      nextCounts['/enquiry'] = enquiryResult.totalCount ?? 0;
+
+      if (adminPromises) {
+        const [requestResult, wasteApprovalResult, userApprovalResult] = await adminPromises;
+        nextCounts['/waste-data/requests'] = requestResult.totalCount ?? 0;
+        nextCounts['/waste-data/approval'] = wasteApprovalResult.totalCount ?? 0;
+        nextCounts['/users/approval'] = userApprovalResult.totalCount ?? 0;
+      }
+    } catch {
+      // Keep the previous badges if a transient request fails.
+    }
+
+    setMenuBadgeCounts((prev) => ({ ...prev, ...nextCounts }));
+  }, [canManageAdminItems]);
+
+  // Expose the refresh function via ref (to be used by context)
+  const createRefreshFunction = useCallback(
+    async (paths?: string[]) => {
+      if (paths && paths.length > 0) {
+        // Selective refresh - only refresh specified paths
+        const pathsToRefresh = new Set(paths);
+        const nextCounts: Record<string, number> = {};
+        let needsRefresh = false;
+
+        // Check if any of the paths need refreshing
+        if (pathsToRefresh.has('/waste-data/requests')) {
+          needsRefresh = true;
+        }
+        if (pathsToRefresh.has('/waste-data/approval')) {
+          needsRefresh = true;
+        }
+        if (pathsToRefresh.has('/users/approval')) {
+          needsRefresh = true;
+        }
+        if (pathsToRefresh.has('/enquiry')) {
+          needsRefresh = true;
+        }
+
+        if (!needsRefresh) return;
+
+        // Perform full badge load since we need admin data
+        await loadMenuBadgeCounts();
+      } else {
+        // Full refresh
+        await loadMenuBadgeCounts();
+      }
+    },
+    [loadMenuBadgeCounts],
+  );
+
+  // Update the ref whenever the function changes
+  useEffect(() => {
+    refreshFunctionRef.current = createRefreshFunction;
+  }, [createRefreshFunction]);
+
   useEffect(() => {
     if (!user) {
       setMenuBadgeCounts({});
@@ -39,55 +149,35 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
 
     let isMounted = true;
 
-    const loadMenuBadgeCounts = async () => {
-      const nextCounts: Record<string, number> = {};
-
-      const enquiryPromise = getAllEnquiry({
-        pageNumber: 1,
-        pageSize: 1,
-        status: EnquiryStatus.Open,
-      });
-
-      const adminPromises = canManageAdminItems
-        ? Promise.all([
-            getAllRequest({ pageNumber: 1, pageSize: 1, status: RequestStatus.Pending }),
-            getWasteRecordsPaginated({
-              pageNumber: 1,
-              pageSize: 1,
-              status: WasteRecordStatus.New,
-              isAdmin: true,
-            }),
-            getAllUsers({ pageNumber: 1, pageSize: 1, status: UserStatus.Pending }),
-          ])
-        : null;
-
-      try {
-        const enquiryResult = await enquiryPromise;
-        nextCounts['/enquiry'] = enquiryResult.totalCount ?? 0;
-
-        if (adminPromises) {
-          const [requestResult, wasteApprovalResult, userApprovalResult] = await adminPromises;
-          nextCounts['/waste-data/requests'] = requestResult.totalCount ?? 0;
-          nextCounts['/waste-data/approval'] = wasteApprovalResult.totalCount ?? 0;
-          nextCounts['/users/approval'] = userApprovalResult.totalCount ?? 0;
-        }
-      } catch {
-        // Keep the previous badges if a transient request fails.
-      }
-
-      if (isMounted) {
-        setMenuBadgeCounts((prev) => ({ ...prev, ...nextCounts }));
-      }
+    const loadInitial = async () => {
+      await loadMenuBadgeCounts();
     };
 
-    loadMenuBadgeCounts();
-    const timerId = window.setInterval(loadMenuBadgeCounts, 60000);
+    loadInitial().catch(() => {
+      // Silently fail
+    });
+
+    // Set up polling interval
+    intervalIdRef.current = setInterval(() => {
+      loadMenuBadgeCounts().catch(() => {
+        // Silently fail
+      });
+    }, 60000);
 
     return () => {
       isMounted = false;
-      window.clearInterval(timerId);
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current);
+      }
     };
-  }, [canManageAdminItems, user]);
+  }, [canManageAdminItems, user, loadMenuBadgeCounts]);
+
+  // Register refresh function with context
+  useEffect(() => {
+    if (refreshFunctionRef.current) {
+      setBadgeRefreshFunction(refreshFunctionRef.current);
+    }
+  }, [setBadgeRefreshFunction]);
 
   const handleProfileClick = async ({ key }: { key: string }) => {
     if (key === 'logout') {
@@ -143,11 +233,17 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
         }}
         menuItemRender={(item, dom) => {
           const badgeCount = item.path ? (menuBadgeCounts[item.path] ?? 0) : 0;
+
+          // For parent menu items without a path (groups), show aggregate badge from children
+          const parentBadgeCount =
+            !item.path && item.children ? getParentBadgeCount(item.path || '') : 0;
+          const displayBadgeCount = badgeCount || parentBadgeCount;
+
           const menuContent =
-            badgeCount > 0 ? (
+            displayBadgeCount > 0 ? (
               <div className="w-full flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-2">{dom}</span>
-                <Badge count={badgeCount} color="#ff4d4f" overflowCount={99} size="small" />
+                <Badge count={displayBadgeCount} color="#ff4d4f" overflowCount={99} size="small" />
               </div>
             ) : (
               dom

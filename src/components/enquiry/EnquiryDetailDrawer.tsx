@@ -56,11 +56,13 @@ export const EnquiryDetailDrawer: React.FC<EnquiryDetailDrawerProps> = ({
       title={
         details ? (
           <div className="flex justify-between items-center w-full">
-            <span>{details.subject}</span>
-            <div className="flex items-center gap-2">
+            <span>
+              {details.subject}{' '}
               <Tag color={details.status === EnquiryStatus.Open ? 'blue' : 'default'}>
                 {enquiryStatusLabels[details.status]}
               </Tag>
+            </span>
+            <div className="flex items-center gap-2">
               {hasRole('Admin') && (
                 <Button
                   size="small"

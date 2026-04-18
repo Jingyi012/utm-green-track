@@ -10,6 +10,7 @@ import {
 } from '@/lib/services/enquiry';
 import { Enquiry, EnquiryDetails, EnquiryInput } from '@/lib/types/typing';
 import { PagedResponse } from '@/lib/types/apiResponse';
+import { useBadgeRefresh } from '@/contexts/BadgeContext';
 
 // Query Keys
 export const enquiryQueryKeys = {
@@ -104,6 +105,7 @@ export const useCreateEnquiry = () => {
 
 export const useUpdateEnquiryStatus = () => {
   const queryClient = useQueryClient();
+  const refreshBadges = useBadgeRefresh();
 
   return useMutation({
     mutationFn: async (data: UpdateEnquiryStatusInput) => {
@@ -113,6 +115,8 @@ export const useUpdateEnquiryStatus = () => {
     onSuccess: async () => {
       message.success('Enquiry status updated');
       await invalidateEnquiryQueries(queryClient);
+      // Refresh badge immediately after enquiry status update
+      await refreshBadges(['/enquiry']);
     },
     onError: (error: Error) => {
       message.error(error.message || 'Failed to update enquiry status');

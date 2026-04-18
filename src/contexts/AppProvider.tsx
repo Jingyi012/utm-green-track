@@ -4,6 +4,7 @@ import enUSIntl from '@ant-design/pro-provider/lib/locale/en_US';
 import enUS from 'antd/locale/en_US';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './AuthContext';
+import { BadgeProvider } from './BadgeContext';
 import { useState } from 'react';
 import { createAppQueryClient } from '@/lib/queryClient';
 
@@ -47,7 +48,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <ProConfigProvider intl={customIntl}>
           <App>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <BadgeProvider>{children}</BadgeProvider>
+            </AuthProvider>
           </App>
         </ProConfigProvider>
       </QueryClientProvider>

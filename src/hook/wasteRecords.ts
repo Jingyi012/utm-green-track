@@ -19,6 +19,7 @@ import { PagedResponse } from '@/lib/types/apiResponse';
 import { UploadFile } from 'antd';
 import { WasteRecordStatus } from '@/lib/enum/status';
 import { downloadFile } from '@/lib/utils/downloadFile';
+import { useBadgeRefresh } from '@/contexts/BadgeContext';
 
 // Query Keys
 export const wasteRecordQueryKeys = {
@@ -79,9 +80,7 @@ export type ExportWasteRecordInput = {
   month: number;
 };
 
-const invalidateWasteRecordListQueries = async (
-  queryClient: ReturnType<typeof useQueryClient>,
-) => {
+const invalidateWasteRecordListQueries = async (queryClient: ReturnType<typeof useQueryClient>) => {
   await queryClient.invalidateQueries({
     queryKey: wasteRecordQueryKeys.lists(),
   });
@@ -198,6 +197,7 @@ export const useLifetimeAnalytics = (campusId: string, enabled = true) => {
 // Mutation Hooks
 export const useUpdateWasteRecord = () => {
   const queryClient = useQueryClient();
+  const refreshBadges = useBadgeRefresh();
 
   return useMutation({
     mutationFn: async ({ id, ...updatedData }: UpdateWasteRecordInput) => {
@@ -210,6 +210,10 @@ export const useUpdateWasteRecord = () => {
         invalidateWasteRecordListQueries(queryClient),
         invalidateWasteRecordDetailQuery(queryClient, variables.id),
       ]);
+      // Refresh badge immediately if status is being updated
+      if (variables.status !== undefined) {
+        await refreshBadges(['/waste-data/approval']);
+      }
     },
     onError: (error: Error) => {
       message.error(error.message || 'Failed to update waste record');
@@ -280,6 +284,7 @@ export const useDeleteAttachment = () => {
 
 export const useSaveWasteRecord = () => {
   const queryClient = useQueryClient();
+  const refreshBadges = useBadgeRefresh();
 
   return useMutation({
     mutationFn: async ({
@@ -304,7 +309,9 @@ export const useSaveWasteRecord = () => {
       }
 
       if (attachmentIdsToDelete.length > 0) {
-        await Promise.all(attachmentIdsToDelete.map((attachmentId) => deleteAttachment(attachmentId)));
+        await Promise.all(
+          attachmentIdsToDelete.map((attachmentId) => deleteAttachment(attachmentId)),
+        );
       }
 
       return { id };
@@ -315,6 +322,10 @@ export const useSaveWasteRecord = () => {
         invalidateWasteRecordListQueries(queryClient),
         invalidateWasteRecordDetailQuery(queryClient, variables.id),
       ]);
+      // Refresh badge immediately if status is being updated
+      if (variables.status !== undefined) {
+        await refreshBadges(['/waste-data/approval']);
+      }
     },
     onError: (error: Error) => {
       message.error(error.message || 'Failed to update waste record');
@@ -348,9 +359,7 @@ const useExportWasteRecords = (format: 'excel' | 'pdf') => {
       }
     },
     onError: () => {
-      message.error(
-        format === 'excel' ? 'Failed to generate Excel' : 'Failed to generate PDF',
-      );
+      message.error(format === 'excel' ? 'Failed to generate Excel' : 'Failed to generate PDF');
     },
     throwOnError: true,
   });
