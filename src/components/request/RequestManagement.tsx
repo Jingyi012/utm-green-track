@@ -4,7 +4,7 @@ import { ActionType, PageContainer, ProColumns, ProTable } from '@ant-design/pro
 import { FooterToolbar } from '@ant-design/pro-layout/es/components/FooterToolbar';
 import { Button, Popconfirm, Space, Tag, Tooltip } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useRequestList, useUpdateRequestStatus } from '@/hook/requests';
 import {
   CheckOutlined,
@@ -51,9 +51,16 @@ const renderTabWithTooltip = (label: string, description: string) => (
 
 const RequestManagement: React.FC = () => {
   const navigate = useNavigate();
+  const searchStr = useLocation({ select: (location) => location.searchStr });
   const [selectedRows, setSelectedRows] = useState<ChangeRequest[]>([]);
   const actionRef = useRef<ActionType | undefined>(undefined);
-  const [statusFilter, setStatusFilter] = useState<RequestStatus>(RequestStatus.Pending);
+  const searchParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
+  const requestedTab = Number(searchParams.get('tab'));
+  const resolvedInitialStatus =
+    requestedTab === RequestStatus.Approved || requestedTab === RequestStatus.Rejected
+      ? (requestedTab as RequestStatus)
+      : RequestStatus.Pending;
+  const [statusFilter, setStatusFilter] = useState<RequestStatus>(resolvedInitialStatus);
   const [filters, setFilters] = useState({
     pageNumber: 1,
     pageSize: 20,
@@ -63,6 +70,10 @@ const RequestManagement: React.FC = () => {
 
   const { data: requestData, isLoading, refetch } = useRequestList(filters);
   const { mutateAsync: updateRequestStatus, isPending: isUpdating } = useUpdateRequestStatus();
+
+  useEffect(() => {
+    setStatusFilter(resolvedInitialStatus);
+  }, [resolvedInitialStatus]);
 
   const tabList = useMemo(
     () => [
@@ -158,7 +169,7 @@ const RequestManagement: React.FC = () => {
               icon={<EyeOutlined />}
               onClick={() =>
                 void navigate({
-                  href: `/waste-data/requests/record?wasteRecordId=${record.wasteRecordId}`,
+                  href: `/waste-data/requests/record?wasteRecordId=${record.wasteRecordId}&tab=${statusFilter}`,
                 })
               }
             >
@@ -272,9 +283,12 @@ const RequestManagement: React.FC = () => {
     <PageContainer
       title={'Request Management'}
       tabList={tabList}
+      tabActiveKey={statusFilter.toString()}
       onTabChange={(key) => {
-        setStatusFilter(parseInt(key) as RequestStatus);
+        const nextStatus = parseInt(key) as RequestStatus;
+        setStatusFilter(nextStatus);
         setSelectedRows([]);
+        void navigate({ href: `/waste-data/requests?tab=${nextStatus}` });
       }}
     >
       <ProTable<ChangeRequest>

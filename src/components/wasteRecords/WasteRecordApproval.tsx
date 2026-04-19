@@ -22,7 +22,7 @@ import {
   QuestionCircleOutlined,
 } from '@ant-design/icons';
 import { TableActionButton, TableActionGroup } from '@/components/table/TableAction';
-import { useNavigate } from '@tanstack/react-router';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useUpdateWasteRecordApprovalStatus, useWasteRecordList } from '@/hook/wasteRecords';
 
 const renderTabWithTooltip = (label: string, description: string) => (
@@ -38,9 +38,18 @@ const renderTabWithTooltip = (label: string, description: string) => (
 
 const WasteRecordApproval: React.FC = () => {
   const navigate = useNavigate();
+  const searchStr = useLocation({ select: (location) => location.searchStr });
   const { departments } = useProfileDropdownOptions();
   const { campuses, disposalMethods, isLoading } = useWasteRecordDropdownOptions();
-  const [statusFilter, setStatusFilter] = useState<WasteRecordStatus>(WasteRecordStatus.New);
+  const searchParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
+  const requestedTab = Number(searchParams.get('tab'));
+  const resolvedInitialStatus =
+    requestedTab === WasteRecordStatus.Verified ||
+    requestedTab === WasteRecordStatus.Rejected ||
+    requestedTab === WasteRecordStatus.RevisionRequired
+      ? (requestedTab as WasteRecordStatus)
+      : WasteRecordStatus.New;
+  const [statusFilter, setStatusFilter] = useState<WasteRecordStatus>(resolvedInitialStatus);
   const [selectedRows, setSelectedRows] = useState<WasteRecord[]>([]);
   const actionRef = useRef<ActionType | undefined>(undefined);
 
@@ -57,6 +66,10 @@ const WasteRecordApproval: React.FC = () => {
   const { data: wasteRecordData, isLoading: isFetching } = useWasteRecordList(filters);
   const { mutateAsync: updateApprovalStatus, isPending: isUpdating } =
     useUpdateWasteRecordApprovalStatus();
+
+  useEffect(() => {
+    setStatusFilter(resolvedInitialStatus);
+  }, [resolvedInitialStatus]);
 
   const handleStatusUpdate = async (
     records: WasteRecord[],
@@ -90,28 +103,28 @@ const WasteRecordApproval: React.FC = () => {
         key: WasteRecordStatus.New.toString(),
         tab: renderTabWithTooltip(
           wasteRecordStatusLabels[WasteRecordStatus.New],
-          'Verify clean records directly. Use Revision Required for fixable issues and Rejected for invalid submissions.',
+          'Verify waste records. Update waste record status to Revision Required for fixable issues and Rejected for invalid submissions.',
         ),
       },
       {
         key: WasteRecordStatus.Verified.toString(),
         tab: renderTabWithTooltip(
           wasteRecordStatusLabels[WasteRecordStatus.Verified],
-          'Verified records are complete submissions. Move them back to Revision Required only when follow-up changes are needed.',
+          'Verified waste records. Move them back to Revision Required only when follow-up changes are needed.',
         ),
       },
       {
         key: WasteRecordStatus.Rejected.toString(),
         tab: renderTabWithTooltip(
           wasteRecordStatusLabels[WasteRecordStatus.Rejected],
-          'Rejected records remain visible for reference. Verify only when the submitted data is now acceptable.',
+          'Rejected records. Verify only when the submitted data is now acceptable.',
         ),
       },
       {
         key: WasteRecordStatus.RevisionRequired.toString(),
         tab: renderTabWithTooltip(
           wasteRecordStatusLabels[WasteRecordStatus.RevisionRequired],
-          'These comments are visible to the requester. Once the updates are correct, verify the record to close the loop.',
+          'These comments are visible to the user. Once the updates are correct, verify the record to close the loop.',
         ),
       },
     ],
@@ -157,7 +170,7 @@ const WasteRecordApproval: React.FC = () => {
                 icon={<EyeOutlined />}
                 onClick={() =>
                   void navigate({
-                    href: `/waste-data/approval/record?wasteRecordId=${record.id}`,
+                    href: `/waste-data/approval/record?wasteRecordId=${record.id}&tab=${statusFilter}`,
                   })
                 }
               >
@@ -199,7 +212,7 @@ const WasteRecordApproval: React.FC = () => {
                 icon={<EyeOutlined />}
                 onClick={() =>
                   void navigate({
-                    href: `/waste-data/approval/record?wasteRecordId=${record.id}`,
+                    href: `/waste-data/approval/record?wasteRecordId=${record.id}&tab=${statusFilter}`,
                   })
                 }
               >
@@ -233,7 +246,7 @@ const WasteRecordApproval: React.FC = () => {
                 icon={<EyeOutlined />}
                 onClick={() =>
                   void navigate({
-                    href: `/waste-data/approval/record?wasteRecordId=${record.id}`,
+                    href: `/waste-data/approval/record?wasteRecordId=${record.id}&tab=${statusFilter}`,
                   })
                 }
               >
@@ -268,7 +281,7 @@ const WasteRecordApproval: React.FC = () => {
                 icon={<EyeOutlined />}
                 onClick={() =>
                   void navigate({
-                    href: `/waste-data/approval/record?wasteRecordId=${record.id}`,
+                    href: `/waste-data/approval/record?wasteRecordId=${record.id}&tab=${statusFilter}`,
                   })
                 }
               >
@@ -313,9 +326,12 @@ const WasteRecordApproval: React.FC = () => {
       title={'Waste Record Approval Management'}
       loading={isLoading}
       tabList={tabList}
+      tabActiveKey={statusFilter.toString()}
       onTabChange={(key) => {
-        setStatusFilter(parseInt(key) as WasteRecordStatus);
+        const nextStatus = parseInt(key) as WasteRecordStatus;
+        setStatusFilter(nextStatus);
         setSelectedRows([]);
+        void navigate({ href: `/waste-data/approval?tab=${nextStatus}` });
       }}
     >
       <ProTable<WasteRecord>

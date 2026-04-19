@@ -37,6 +37,7 @@ const WasteRecordDetailPage: React.FC<WasteRecordDetailPageProps> = ({ source = 
   const searchParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
   const wasteRecordId = searchParams.get('wasteRecordId') ?? undefined;
   const isEditRoute = searchParams.get('mode') === 'edit';
+  const parentTab = searchParams.get('tab');
   const { departments } = useProfileDropdownOptions();
   const { campuses, disposalMethods } = useWasteRecordDropdownOptions();
   const { data: record, isLoading: loading } = useWasteRecordDetail(
@@ -55,29 +56,57 @@ const WasteRecordDetailPage: React.FC<WasteRecordDetailPageProps> = ({ source = 
       case 'management':
         return {
           parentPath: '/waste-data/management',
+          detailPath: '/waste-data/management/record',
           parentTitle: 'Management',
           pageTitle: isEditMode ? 'Edit Waste Record' : 'Waste Record Details',
         };
       case 'approval':
         return {
           parentPath: '/waste-data/approval',
+          detailPath: '/waste-data/approval/record',
           parentTitle: 'Approval',
           pageTitle: isEditMode ? 'Review Waste Record' : 'Waste Record Details',
         };
       case 'requests':
         return {
           parentPath: '/waste-data/requests',
+          detailPath: '/waste-data/requests/record',
           parentTitle: 'Requests',
           pageTitle: isEditMode ? 'Edit Waste Record' : 'Waste Record Details',
         };
       default:
         return {
           parentPath: '/data-entry/view-form',
+          detailPath: '/data-entry/view-form/record',
           parentTitle: 'View Form',
           pageTitle: isEditMode ? 'Edit Waste Record' : 'Waste Record Details',
         };
     }
   }, [isEditMode, source]);
+
+  const parentHref = useMemo(() => {
+    if (!parentTab) {
+      return pageContext.parentPath;
+    }
+
+    return `${pageContext.parentPath}?tab=${parentTab}`;
+  }, [pageContext.parentPath, parentTab]);
+
+  const buildDetailHref = (mode?: 'edit') => {
+    if (!wasteRecordId) {
+      return pageContext.detailPath;
+    }
+
+    const params = new URLSearchParams({ wasteRecordId });
+    if (parentTab) {
+      params.set('tab', parentTab);
+    }
+    if (mode) {
+      params.set('mode', mode);
+    }
+
+    return `${pageContext.detailPath}?${params.toString()}`;
+  };
 
   const attachmentContent = useMemo(() => {
     if (!record?.attachments?.length) {
@@ -178,26 +207,18 @@ const WasteRecordDetailPage: React.FC<WasteRecordDetailPageProps> = ({ source = 
       okButtonProps: { danger: true, loading: isDeleting },
       onOk: async () => {
         await deleteWasteRecord({ id: record.id });
-        void navigate({ to: pageContext.parentPath });
+        void navigate({ href: parentHref });
       },
     });
   };
 
   const goToViewMode = () => {
-    if (wasteRecordId) {
-      const sourceQuery = source === 'view-form' ? '' : `&source=${source}`;
-      void navigate({
-        href: `/data-entry/view-form/record?wasteRecordId=${wasteRecordId}${sourceQuery}`,
-      });
-    }
+    void navigate({ href: buildDetailHref() });
   };
 
   const goToEditMode = () => {
     if (wasteRecordId && canManageRecord) {
-      const sourceQuery = source === 'view-form' ? '' : `&source=${source}`;
-      void navigate({
-        href: `/data-entry/view-form/record?wasteRecordId=${wasteRecordId}${sourceQuery}&mode=edit`,
-      });
+      void navigate({ href: buildDetailHref('edit') });
     }
   };
 
@@ -237,7 +258,7 @@ const WasteRecordDetailPage: React.FC<WasteRecordDetailPageProps> = ({ source = 
           { title: 'Waste Record Details' },
         ],
       }}
-      onBack={() => void navigate({ to: pageContext.parentPath })}
+      onBack={() => void navigate({ href: parentHref })}
     >
       {loading && (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
