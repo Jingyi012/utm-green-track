@@ -25,6 +25,11 @@ import { TableActionButton, TableActionGroup } from '@/components/table/TableAct
 export const EnquiryList: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [activeStatusUpdate, setActiveStatusUpdate] = useState<{
+    enquiryId: string;
+    status: number;
+  } | null>(null);
+  const [activeDeleteId, setActiveDeleteId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     pageNumber: 1,
     pageSize: 20,
@@ -41,7 +46,10 @@ export const EnquiryList: React.FC = () => {
     useUpdateEnquiryStatus();
 
   const handleDeleteEnquiry = (id: string) => {
-    return deleteEnquiry(id);
+    setActiveDeleteId(id);
+    return deleteEnquiry(id).finally(() => {
+      setActiveDeleteId(null);
+    });
   };
 
   const handleCreateEnquiry = async (values: EnquiryInput) => {
@@ -55,10 +63,13 @@ export const EnquiryList: React.FC = () => {
   };
 
   const handleEnquiryStatusUpdate = async (id: string, status: number) => {
+    setActiveStatusUpdate({ enquiryId: id, status });
     try {
       await updateEnquiryStatus({ enquiryId: id, status });
     } catch {
       return;
+    } finally {
+      setActiveStatusUpdate(null);
     }
   };
 
@@ -130,7 +141,11 @@ export const EnquiryList: React.FC = () => {
               <TableActionButton
                 tone="warning"
                 icon={<StopOutlined />}
-                loading={isUpdatingStatus}
+                loading={
+                  isUpdatingStatus &&
+                  activeStatusUpdate?.enquiryId === record.id &&
+                  activeStatusUpdate.status === EnquiryStatus.Closed
+                }
                 onClick={() => handleEnquiryStatusUpdate(record.id, EnquiryStatus.Closed)}
               >
                 Close
@@ -141,7 +156,11 @@ export const EnquiryList: React.FC = () => {
               <TableActionButton
                 tone="success"
                 icon={<RedoOutlined />}
-                loading={isUpdatingStatus}
+                loading={
+                  isUpdatingStatus &&
+                  activeStatusUpdate?.enquiryId === record.id &&
+                  activeStatusUpdate.status === EnquiryStatus.Open
+                }
                 onClick={() => handleEnquiryStatusUpdate(record.id, EnquiryStatus.Open)}
               >
                 Reopen
@@ -152,7 +171,11 @@ export const EnquiryList: React.FC = () => {
               title="Are you sure you want to delete this enquiry?"
               onConfirm={() => handleDeleteEnquiry(record.id)}
             >
-              <TableActionButton tone="danger" icon={<DeleteOutlined />} loading={isDeleting}>
+              <TableActionButton
+                tone="danger"
+                icon={<DeleteOutlined />}
+                loading={isDeleting && activeDeleteId === record.id}
+              >
                 Delete
               </TableActionButton>
             </Popconfirm>
@@ -160,7 +183,15 @@ export const EnquiryList: React.FC = () => {
         ),
       },
     ],
-    [handleDeleteEnquiry, handleEnquiryStatusUpdate, hasRole, isDeleting, isUpdatingStatus],
+    [
+      handleDeleteEnquiry,
+      handleEnquiryStatusUpdate,
+      hasRole,
+      isDeleting,
+      isUpdatingStatus,
+      activeDeleteId,
+      activeStatusUpdate,
+    ],
   );
 
   return (

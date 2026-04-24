@@ -191,6 +191,11 @@ export const proLayoutMenuData: AppMenuItem[] = [
         name: 'Role Permissions',
         requiredPermission: ADMIN_OPERATION_PERMISSION,
       },
+      {
+        path: '/configurations/notification-emails',
+        name: 'Notification Emails',
+        requiredPermission: ADMIN_OPERATION_PERMISSION,
+      },
     ],
   },
   {

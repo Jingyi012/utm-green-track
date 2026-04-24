@@ -21,6 +21,7 @@ export default function DisposalWasteConfig() {
     data: disposalMethods = [],
     isLoading: isFetching,
     error: disposalError,
+    refetch,
   } = useDisposalMethodList();
 
   const { mutateAsync: updateWasteTypeMutation, isPending: isUpdating } = useUpdateWasteType();
@@ -107,6 +108,9 @@ export default function DisposalWasteConfig() {
               dataSource={method.wasteTypes}
               pagination={false}
               search={false}
+              options={{
+                reload: () => refetch(),
+              }}
               toolBarRender={false}
               columns={columns}
             />

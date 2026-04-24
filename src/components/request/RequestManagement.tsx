@@ -61,6 +61,10 @@ const RequestManagement: React.FC = () => {
       ? (requestedTab as RequestStatus)
       : RequestStatus.Pending;
   const [statusFilter, setStatusFilter] = useState<RequestStatus>(resolvedInitialStatus);
+  const [activeStatusUpdate, setActiveStatusUpdate] = useState<{
+    requestIds: string[];
+    status: RequestStatus;
+  } | null>(null);
   const [filters, setFilters] = useState({
     pageNumber: 1,
     pageSize: 20,
@@ -104,6 +108,10 @@ const RequestManagement: React.FC = () => {
 
   const handleStatusUpdate = async (requests: ChangeRequest[], status: RequestStatus) => {
     if (!requests.length) return;
+    setActiveStatusUpdate({
+      requestIds: requests.map((request) => request.id),
+      status,
+    });
     try {
       await updateRequestStatus({
         requestIds: requests.map((request) => request.id),
@@ -112,8 +120,19 @@ const RequestManagement: React.FC = () => {
       setSelectedRows([]);
     } catch {
       return;
+    } finally {
+      setActiveStatusUpdate(null);
     }
   };
+
+  const isRowActionLoading = (requestId: string, status: RequestStatus) =>
+    isUpdating &&
+    activeStatusUpdate?.status === status &&
+    activeStatusUpdate.requestIds.length === 1 &&
+    activeStatusUpdate.requestIds[0] === requestId;
+
+  const isBatchActionLoading = (status: RequestStatus) =>
+    isUpdating && activeStatusUpdate?.status === status && activeStatusUpdate.requestIds.length > 1;
 
   const columns: ProColumns<ChangeRequest>[] = useMemo(
     () => [
@@ -222,13 +241,13 @@ const RequestManagement: React.FC = () => {
               <TableActionGroup>
                 <Popconfirm
                   title="Approve this request?"
-                  description="This should send the linked waste record into Revision Required so the requester can update it."
+                  description="This should change the waste record status to Revision Required so the requester can update it."
                   onConfirm={() => handleStatusUpdate([record], RequestStatus.Approved)}
                 >
                   <TableActionButton
                     tone="success"
                     icon={<CheckOutlined />}
-                    loading={isUpdating}
+                    loading={isRowActionLoading(record.id, RequestStatus.Approved)}
                   >
                     Approve
                   </TableActionButton>
@@ -241,7 +260,7 @@ const RequestManagement: React.FC = () => {
                   <TableActionButton
                     tone="danger"
                     icon={<CloseOutlined />}
-                    loading={isUpdating}
+                    loading={isRowActionLoading(record.id, RequestStatus.Rejected)}
                   >
                     Reject
                   </TableActionButton>
@@ -259,7 +278,7 @@ const RequestManagement: React.FC = () => {
               <TableActionButton
                 tone="warning"
                 icon={<ClockCircleOutlined />}
-                loading={isUpdating}
+                loading={isRowActionLoading(record.id, RequestStatus.Pending)}
               >
                 Pending
               </TableActionButton>
@@ -268,7 +287,7 @@ const RequestManagement: React.FC = () => {
         },
       },
     ],
-    [handleStatusUpdate, isUpdating, navigate],
+    [handleStatusUpdate, navigate, isUpdating, activeStatusUpdate],
   );
 
   useEffect(() => {
@@ -346,7 +365,7 @@ const RequestManagement: React.FC = () => {
         >
           <Button
             onClick={async () => handleStatusUpdate(selectedRows, RequestStatus.Approved)}
-            loading={isUpdating}
+            loading={isBatchActionLoading(RequestStatus.Approved)}
           >
             Batch Approved
           </Button>

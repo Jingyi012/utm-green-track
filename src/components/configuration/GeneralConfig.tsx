@@ -97,6 +97,7 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
     isFetching: isConfigFetching,
     isError,
     error,
+    refetch,
   } = useConfigList({
     prefix: definition.prefix,
     year: selectedYear === 'all' ? undefined : selectedYear,
@@ -210,6 +211,9 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
         columns={columns}
         search={false}
         pagination={false}
+        options={{
+          reload: () => refetch(),
+        }}
         toolBarRender={() => [
           <Space key="year-filter" align="center">
             <Typography.Text type="secondary">Year</Typography.Text>

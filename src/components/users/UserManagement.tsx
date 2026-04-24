@@ -24,6 +24,7 @@ const UserManagement: React.FC = () => {
   const [editMode, setEditMode] = useState<boolean>(false);
   const [excelLoading, setExcelLoading] = useState<boolean>(false);
   const [pdfLoading, setPdfLoading] = useState<boolean>(false);
+  const [activeDeleteUserId, setActiveDeleteUserId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     pageNumber: 1,
     pageSize: 20,
@@ -55,7 +56,10 @@ const UserManagement: React.FC = () => {
   };
 
   const handleDeleteUser = (userId: string) => {
-    return deleteUser(userId);
+    setActiveDeleteUserId(userId);
+    return deleteUser(userId).finally(() => {
+      setActiveDeleteUserId(null);
+    });
   };
 
   const columns: ProColumns<UserDetails>[] = [
@@ -77,7 +81,6 @@ const UserManagement: React.FC = () => {
                 setModalOpen(true);
                 setEditMode(true);
               }}
-              loading={isUpdating}
             >
               Edit
             </TableActionButton>
@@ -90,7 +93,7 @@ const UserManagement: React.FC = () => {
               <TableActionButton
                 tone="danger"
                 icon={<DeleteOutlined />}
-                loading={isDeleting}
+                loading={isDeleting && activeDeleteUserId === record.id}
               >
                 Delete
               </TableActionButton>

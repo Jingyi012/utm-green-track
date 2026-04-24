@@ -56,8 +56,9 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
   const linkedWasteRecordId = searchParams.get('wasteRecordId') ?? undefined;
   const [modalOpen, setModalOpen] = useState<false | 'excel' | 'pdf'>(false);
   const [changeRequestModalOpen, setChangeRequestModalOpen] = useState<boolean>(false);
+  const [activeDeleteRecordId, setActiveDeleteRecordId] = useState<string | null>(null);
 
-  const { data: wasteRecordData, isLoading: isFetching } = useWasteRecordList(filters);
+  const { data: wasteRecordData, isLoading: isFetching, refetch } = useWasteRecordList(filters);
   const { mutateAsync: deleteWasteRecord, isPending: isDeleting } = useDeleteWasteRecord();
   const { mutateAsync: exportWasteRecordExcel, isPending: isExportingExcel } =
     useExportWasteRecordExcel();
@@ -138,9 +139,17 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
       content: 'Are you sure you want to delete this waste record?',
       okText: 'Yes',
       cancelText: 'Cancel',
-      okButtonProps: { danger: true, loading: isDeleting },
+      okButtonProps: {
+        danger: true,
+        loading: isDeleting && activeDeleteRecordId === wasteRecord.id,
+      },
       onOk: async () => {
-        await deleteWasteRecord({ id: wasteRecord.id });
+        setActiveDeleteRecordId(wasteRecord.id);
+        try {
+          await deleteWasteRecord({ id: wasteRecord.id });
+        } finally {
+          setActiveDeleteRecordId(null);
+        }
       },
     });
   };
@@ -193,7 +202,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
                   <TableActionButton
                     tone="danger"
                     icon={<DeleteOutlined />}
-                    loading={isDeleting}
+                    loading={isDeleting && activeDeleteRecordId === record.id}
                     onClick={() => confirmDeletion(record)}
                   >
                     Delete
@@ -228,6 +237,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
       isDeleting,
       isViewForm,
       navigate,
+      activeDeleteRecordId,
     ],
   );
 
@@ -314,6 +324,9 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         search={{
           layout: 'vertical',
           labelWidth: 'auto',
+        }}
+        options={{
+          reload: () => refetch(),
         }}
       />
 

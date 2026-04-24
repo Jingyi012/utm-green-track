@@ -38,48 +38,60 @@ export const renderAttachments = (_: unknown, record: WasteRecord) => {
   const attachments = Array.isArray(record.attachments) ? record.attachments : [];
   if (attachments.length === 0) return '-';
 
+  const cellContentStyle: React.CSSProperties = {
+    display: 'block',
+    width: '100%',
+    overflow: 'hidden',
+  };
+
+  const fileLinkStyle: React.CSSProperties = {
+    display: 'block',
+    width: '100%',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  };
+
   if (attachments.length === 1) {
     const file = attachments[0];
     return (
-      <Tooltip title={file.fileName}>
-        <a
-          href={file.filePath}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-block',
-            maxWidth: 180,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {file.fileName}
-        </a>
-      </Tooltip>
+      <div style={cellContentStyle}>
+        <Tooltip title={file.fileName}>
+          <a
+            href={file.filePath}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={fileLinkStyle}
+          >
+            {file.fileName}
+          </a>
+        </Tooltip>
+      </div>
     );
   }
 
   return (
-    <Tooltip
-      title={
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {attachments.map((file) => (
-            <a
-              key={file.id}
-              href={file.filePath}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: '#fff' }}
-            >
-              {file.fileName}
-            </a>
-          ))}
-        </div>
-      }
-    >
-      <span>{`${attachments.length} files`}</span>
-    </Tooltip>
+    <div style={cellContentStyle}>
+      <Tooltip
+        title={
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {attachments.map((file) => (
+              <a
+                key={file.id}
+                href={file.filePath}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#fff' }}
+              >
+                {file.fileName}
+              </a>
+            ))}
+          </div>
+        }
+      >
+        <span style={fileLinkStyle}>{`${attachments.length} files`}</span>
+      </Tooltip>
+    </div>
   );
 };
 

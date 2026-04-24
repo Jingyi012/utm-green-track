@@ -357,7 +357,10 @@ export const useUpdateWasteRecordApprovalStatus = () => {
     },
     onSuccess: async (_, variables) => {
       message.success(`Waste record status updated to ${wasteRecordStatusLabels[variables.status]}`);
-      await invalidateWasteRecordListQueries(queryClient);
+      await Promise.all([
+        invalidateWasteRecordListQueries(queryClient),
+        ...variables.wasteRecordIds.map((id) => invalidateWasteRecordDetailQuery(queryClient, id)),
+      ]);
       await refreshBadges(['/waste-data/approval']);
     },
     onError: (_, variables) => {

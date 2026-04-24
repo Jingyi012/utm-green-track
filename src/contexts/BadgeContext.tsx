@@ -8,9 +8,13 @@ interface BadgeContextType {
 const BadgeContext = createContext<BadgeContextType | undefined>(undefined);
 
 export const BadgeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [refreshFunction, setRefreshFunction] = useState<
+  const [refreshFunction, setRefreshFunctionState] = useState<
     ((paths?: string[]) => Promise<void>) | null
   >(null);
+
+  const setRefreshFunction = useCallback((fn: (paths?: string[]) => Promise<void>) => {
+    setRefreshFunctionState(() => fn);
+  }, []);
 
   const refreshBadges = useCallback(
     async (paths?: string[]) => {

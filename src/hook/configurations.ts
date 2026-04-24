@@ -41,6 +41,11 @@ export type UpdateConfigInput = {
   value: string;
 };
 
+type UseUpdateConfigOptions = {
+  invalidateOnSuccess?: boolean;
+  successMessage?: string | false;
+};
+
 // ============= SHARED HELPERS =============
 async function invalidateWasteTypeRelatedQueries(queryClient: ReturnType<typeof useQueryClient>) {
   await Promise.all([
@@ -158,16 +163,23 @@ export const useDeleteWasteType = () => {
 };
 
 // ============= GENERAL CONFIG MUTATION HOOKS =============
-export const useUpdateConfig = () => {
+export const useUpdateConfig = (options?: UseUpdateConfigOptions) => {
   const queryClient = useQueryClient();
+  const { invalidateOnSuccess = true, successMessage = 'Configuration updated successfully' } =
+    options ?? {};
 
   return useMutation({
     mutationFn: async (data: UpdateConfigInput) => {
       return await updateConfig(data);
     },
     onSuccess: async () => {
-      message.success('Configuration updated successfully');
-      await invalidateConfigQueries(queryClient);
+      if (successMessage) {
+        message.success(successMessage);
+      }
+
+      if (invalidateOnSuccess) {
+        await invalidateConfigQueries(queryClient);
+      }
     },
     onError: (error: unknown) => {
       message.error(getErrorMessage(error, 'Failed to update configuration'));

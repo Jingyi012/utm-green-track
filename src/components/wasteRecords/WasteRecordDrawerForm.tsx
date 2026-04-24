@@ -1,5 +1,6 @@
 import { Col, Row, Form, Button, Upload, Typography, App } from 'antd';
 import {
+  ProFormDatePicker,
   ProFormSelect,
   ProFormText,
   ProFormDigit,
@@ -87,6 +88,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
   const normalizedInitialValues = useMemo(
     () => ({
       ...initialValues,
+      date: toPickerValue(initialValues?.date),
       programDate: toPickerValue(initialValues?.programDate),
     }),
     [initialValues],
@@ -142,6 +144,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
       onFinish={async (values) => {
         const payload: FormValueType = {
           ...values,
+          date: toIsoString(values.date),
           programDate: toIsoString(values.programDate),
         };
 
@@ -172,6 +175,20 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
         <Title level={5}>Basic Information</Title>
 
         <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <ProFormDatePicker
+              name="date"
+              label="Date"
+              placeholder="Please select record date"
+              rules={[{ required: true, message: 'Please select record date' }]}
+              disabled={!isEditMode}
+              fieldProps={{
+                allowClear: false,
+                format: 'DD/MM/YYYY',
+                style: { width: '100%' },
+              }}
+            />
+          </Col>
           <Col span={12}>
             <ProFormSelect
               name={'campusId'}
@@ -205,8 +222,6 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
               showSearch
             />
           </Col>
-        </Row>
-        <Row gutter={16}>
           <Col xs={24} md={12}>
             <ProFormText
               name="unit"
@@ -225,6 +240,10 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
             />
           </Col>
         </Row>
+
+        <Title level={5} style={{ marginTop: 12 }}>
+          Waste Diversion Initiative (If any)
+        </Title>
 
         <Row gutter={16}>
           <Col xs={24} md={12}>

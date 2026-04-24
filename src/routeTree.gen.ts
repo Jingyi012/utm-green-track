@@ -33,6 +33,7 @@ import { Route as InternalDataEntryStatisticRouteImport } from './routes/_intern
 import { Route as InternalDataEntryNewFormRouteImport } from './routes/_internal/data-entry/new-form'
 import { Route as InternalConfigurationsUtmPopulationRouteImport } from './routes/_internal/configurations/utm-population'
 import { Route as InternalConfigurationsRolePermissionsRouteImport } from './routes/_internal/configurations/role-permissions'
+import { Route as InternalConfigurationsNotificationEmailsRouteImport } from './routes/_internal/configurations/notification-emails'
 import { Route as InternalConfigurationsLandfillingCostRouteImport } from './routes/_internal/configurations/landfilling-cost'
 import { Route as InternalConfigurationsDisposalWasteRouteImport } from './routes/_internal/configurations/disposal-waste'
 import { Route as InternalConfigurationsDepartmentsRouteImport } from './routes/_internal/configurations/departments'
@@ -172,6 +173,12 @@ const InternalConfigurationsRolePermissionsRoute =
     path: '/configurations/role-permissions',
     getParentRoute: () => InternalRouteRoute,
   } as any)
+const InternalConfigurationsNotificationEmailsRoute =
+  InternalConfigurationsNotificationEmailsRouteImport.update({
+    id: '/configurations/notification-emails',
+    path: '/configurations/notification-emails',
+    getParentRoute: () => InternalRouteRoute,
+  } as any)
 const InternalConfigurationsLandfillingCostRoute =
   InternalConfigurationsLandfillingCostRouteImport.update({
     id: '/configurations/landfilling-cost',
@@ -242,6 +249,7 @@ export interface FileRoutesByFullPath {
   '/configurations/departments': typeof InternalConfigurationsDepartmentsRoute
   '/configurations/disposal-waste': typeof InternalConfigurationsDisposalWasteRoute
   '/configurations/landfilling-cost': typeof InternalConfigurationsLandfillingCostRoute
+  '/configurations/notification-emails': typeof InternalConfigurationsNotificationEmailsRoute
   '/configurations/role-permissions': typeof InternalConfigurationsRolePermissionsRoute
   '/configurations/utm-population': typeof InternalConfigurationsUtmPopulationRoute
   '/data-entry/new-form': typeof InternalDataEntryNewFormRoute
@@ -276,6 +284,7 @@ export interface FileRoutesByTo {
   '/configurations/departments': typeof InternalConfigurationsDepartmentsRoute
   '/configurations/disposal-waste': typeof InternalConfigurationsDisposalWasteRoute
   '/configurations/landfilling-cost': typeof InternalConfigurationsLandfillingCostRoute
+  '/configurations/notification-emails': typeof InternalConfigurationsNotificationEmailsRoute
   '/configurations/role-permissions': typeof InternalConfigurationsRolePermissionsRoute
   '/configurations/utm-population': typeof InternalConfigurationsUtmPopulationRoute
   '/data-entry/new-form': typeof InternalDataEntryNewFormRoute
@@ -312,6 +321,7 @@ export interface FileRoutesById {
   '/_internal/configurations/departments': typeof InternalConfigurationsDepartmentsRoute
   '/_internal/configurations/disposal-waste': typeof InternalConfigurationsDisposalWasteRoute
   '/_internal/configurations/landfilling-cost': typeof InternalConfigurationsLandfillingCostRoute
+  '/_internal/configurations/notification-emails': typeof InternalConfigurationsNotificationEmailsRoute
   '/_internal/configurations/role-permissions': typeof InternalConfigurationsRolePermissionsRoute
   '/_internal/configurations/utm-population': typeof InternalConfigurationsUtmPopulationRoute
   '/_internal/data-entry/new-form': typeof InternalDataEntryNewFormRoute
@@ -348,6 +358,7 @@ export interface FileRouteTypes {
     | '/configurations/departments'
     | '/configurations/disposal-waste'
     | '/configurations/landfilling-cost'
+    | '/configurations/notification-emails'
     | '/configurations/role-permissions'
     | '/configurations/utm-population'
     | '/data-entry/new-form'
@@ -382,6 +393,7 @@ export interface FileRouteTypes {
     | '/configurations/departments'
     | '/configurations/disposal-waste'
     | '/configurations/landfilling-cost'
+    | '/configurations/notification-emails'
     | '/configurations/role-permissions'
     | '/configurations/utm-population'
     | '/data-entry/new-form'
@@ -417,6 +429,7 @@ export interface FileRouteTypes {
     | '/_internal/configurations/departments'
     | '/_internal/configurations/disposal-waste'
     | '/_internal/configurations/landfilling-cost'
+    | '/_internal/configurations/notification-emails'
     | '/_internal/configurations/role-permissions'
     | '/_internal/configurations/utm-population'
     | '/_internal/data-entry/new-form'
@@ -616,6 +629,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InternalConfigurationsRolePermissionsRouteImport
       parentRoute: typeof InternalRouteRoute
     }
+    '/_internal/configurations/notification-emails': {
+      id: '/_internal/configurations/notification-emails'
+      path: '/configurations/notification-emails'
+      fullPath: '/configurations/notification-emails'
+      preLoaderRoute: typeof InternalConfigurationsNotificationEmailsRouteImport
+      parentRoute: typeof InternalRouteRoute
+    }
     '/_internal/configurations/landfilling-cost': {
       id: '/_internal/configurations/landfilling-cost'
       path: '/configurations/landfilling-cost'
@@ -735,6 +755,7 @@ interface InternalRouteRouteChildren {
   InternalConfigurationsDepartmentsRoute: typeof InternalConfigurationsDepartmentsRoute
   InternalConfigurationsDisposalWasteRoute: typeof InternalConfigurationsDisposalWasteRoute
   InternalConfigurationsLandfillingCostRoute: typeof InternalConfigurationsLandfillingCostRoute
+  InternalConfigurationsNotificationEmailsRoute: typeof InternalConfigurationsNotificationEmailsRoute
   InternalConfigurationsRolePermissionsRoute: typeof InternalConfigurationsRolePermissionsRoute
   InternalConfigurationsUtmPopulationRoute: typeof InternalConfigurationsUtmPopulationRoute
   InternalDataEntryNewFormRoute: typeof InternalDataEntryNewFormRoute
@@ -765,6 +786,8 @@ const InternalRouteRouteChildren: InternalRouteRouteChildren = {
     InternalConfigurationsDisposalWasteRoute,
   InternalConfigurationsLandfillingCostRoute:
     InternalConfigurationsLandfillingCostRoute,
+  InternalConfigurationsNotificationEmailsRoute:
+    InternalConfigurationsNotificationEmailsRoute,
   InternalConfigurationsRolePermissionsRoute:
     InternalConfigurationsRolePermissionsRoute,
   InternalConfigurationsUtmPopulationRoute:

@@ -48,13 +48,14 @@ const MyRequestManagement: React.FC = () => {
   const actionRef = useRef<ActionType | undefined>(undefined);
 
   const [statusFilter, setStatusFilter] = useState<RequestStatus>(RequestStatus.Pending);
+  const [activeDeleteRequestId, setActiveDeleteRequestId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     pageNumber: 1,
     pageSize: 20,
     status: RequestStatus.Pending,
   });
 
-  const { data: requestData, isLoading } = useMyRequestList(filters);
+  const { data: requestData, isLoading, refetch } = useMyRequestList(filters);
   const { mutateAsync: deleteMyRequest, isPending: isDeleting } = useDeleteMyRequest();
 
   const tabList = useMemo(
@@ -85,10 +86,13 @@ const MyRequestManagement: React.FC = () => {
   );
 
   const handleDeletePending = async (requestId: string) => {
+    setActiveDeleteRequestId(requestId);
     try {
       await deleteMyRequest(requestId);
     } catch {
       return;
+    } finally {
+      setActiveDeleteRequestId(null);
     }
   };
 
@@ -207,7 +211,11 @@ const MyRequestManagement: React.FC = () => {
               cancelText="Cancel"
               okButtonProps={{ danger: true }}
             >
-              <TableActionButton tone="danger" icon={<DeleteOutlined />} loading={isDeleting}>
+              <TableActionButton
+                tone="danger"
+                icon={<DeleteOutlined />}
+                loading={isDeleting && activeDeleteRequestId === record.id}
+              >
                 Delete
               </TableActionButton>
             </Popconfirm>
@@ -216,7 +224,7 @@ const MyRequestManagement: React.FC = () => {
           ),
       },
     ],
-    [handleDeletePending, isDeleting, navigate],
+    [handleDeletePending, isDeleting, navigate, activeDeleteRequestId],
   );
 
   useEffect(() => {
@@ -267,6 +275,9 @@ const MyRequestManagement: React.FC = () => {
             success: true,
             total: requestData?.totalCount ?? 0,
           });
+        }}
+        options={{
+          reload: () => refetch(),
         }}
       />
     </PageContainer>

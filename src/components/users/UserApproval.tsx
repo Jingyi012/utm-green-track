@@ -30,8 +30,12 @@ const UserApproval: React.FC = () => {
 
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectingUsers, setRejectingUsers] = useState<UserDetails[]>([]);
+  const [activeStatusUpdate, setActiveStatusUpdate] = useState<{
+    userIds: string[];
+    status: UserStatus;
+  } | null>(null);
 
-  const { data: userData, isLoading: isFetching } = useUserList(filters);
+  const { data: userData, isLoading: isFetching, refetch } = useUserList(filters);
   const { mutateAsync: updateApprovalStatus, isPending: isUpdating } = useUpdateUserApprovalStatus();
 
   const openRejectModal = (users: UserDetails[]) => {
@@ -46,6 +50,10 @@ const UserApproval: React.FC = () => {
     rejectedReason?: string,
   ) => {
     if (!users.length) return;
+    setActiveStatusUpdate({
+      userIds: users.map((user) => user.id),
+      status,
+    });
     return updateApprovalStatus({
       userIds: users.map((user) => user.id),
       status,
@@ -54,8 +62,20 @@ const UserApproval: React.FC = () => {
       .then(() => {
         setSelectedRows([]);
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        setActiveStatusUpdate(null);
+      });
   };
+
+  const isRowActionLoading = (userId: string, status: UserStatus) =>
+    isUpdating &&
+    activeStatusUpdate?.status === status &&
+    activeStatusUpdate.userIds.length === 1 &&
+    activeStatusUpdate.userIds[0] === userId;
+
+  const isBatchActionLoading = (status: UserStatus) =>
+    isUpdating && activeStatusUpdate?.status === status && activeStatusUpdate.userIds.length > 1;
 
   const columns: ProColumns<UserDetails>[] = [
     ...getBaseUserColumns({ positions, departments, roles }),
@@ -73,7 +93,7 @@ const UserApproval: React.FC = () => {
                 tone="success"
                 icon={<CheckOutlined />}
                 onClick={() => handleStatusUpdate([record], UserStatus.Approved)}
-                loading={isUpdating}
+                loading={isRowActionLoading(record.id, UserStatus.Approved)}
               >
                 Approve
               </TableActionButton>
@@ -82,7 +102,6 @@ const UserApproval: React.FC = () => {
                 tone="danger"
                 icon={<CloseOutlined />}
                 onClick={() => openRejectModal([record])}
-                loading={isUpdating}
               >
                 Reject
               </TableActionButton>
@@ -96,7 +115,6 @@ const UserApproval: React.FC = () => {
               tone="danger"
               icon={<CloseOutlined />}
               onClick={() => openRejectModal([record])}
-              loading={isUpdating}
             >
               Reject
             </TableActionButton>
@@ -109,7 +127,7 @@ const UserApproval: React.FC = () => {
               tone="success"
               icon={<CheckOutlined />}
               onClick={() => handleStatusUpdate([record], UserStatus.Approved)}
-              loading={isUpdating}
+              loading={isRowActionLoading(record.id, UserStatus.Approved)}
             >
               Approve
             </TableActionButton>
@@ -183,6 +201,9 @@ const UserApproval: React.FC = () => {
         search={{
           labelWidth: 'auto',
         }}
+        options={{
+          reload: () => refetch(),
+        }}
         rowSelection={
           statusFilter === UserStatus.Pending
             ? {
@@ -203,7 +224,7 @@ const UserApproval: React.FC = () => {
         >
           <Button
             onClick={async () => handleStatusUpdate(selectedRows, UserStatus.Approved)}
-            loading={isUpdating}
+            loading={isBatchActionLoading(UserStatus.Approved)}
           >
             Batch Approve
           </Button>

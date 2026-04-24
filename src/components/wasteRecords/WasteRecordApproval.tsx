@@ -56,6 +56,10 @@ const WasteRecordApproval: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalStatus, setModalStatus] = useState<WasteRecordStatus | null>(null);
   const [modalRecords, setModalRecords] = useState<WasteRecord[]>([]);
+  const [activeStatusUpdate, setActiveStatusUpdate] = useState<{
+    recordIds: string[];
+    status: WasteRecordStatus;
+  } | null>(null);
   const [filters, setFilters] = useState<WasteRecordFilter>({
     pageNumber: 1,
     pageSize: 20,
@@ -63,7 +67,7 @@ const WasteRecordApproval: React.FC = () => {
     isAdmin: true,
   });
 
-  const { data: wasteRecordData, isLoading: isFetching } = useWasteRecordList(filters);
+  const { data: wasteRecordData, isLoading: isFetching, refetch } = useWasteRecordList(filters);
   const { mutateAsync: updateApprovalStatus, isPending: isUpdating } =
     useUpdateWasteRecordApprovalStatus();
 
@@ -77,6 +81,12 @@ const WasteRecordApproval: React.FC = () => {
     comment?: string,
   ) => {
     if (!records.length) return;
+
+    setActiveStatusUpdate({
+      recordIds: records.map((record) => record.id),
+      status,
+    });
+
     try {
       await updateApprovalStatus({
         wasteRecordIds: records.map((record) => record.id),
@@ -86,6 +96,8 @@ const WasteRecordApproval: React.FC = () => {
       setSelectedRows([]);
     } catch {
       return;
+    } finally {
+      setActiveStatusUpdate(null);
     }
   };
 
@@ -153,6 +165,17 @@ const WasteRecordApproval: React.FC = () => {
     };
   }, [modalRecords.length, modalStatus]);
 
+  const isRowActionLoading = (recordId: string, status: WasteRecordStatus) =>
+    isUpdating &&
+    activeStatusUpdate?.status === status &&
+    activeStatusUpdate.recordIds.length === 1 &&
+    activeStatusUpdate.recordIds[0] === recordId;
+
+  const isBatchActionLoading = (status: WasteRecordStatus) =>
+    isUpdating &&
+    activeStatusUpdate?.status === status &&
+    activeStatusUpdate.recordIds.length > 1;
+
   const columns: ProColumns<WasteRecord>[] = [
     ...getBaseColumns({ campuses, departments, disposalMethods, showUserColumn: true }),
     {
@@ -179,7 +202,7 @@ const WasteRecordApproval: React.FC = () => {
               <TableActionButton
                 tone="success"
                 icon={<CheckOutlined />}
-                loading={isUpdating}
+                loading={isRowActionLoading(record.id, WasteRecordStatus.Verified)}
                 onClick={() => handleStatusUpdate([record], WasteRecordStatus.Verified)}
               >
                 Verify
@@ -187,7 +210,6 @@ const WasteRecordApproval: React.FC = () => {
               <TableActionButton
                 tone="danger"
                 icon={<CloseOutlined />}
-                loading={isUpdating}
                 onClick={() => openStatusModal([record], WasteRecordStatus.Rejected)}
               >
                 Reject
@@ -195,7 +217,6 @@ const WasteRecordApproval: React.FC = () => {
               <TableActionButton
                 tone="warning"
                 icon={<ExclamationOutlined />}
-                loading={isUpdating}
                 onClick={() => openStatusModal([record], WasteRecordStatus.RevisionRequired)}
               >
                 Revision
@@ -221,7 +242,6 @@ const WasteRecordApproval: React.FC = () => {
               <TableActionButton
                 tone="warning"
                 icon={<ExclamationOutlined />}
-                loading={isUpdating}
                 onClick={() => openStatusModal([record], WasteRecordStatus.RevisionRequired)}
               >
                 Revision
@@ -229,7 +249,6 @@ const WasteRecordApproval: React.FC = () => {
               <TableActionButton
                 tone="danger"
                 icon={<CloseOutlined />}
-                loading={isUpdating}
                 onClick={() => openStatusModal([record], WasteRecordStatus.Rejected)}
               >
                 Reject
@@ -255,7 +274,7 @@ const WasteRecordApproval: React.FC = () => {
               <TableActionButton
                 tone="success"
                 icon={<CheckOutlined />}
-                loading={isUpdating}
+                loading={isRowActionLoading(record.id, WasteRecordStatus.Verified)}
                 onClick={() => handleStatusUpdate([record], WasteRecordStatus.Verified)}
               >
                 Verify
@@ -263,7 +282,6 @@ const WasteRecordApproval: React.FC = () => {
               <TableActionButton
                 tone="warning"
                 icon={<ExclamationOutlined />}
-                loading={isUpdating}
                 onClick={() => openStatusModal([record], WasteRecordStatus.RevisionRequired)}
               >
                 Revision
@@ -290,7 +308,7 @@ const WasteRecordApproval: React.FC = () => {
               <TableActionButton
                 tone="success"
                 icon={<CheckOutlined />}
-                loading={isUpdating}
+                loading={isRowActionLoading(record.id, WasteRecordStatus.Verified)}
                 onClick={() => handleStatusUpdate([record], WasteRecordStatus.Verified)}
               >
                 Verify
@@ -298,7 +316,6 @@ const WasteRecordApproval: React.FC = () => {
               <TableActionButton
                 tone="danger"
                 icon={<CloseOutlined />}
-                loading={isUpdating}
                 onClick={() => openStatusModal([record], WasteRecordStatus.Rejected)}
               >
                 Reject
@@ -368,6 +385,9 @@ const WasteRecordApproval: React.FC = () => {
           layout: 'vertical',
           labelWidth: 'auto',
         }}
+        options={{
+          reload: () => refetch(),
+        }}
         rowSelection={
           statusFilter === WasteRecordStatus.New
             ? {
@@ -387,20 +407,18 @@ const WasteRecordApproval: React.FC = () => {
         >
           <Button
             onClick={async () => handleStatusUpdate(selectedRows, WasteRecordStatus.Verified)}
-            loading={isUpdating}
+            loading={isBatchActionLoading(WasteRecordStatus.Verified)}
           >
             Batch Approve
           </Button>
           <Button
             onClick={() => openStatusModal(selectedRows, WasteRecordStatus.RevisionRequired)}
-            loading={isUpdating}
           >
             Batch Revision
           </Button>
           <Button
             danger
             onClick={() => openStatusModal(selectedRows, WasteRecordStatus.Rejected)}
-            loading={isUpdating}
           >
             Batch Reject
           </Button>
