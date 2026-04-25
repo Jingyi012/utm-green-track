@@ -1,0 +1,12 @@
+.git
+.github
+.codex
+.next
+.tanstack
+dist
+node_modules
+npm-debug.log*
+.env
+.env.*
+coverage
+*.tsbuildinfo
