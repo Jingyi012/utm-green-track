@@ -22,6 +22,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Convert owner to lowercase
+        run: echo "REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -39,13 +42,13 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:main
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ghcr.io/${{ env.REPO_OWNER }}/${{ env.IMAGE_NAME }}:main
+            ghcr.io/${{ env.REPO_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           build-args: |
             VITE_API_URL=${{ vars.PROD_VITE_API_URL }}
             VITE_FRONTEND_URL=${{ vars.PROD_VITE_FRONTEND_URL }}
 
-      - name: Deploy updated stack on VPS
+      - name: Deploy frontend on VPS
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -54,5 +57,10 @@ jobs:
           script: |
             set -e
             cd ${{ env.DEPLOY_PATH }}
-            docker compose pull
-            docker compose up -d --remove-orphans
+
+            # Login to GHCR
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull and restart frontend only
+            docker compose pull frontend
+            docker compose up -d frontend
