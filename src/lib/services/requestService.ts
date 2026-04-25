@@ -19,6 +19,20 @@ export async function getAllRequest(
     });
 }
 
+export async function getMyRequest(
+    params: {
+        pageNumber?: number;
+        pageSize?: number;
+        status?: number;
+    },
+    options?: { [key: string]: any }) {
+
+    return api.get<PagedResponse<ChangeRequest[]>>(`${API_URL}/me`, {
+        params,
+        ...options,
+    });
+}
+
 export async function createRequest(body: {
     wasteRecordId?: string;
     message: string;
@@ -38,4 +52,9 @@ export async function updateRequestResolveStatus(body: {
 export async function deleteRequest(id: string,
     options?: { [key: string]: any }) {
     return api.delete<GeneralResponse<string>>(`${API_URL}/${id}`, { ...options });
+}
+
+export async function deleteMyRequest(id: string,
+    options?: { [key: string]: any }) {
+    return api.delete<GeneralResponse<string>>(`${API_URL}/me/${id}`, { ...options });
 }

@@ -1,5 +1,3 @@
-'use client';
-
 import { Select, Space } from 'antd';
 
 const { Option } = Select;
@@ -12,8 +10,9 @@ interface YearMonthPickerProps {
 
 const YearMonthPicker: React.FC<YearMonthPickerProps> = ({ year, month = 0, onChange }) => {
   const currentYear = new Date().getFullYear();
-
-  const years = Array.from({ length: 3 }, (_, i) => currentYear - i);
+  const startYear = 2020;
+  const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i)
+    .reverse();
 
   const months = [
     { label: 'All', value: 0 }, // yearly

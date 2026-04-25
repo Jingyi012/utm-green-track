@@ -20,12 +20,33 @@ export const dateFormatter = (date: string) => {
     return new Date(date).toLocaleDateString('en-GB')
 }
 
-export const dateTimeFormatter = (date: string | Date): string => {
-    const d = dayjs.tz(date, 'Asia/Kuala_Lumpur');
-
-    if (!d.isValid()) {
+export const dateTimeFormatter = (date?: string | Date | null): string => {
+    if (!date) {
         return "-";
     }
 
-    return d.format('DD MMM YYYY, h:mm A');
+    try {
+        if (typeof date === 'string') {
+            const normalized = date.trim();
+            if (!normalized || normalized === '-' || normalized.toLowerCase() === 'null') {
+                return "-";
+            }
+
+            const parsed = dayjs(normalized);
+            if (!parsed.isValid()) {
+                return "-";
+            }
+
+            return parsed.tz('Asia/Kuala_Lumpur').format('DD MMM YYYY, h:mm A');
+        }
+
+        const parsed = dayjs(date);
+        if (!parsed.isValid()) {
+            return "-";
+        }
+
+        return parsed.tz('Asia/Kuala_Lumpur').format('DD MMM YYYY, h:mm A');
+    } catch {
+        return "-";
+    }
 };

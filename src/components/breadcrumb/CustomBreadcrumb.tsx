@@ -1,6 +1,5 @@
-'use client';
 
-import Link from 'next/link';
+import { Link } from '@tanstack/react-router';
 import { RightOutlined } from '@ant-design/icons';
 import { Divider } from 'antd';
 
@@ -12,7 +11,7 @@ const CustomBreadcrumb = ({ items }: { items: { title: string; href?: string }[]
                     {items.map((item, index) => (
                         <li key={index} className="flex items-center space-x-2">
                             {item.href ? (
-                                <Link href={item.href} className="text-blue-600 hover:underline">
+                                <Link to={item.href} className="text-blue-600 hover:underline">
                                     {item.title}
                                 </Link>
                             ) : (
@@ -29,3 +28,4 @@ const CustomBreadcrumb = ({ items }: { items: { title: string; href?: string }[]
 };
 
 export default CustomBreadcrumb;
+

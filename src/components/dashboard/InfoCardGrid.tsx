@@ -1,219 +1,215 @@
-'use client';
-
-import { Col, Row, Card, Typography, Table, Divider, Collapse, Tag } from 'antd';
+import { Col, Row, Typography, Table, Divider, Collapse } from 'antd';
+import { useMemo, useState } from 'react';
 import InfoCard from './InfoCard';
-import Image from 'next/image';
-import { useState } from 'react';
 import { BreakdownModal } from './BreakdownModal';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 interface WasteBreakdown {
-    disposalMethod: string;
-    wasteType: string;
-    totalWeight: number;
+  disposalMethod: string;
+  wasteType: string;
+  totalWeight: number;
 }
 
 interface InfoCardGridProps {
-    totalWasteGenerated: number;
-    totalWasteRecycled: number;
-    totalWasteToLandfill: number;
-    totalGhgReduction: number;
-    totalLandfillCostSavings: number;
-    wasteTypeTotals: WasteBreakdown[];
+  totalWasteGenerated: number;
+  totalWasteRecycled: number;
+  totalWasteToLandfill: number;
+  totalGhgReduction: number;
+  totalLandfillCostSavings: number;
+  wasteTypeTotals: WasteBreakdown[];
 }
 
-export default function InfoCardGrid(props: InfoCardGridProps) {
-    const {
-        totalWasteGenerated,
-        totalWasteRecycled,
-        totalWasteToLandfill,
-        totalGhgReduction,
-        totalLandfillCostSavings,
-        wasteTypeTotals,
-    } = props;
+type BreakdownType = 'generated' | 'diverted' | 'diversionRate' | null;
 
-    const [modalOpen, setModalOpen] = useState(false);
-    const [modalTitle, setModalTitle] = useState('');
-    const [modalContent, setModalContent] = useState<React.ReactNode>(null);
+interface BreakdownSummary {
+  disposalMethod: string;
+  weight: number;
+}
 
-    const format = (n: number) => n.toFixed(2);
+export default function InfoCardGrid({
+  totalWasteGenerated,
+  totalWasteRecycled,
+  totalWasteToLandfill,
+  totalGhgReduction,
+  wasteTypeTotals,
+}: InfoCardGridProps) {
+  const [activeBreakdown, setActiveBreakdown] = useState<BreakdownType>(null);
 
-    const showWasteGenerated = () => {
-        setModalTitle('Breakdown: Total Waste Generated');
+  const format = (n: number) => n.toFixed(2);
 
-        const grouped = Object.groupBy(wasteTypeTotals, (x) => x.disposalMethod);
+  const formatRate = (n: number, divider: number) => {
+    if (!divider) return '0.00';
+    return ((n / divider) * 100).toFixed(2);
+  };
 
-        const summary = Object.entries(grouped).map(([method, list]) => ({
-            disposalMethod: method,
-            weight: list!.reduce((sum, x) => sum + x.totalWeight, 0),
-        }));
+  const groupByDisposalMethod = (items: WasteBreakdown[]) => {
+    return items.reduce<Record<string, WasteBreakdown[]>>((acc, item) => {
+      if (!acc[item.disposalMethod]) {
+        acc[item.disposalMethod] = [];
+      }
+      acc[item.disposalMethod].push(item);
+      return acc;
+    }, {});
+  };
 
-        const collapseItems = Object.entries(grouped).map(([method, list]) => ({
-            key: method,
-            label: method,
-            children: (
-                <Table
-                    dataSource={list}
-                    pagination={false}
-                    columns={[
-                        { title: 'Waste Type', dataIndex: 'wasteType' },
-                        {
-                            title: 'Weight (Tonnes)',
-                            dataIndex: 'totalWeight',
-                            render: (v) => format(v),
-                        },
-                    ]}
-                    rowKey={(r) => `${method}-${r.wasteType}`}
-                />
-            ),
-        }));
+  const getBreakdownData = (type: Exclude<BreakdownType, null>) => {
+    const allowedMethods = ['Recycling', 'Composting', 'Energy Recovery'];
 
-        setModalContent(
-            <div>
-                <Title level={4}>Summary by Disposal Method</Title>
-                <Table
-                    dataSource={summary}
-                    pagination={false}
-                    columns={[
-                        { title: 'Disposal Method', dataIndex: 'disposalMethod' },
-                        {
-                            title: 'Total (Tonnes)',
-                            dataIndex: 'weight',
-                            render: (v) => format(v),
-                        },
-                    ]}
-                    rowKey={(r) => r.disposalMethod}
-                    style={{ marginBottom: 20 }}
-                />
+    switch (type) {
+      case 'generated':
+        return {
+          title: 'Breakdown: Total Waste Generated',
+          items: wasteTypeTotals,
+          isRate: false,
+        };
 
-                <Divider />
+      case 'diverted':
+        return {
+          title: 'Breakdown: Total Waste Diverted',
+          items: wasteTypeTotals.filter((x) => allowedMethods.includes(x.disposalMethod)),
+          isRate: false,
+        };
 
-                <Title level={4}>Detailed Breakdown</Title>
-                <Collapse accordion items={collapseItems} />
-            </div>
-        );
+      case 'diversionRate':
+        return {
+          title: 'Breakdown: Waste Diversion Rate',
+          items: wasteTypeTotals.filter((x) => allowedMethods.includes(x.disposalMethod)),
+          isRate: true,
+        };
 
-        setModalOpen(true);
-    };
+      default:
+        return {
+          title: '',
+          items: [],
+          isRate: false,
+        };
+    }
+  };
 
-    const showWasteReduction = () => {
-        setModalTitle("Breakdown: Total Waste Reduced");
+  const modalData = useMemo(() => {
+    if (!activeBreakdown) return null;
 
-        const allowedMethods = ["Recycling", "Composting", "Energy Recovery"];
-        const filtered = wasteTypeTotals.filter(x =>
-            allowedMethods.includes(x.disposalMethod)
-        );
+    const { title, items, isRate } = getBreakdownData(activeBreakdown);
+    const grouped = groupByDisposalMethod(items);
 
-        const grouped = Object.groupBy(filtered, (x) => x.disposalMethod);
+    const summary: BreakdownSummary[] = Object.entries(grouped).map(([method, list]) => ({
+      disposalMethod: method,
+      weight: list.reduce((sum, x) => sum + x.totalWeight, 0),
+    }));
 
-        const summary = Object.entries(grouped).map(([method, list]) => ({
-            disposalMethod: method,
-            weight: list!.reduce((sum, x) => sum + x.totalWeight, 0),
-        }));
+    const renderValue = (value: number) =>
+      isRate ? `${formatRate(value, totalWasteGenerated)}%` : format(value);
 
-        const collapseItems = Object.entries(grouped).map(([method, list]) => ({
-            key: method,
-            label: method,
-            children: (
-                <Table
-                    dataSource={list}
-                    pagination={false}
-                    columns={[
-                        { title: "Waste Type", dataIndex: "wasteType" },
-                        {
-                            title: "Weight (Tonnes)",
-                            dataIndex: "totalWeight",
-                            render: (v) => format(v),
-                        },
-                    ]}
-                    rowKey={(r) => `${method}-${r.wasteType}`}
-                />
-            ),
-        }));
-
-        setModalContent(
-            <div>
-                <Title level={4}>Summary by Disposal Method</Title>
-                <Table
-                    dataSource={summary}
-                    pagination={false}
-                    columns={[
-                        { title: "Disposal Method", dataIndex: "disposalMethod" },
-                        {
-                            title: "Total (Tonnes)",
-                            dataIndex: "weight",
-                            render: (v) => format(v),
-                        },
-                    ]}
-                    rowKey={(r) => r.disposalMethod}
-                    style={{ marginBottom: 20 }}
-                />
-
-                <Divider />
-
-                <Title level={4}>Detailed Breakdown</Title>
-                <Collapse accordion items={collapseItems} />
-            </div>
-        );
-
-        setModalOpen(true);
-    };
-
-    const cardData = [
-        {
-            icon: <Image src="/icons/totalWasteGenerated.png" alt="" width={50} height={50} />,
-            itemLabel: 'Total Waste Generated',
-            value: format(totalWasteGenerated),
-            unit: 'Tonnes',
-            showMore: true,
-            onShowMore: showWasteGenerated,
-        },
-        {
-            icon: <Image src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
-            itemLabel: 'Total Waste Reduction',
-            value: format(totalWasteRecycled),
-            unit: 'Tonnes',
-            showMore: true,
-            onShowMore: showWasteReduction,
-        },
-        {
-            icon: <Image src="/icons/totalWasteToLandfill.png" alt="" width={50} height={50} />,
-            itemLabel: 'Total Waste to Landfill',
-            value: format(totalWasteToLandfill),
-            unit: 'Tonnes',
-        },
-        {
-            icon: <Image src="/icons/totalGHGReduction.png" alt="" width={50} height={50} />,
-            itemLabel: 'Total GHG Reduction',
-            value: format(totalGhgReduction),
-            unit: 'kg CO₂e',
-        },
-        {
-            icon: <Image src="/icons/landfillCostSaving.png" alt="" width={50} height={50} />,
-            itemLabel: 'Landfill Cost Saving',
-            value: format(totalLandfillCostSavings),
-            unit: 'RM',
-        },
+    const detailColumns = [
+      { title: 'Waste Type', dataIndex: 'wasteType' },
+      {
+        title: isRate ? 'Rate' : 'Weight (Tonnes)',
+        dataIndex: 'totalWeight',
+        render: (value: number) => renderValue(value),
+      },
     ];
 
-    return (
-        <>
-            <Row gutter={[16, 16]}>
-                {cardData.map((item, index) => (
-                    <Col xs={24} sm={12} md={8} key={index}>
-                        <InfoCard {...item} />
-                    </Col>
-                ))}
-            </Row>
+    const summaryColumns = [
+      { title: 'Disposal Method', dataIndex: 'disposalMethod' },
+      {
+        title: isRate ? 'Total Rate' : 'Total (Tonnes)',
+        dataIndex: 'weight',
+        render: (value: number) => renderValue(value),
+      },
+    ];
 
-            <BreakdownModal
-                open={modalOpen}
-                onClose={() => setModalOpen(false)}
-                title={modalTitle}
-            >
-                {modalContent}
-            </BreakdownModal>
-        </>
-    );
+    const collapseItems = Object.entries(grouped).map(([method, list]) => ({
+      key: method,
+      label: method,
+      children: (
+        <Table
+          dataSource={list}
+          pagination={false}
+          columns={detailColumns}
+          rowKey={(row) => `${method}-${row.wasteType}`}
+        />
+      ),
+    }));
+
+    return {
+      title,
+      content: (
+        <div>
+          <Title level={4}>Summary by Disposal Method</Title>
+          <Table
+            dataSource={summary}
+            pagination={false}
+            columns={summaryColumns}
+            rowKey={(row) => row.disposalMethod}
+            style={{ marginBottom: 20 }}
+          />
+
+          <Divider />
+
+          <Title level={4}>Detailed Breakdown</Title>
+          <Collapse accordion items={collapseItems} />
+        </div>
+      ),
+    };
+  }, [activeBreakdown, totalWasteGenerated, wasteTypeTotals]);
+
+  const cardData = [
+    {
+      icon: <img src="/icons/totalWasteGenerated.png" alt="" width={50} height={50} />,
+      itemLabel: 'Total Waste Generated',
+      value: format(totalWasteGenerated),
+      unit: 'Tonnes',
+      showMore: true,
+      onShowMore: () => setActiveBreakdown('generated'),
+    },
+    {
+      icon: <img src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
+      itemLabel: 'Total Waste Diverted',
+      value: format(totalWasteRecycled),
+      unit: 'Tonnes',
+      showMore: true,
+      onShowMore: () => setActiveBreakdown('diverted'),
+    },
+    {
+      icon: <img src="/icons/totalWasteToLandfill.png" alt="" width={50} height={50} />,
+      itemLabel: 'Total Waste to Landfill',
+      value: format(totalWasteToLandfill),
+      unit: 'Tonnes',
+    },
+    {
+      icon: <img src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
+      itemLabel: 'Waste Diversion Rate',
+      value: formatRate(totalWasteRecycled, totalWasteGenerated),
+      unit: '%',
+      showMore: true,
+      onShowMore: () => setActiveBreakdown('diversionRate'),
+    },
+    {
+      icon: <img src="/icons/totalGHGReduction.png" alt="" width={50} height={50} />,
+      itemLabel: 'Est. GHG Reduction',
+      value: format(totalGhgReduction),
+      unit: 'kg CO₂e',
+    },
+  ];
+
+  return (
+    <>
+      <Row gutter={[16, 16]}>
+        {cardData.map((item) => (
+          <Col xs={24} sm={12} md={8} key={item.itemLabel}>
+            <InfoCard {...item} />
+          </Col>
+        ))}
+      </Row>
+
+      <BreakdownModal
+        open={!!activeBreakdown}
+        onClose={() => setActiveBreakdown(null)}
+        title={modalData?.title ?? ''}
+      >
+        {modalData?.content}
+      </BreakdownModal>
+    </>
+  );
 }
