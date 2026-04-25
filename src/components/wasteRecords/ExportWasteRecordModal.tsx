@@ -1,14 +1,12 @@
-"use client";
-
-import { Modal, Space } from "antd";
-import dayjs from "dayjs";
-import { ProForm, ProFormSelect } from "@ant-design/pro-components";
+import { Modal, Space } from 'antd';
+import dayjs from 'dayjs';
+import { ProForm, ProFormSelect } from '@ant-design/pro-components';
 
 interface ExportWasteRecordModalProps {
   open: boolean;
   onCancel: () => void;
   onConfirm: (year: number, month: number) => void;
-  type: "excel" | "pdf";
+  type: 'excel' | 'pdf';
 }
 
 export const ExportWasteRecordModal = ({
@@ -17,7 +15,12 @@ export const ExportWasteRecordModal = ({
   onConfirm,
   type,
 }: ExportWasteRecordModalProps) => {
+  const startYear = 2020;
   const currentYear = dayjs().year();
+  const yearOptions = Array.from({ length: currentYear - startYear + 1 }, (_, index) => {
+    const year = startYear + index;
+    return { label: year, value: year };
+  }).reverse();
 
   const handleFinish = (values: any) => {
     onConfirm(values.year, values.month);
@@ -36,27 +39,21 @@ export const ExportWasteRecordModal = ({
         onFinish={handleFinish}
         initialValues={{ year: currentYear, month: 0 }}
         submitter={{
-          searchConfig: { submitText: "Export" },
+          searchConfig: { submitText: 'Export' },
           render: (props, dom) => (
-            <div style={{ textAlign: "right", marginTop: 16 }}>
-              <div style={{ display: "inline-block" }}>
-                <Space size="small">
-                  {dom}
-                </Space>
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <div style={{ display: 'inline-block' }}>
+                <Space size="small">{dom}</Space>
               </div>
             </div>
-          )
-
+          ),
         }}
       >
         <ProFormSelect
           name="year"
           label="Year"
           rules={[{ required: true }]}
-          options={[currentYear, currentYear - 1, currentYear - 2].map((y) => ({
-            label: y,
-            value: y,
-          }))}
+          options={yearOptions}
         />
 
         <ProFormSelect
@@ -64,9 +61,9 @@ export const ExportWasteRecordModal = ({
           label="Month"
           rules={[{ required: true }]}
           options={[
-            { label: "All Months", value: 0 },
+            { label: 'All Months', value: 0 },
             ...Array.from({ length: 12 }, (_, i) => ({
-              label: dayjs().month(i).format("MMMM"),
+              label: dayjs().month(i).format('MMMM'),
               value: i + 1,
             })),
           ]}

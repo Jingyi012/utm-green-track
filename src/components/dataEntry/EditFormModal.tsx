@@ -1,246 +1,293 @@
-'use client';
-
-import { Modal, Button, Upload, App, Col, Row, Typography } from "antd";
+import { Modal, Button, Upload, App, Col, Row, Typography, UploadFile } from 'antd';
 import {
-    ProForm,
-    ProFormSelect,
-    ProFormText,
-    ProFormDigit,
-    ProFormDateTimePicker,
-} from "@ant-design/pro-components";
-import { UploadOutlined } from "@ant-design/icons";
-import { WasteTypeWithEmissionFactor } from "@/lib/types/typing";
-import { useState, useEffect } from "react";
+  ProForm,
+  ProFormDatePicker,
+  ProFormDateTimePicker,
+  ProFormDigit,
+  ProFormSelect,
+  ProFormText,
+} from '@ant-design/pro-components';
+import { UploadOutlined } from '@ant-design/icons';
+import { WasteTypeWithEmissionFactor } from '@/lib/types/typing';
+import { useState, useEffect } from 'react';
+import { WasteRecordDraftInput } from '@/lib/types/wasteRecord';
+import dayjs from 'dayjs';
+import {
+  ATTACHMENT_ACCEPT_ATTRIBUTE,
+  ATTACHMENT_ACCEPT_LABEL,
+  validateAttachmentBeforeUpload,
+} from '@/lib/utils/attachmentValidation';
+
 const { Title } = Typography;
 
+type FormValues = Omit<Partial<WasteRecordDraftInput>, 'date' | 'programDate'> & {
+  date?: unknown;
+  programDate?: unknown;
+  attachments?: UploadFile[];
+};
+
 type Props = {
-    open: boolean;
-    record: any | null;
-    campuses: { id: string; name: string }[];
-    departments: { id: string; name: string }[];
-    disposalMethods: {
-        id: string;
-        name: string;
-        wasteTypes: WasteTypeWithEmissionFactor[];
-    }[];
-    onClose: () => void;
-    onSave: (values: any, recordKey: string) => void;
+  open: boolean;
+  record: WasteRecordDraftInput | null;
+  campuses: { id: string; name: string }[];
+  departments: { id: string; name: string }[];
+  disposalMethods: {
+    id: string;
+    name: string;
+    wasteTypes: WasteTypeWithEmissionFactor[];
+  }[];
+  onClose: () => void;
+  onSave: (values: Partial<WasteRecordDraftInput>, recordKey: string) => void;
+};
+
+const toPickerValue = (value?: string | null) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed : undefined;
+};
+
+const toIsoString = (value: unknown): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  if (dayjs.isDayjs(value)) {
+    return value.toISOString();
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  return undefined;
 };
 
 export default function EditformModal({
-    open,
-    record,
-    campuses,
-    departments,
-    disposalMethods,
-    onClose,
-    onSave,
+  open,
+  record,
+  campuses,
+  departments,
+  disposalMethods,
+  onClose,
+  onSave,
 }: Props) {
-    const { message } = App.useApp();
-    const [form] = ProForm.useForm();
-    const [selectedDisposalMethod, setSelectedDisposalMethod] = useState<string>();
-    const [wasteTypes, setWasteTypes] = useState<WasteTypeWithEmissionFactor[]>([]);
+  const { message } = App.useApp();
+  const [form] = ProForm.useForm<FormValues>();
+  const [selectedDisposalMethod, setSelectedDisposalMethod] = useState<string>();
+  const [wasteTypes, setWasteTypes] = useState<WasteTypeWithEmissionFactor[]>([]);
 
-    useEffect(() => {
-        if (record) {
-            form.setFieldsValue(record);
-            const method = disposalMethods.find((dm) => dm.id === record.disposalMethodId);
-            setWasteTypes(method?.wasteTypes ?? []);
-            setSelectedDisposalMethod(record.disposalMethodId);
-        }
-    }, [record, disposalMethods, form]);
+  useEffect(() => {
+    if (record) {
+      form.setFieldsValue({
+        ...record,
+        date: toPickerValue(record.date),
+        programDate: toPickerValue(record.programDate),
+      });
+      const method = disposalMethods.find((item) => item.id === record.disposalMethodId);
+      setWasteTypes(method?.wasteTypes ?? []);
+      setSelectedDisposalMethod(record.disposalMethodId);
+    }
+  }, [record, disposalMethods, form]);
 
-    const handleDisposalMethodChange = (value: string) => {
-        setSelectedDisposalMethod(value);
-        const selectedMethod = disposalMethods.find((dm) => dm.id === value);
-        form.resetFields(["wasteTypeId"]);
-        setWasteTypes(selectedMethod?.wasteTypes ?? []);
-    };
+  const handleDisposalMethodChange = (value: string): void => {
+    setSelectedDisposalMethod(value);
+    const selectedMethod = disposalMethods.find((method) => method.id === value);
+    form.resetFields(['wasteTypeId']);
+    setWasteTypes(selectedMethod?.wasteTypes ?? []);
+  };
 
-    const handleFinish = async (values: any) => {
-        if (!record) return;
-        onSave(values, record.key);
-        onClose();
-    };
+  const handleFinish = async (values: FormValues): Promise<void> => {
+    if (!record) {
+      return;
+    }
 
-    return (
-        <Modal
-            title="Edit Waste Record"
-            open={open}
-            onCancel={onClose}
-            footer={null}
-            width={600}
-            destroyOnHidden
-        >
-            <ProForm
-                form={form}
-                layout="vertical"
-                submitter={false}
-                onFinish={handleFinish}
-            >
-                <Title level={5}>Basic Information</Title>
-                <Row gutter={16}>
-                    <Col xs={24} md={12}>
-                        <ProFormSelect
-                            name="campusId"
-                            label="UTM Campus"
-                            placeholder="Please select campus"
-                            rules={[{ required: true, message: 'Please select a campus' }]}
-                            options={campuses.map((campus) => ({
-                                label: campus.name,
-                                value: campus.id,
-                            }))}
-                            fieldProps={{
-                                showSearch: true,
-                                optionFilterProp: "label",
-                            }}
-                        />
-                    </Col>
-                    <Col xs={24} md={12}>
-                        <ProFormSelect
-                            name="departmentId"
-                            label="Faculty / Department / College"
-                            placeholder="Select your department"
-                            options={departments.map((dept) => ({
-                                label: dept.name,
-                                value: dept.id,
-                            }))}
-                            rules={[{ required: true, message: 'Please select your faculty / department' }]}
-                            showSearch
-                        />
-                    </Col>
-                </Row>
-                <Row gutter={16}>
-                    <Col xs={24} md={12}>
-                        <ProFormText
-                            name="unit"
-                            label="PTJ / Unit"
-                            placeholder="Please enter PTJ / unit"
-                            rules={[{ required: true, message: 'Please enter PTJ / unit' }]}
-                        />
-                    </Col>
-                    <Col xs={24} md={12}>
-                        <ProFormText
-                            name="location"
-                            label="Location"
-                            placeholder="Please enter location"
-                            rules={[{ required: true, message: 'Please enter location' }]}
-                        />
-                    </Col>
-                </Row>
-
-                <Row gutter={16}>
-                    <Col xs={24} md={12}>
-                        <ProFormText
-                            name="program"
-                            label="Name of Program / Initiative (if any)"
-                            placeholder="Please enter program / initiative name"
-                            rules={[]}
-                        />
-                    </Col>
-                    <Col xs={24} md={12}>
-                        <ProFormDateTimePicker
-                            name="programDate"
-                            label="Date of Program / Initiative"
-                            placeholder="Please enter date of program / initiative"
-                            rules={[]}
-                        />
-                    </Col>
-                </Row>
-
-                <Title level={5} style={{ marginTop: 12 }}>Waste Information</Title>
-                <Row gutter={16}>
-                    <Col xs={24} md={12}>
-                        <ProFormSelect
-                            name="disposalMethodId"
-                            label="Disposal Method"
-                            placeholder="Please select disposal method"
-                            rules={[{ required: true, message: 'Please select disposal method' }]}
-                            options={disposalMethods.map((method) => ({
-                                label: method.name,
-                                value: method.id,
-                            }))}
-                            fieldProps={{
-                                onChange: handleDisposalMethodChange,
-                                showSearch: true,
-                                optionFilterProp: "label",
-                            }}
-                        />
-                    </Col>
-                    <Col xs={24} md={12}>
-                        <ProFormSelect
-                            name="wasteTypeId"
-                            label="Waste Type"
-                            placeholder="Please select waste type"
-                            rules={[{ required: true, message: 'Please select waste type' }]}
-                            options={wasteTypes.map(wt => ({
-                                label: wt.name,
-                                value: wt.id,
-                            }))}
-                            fieldProps={{
-                                disabled: !selectedDisposalMethod,
-                                showSearch: true,
-                                optionFilterProp: "label",
-                            }}
-                        />
-                    </Col>
-                    <Col xs={24} md={12}>
-                        <ProFormDigit
-                            name="wasteWeight"
-                            label="Waste Weight (kg)"
-                            placeholder="Please enter waste weight"
-                            rules={[{
-                                required: true,
-                                message: 'Please enter waste weight'
-                            }]}
-                            fieldProps={{
-                                min: 0,
-                                step: 0.1,
-                                precision: 2,
-                            }}
-                            min={0}
-                        />
-                    </Col>
-                    <Col xs={24} md={12}>
-                        <ProForm.Item
-                            name="attachments"
-                            label="Attachment"
-                            rules={[{
-                                required: true,
-                                message: 'Please upload attachment'
-                            }]}
-                            valuePropName="fileList"
-                            getValueFromEvent={(e: { fileList: any; }) => {
-                                if (Array.isArray(e)) {
-                                    return e;
-                                }
-                                return e?.fileList;
-                            }}
-                        >
-                            <Upload
-                                beforeUpload={(file) => {
-                                    const isLt5M = file.size / 1024 / 1024 < 5;
-                                    if (!isLt5M) {
-                                        message.error('File must be smaller than 5MB!');
-                                        return Upload.LIST_IGNORE;
-                                    }
-                                    return false;
-                                }}
-                                multiple
-                            >
-                                <Button icon={<UploadOutlined />}>Click to upload files</Button>
-                            </Upload>
-                        </ProForm.Item>
-                    </Col>
-                </Row>
-
-                <div className="flex justify-center gap-4 mt-6">
-                    <Button onClick={onClose}>Cancel</Button>
-                    <Button type="primary" onClick={() => form.submit()}>
-                        Save Changes
-                    </Button>
-                </div>
-            </ProForm>
-        </Modal>
+    onSave(
+      {
+        ...values,
+        date: toIsoString(values.date) ?? record.date,
+        programDate: toIsoString(values.programDate),
+      },
+      record.key,
     );
+    onClose();
+  };
+
+  return (
+    <Modal
+      title="Edit Waste Record"
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      width={600}
+      destroyOnHidden
+    >
+      <ProForm<FormValues> form={form} layout="vertical" submitter={false} onFinish={handleFinish}>
+        <Title level={5}>Basic Information</Title>
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <ProFormDatePicker
+              name="date"
+              label="Record Date"
+              placeholder="Please select record date"
+              rules={[{ required: true, message: 'Please select record date' }]}
+              fieldProps={{ allowClear: false, format: 'DD/MM/YYYY' }}
+            />
+          </Col>
+          <Col xs={24} md={12}>
+            <ProFormSelect
+              name="campusId"
+              label="UTM Campus"
+              placeholder="Please select campus"
+              rules={[{ required: true, message: 'Please select a campus' }]}
+              options={campuses.map((campus) => ({
+                label: campus.name,
+                value: campus.id,
+              }))}
+              fieldProps={{
+                showSearch: true,
+                optionFilterProp: 'label',
+              }}
+            />
+          </Col>
+        </Row>
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <ProFormSelect
+              name="departmentId"
+              label="Faculty / Department / College / PTJ"
+              placeholder="Select faculty / department / college / PTJ"
+              options={departments.map((department) => ({
+                label: department.name,
+                value: department.id,
+              }))}
+              rules={[
+                { required: true, message: 'Please select faculty / department / college / PTJ' },
+              ]}
+              showSearch
+            />
+          </Col>
+        </Row>
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <ProFormText name="unit" label="Unit" placeholder="Please enter unit" />
+          </Col>
+          <Col xs={24} md={12}>
+            <ProFormText
+              name="location"
+              label="Location"
+              placeholder="Please enter location"
+              rules={[{ required: true, message: 'Please enter location' }]}
+            />
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <ProFormText
+              name="program"
+              label="Name of Program / Initiative (if any)"
+              placeholder="Please enter program / initiative name"
+            />
+          </Col>
+          <Col xs={24} md={12}>
+            <ProFormDateTimePicker
+              name="programDate"
+              label="Date of Program / Initiative"
+              placeholder="Please enter date of program / initiative"
+            />
+          </Col>
+        </Row>
+
+        <Title level={5} style={{ marginTop: 12 }}>
+          Waste Information
+        </Title>
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <ProFormSelect
+              name="disposalMethodId"
+              label="Disposal Method"
+              placeholder="Please select disposal method"
+              rules={[{ required: true, message: 'Please select disposal method' }]}
+              options={disposalMethods.map((method) => ({
+                label: method.name,
+                value: method.id,
+              }))}
+              fieldProps={{
+                onChange: handleDisposalMethodChange,
+                showSearch: true,
+                optionFilterProp: 'label',
+              }}
+            />
+          </Col>
+          <Col xs={24} md={12}>
+            <ProFormSelect
+              name="wasteTypeId"
+              label="Waste Type"
+              placeholder="Please select waste type"
+              rules={[{ required: true, message: 'Please select waste type' }]}
+              options={wasteTypes.map((wasteType) => ({
+                label: wasteType.name,
+                value: wasteType.id,
+              }))}
+              fieldProps={{
+                disabled: !selectedDisposalMethod,
+                showSearch: true,
+                optionFilterProp: 'label',
+              }}
+            />
+          </Col>
+          <Col xs={24} md={12}>
+            <ProFormDigit
+              name="wasteWeight"
+              label="Waste Weight (kg)"
+              placeholder="Please enter waste weight"
+              rules={[{ required: true, message: 'Please enter waste weight' }]}
+              fieldProps={{
+                min: 0,
+                step: 0.1,
+                precision: 2,
+              }}
+              min={0}
+            />
+          </Col>
+          <Col xs={24} md={12}>
+            <ProForm.Item
+              name="attachments"
+              label="Attachment (Optional)"
+              extra={ATTACHMENT_ACCEPT_LABEL}
+              valuePropName="fileList"
+              getValueFromEvent={(event: { fileList: UploadFile[] } | UploadFile[]) => {
+                if (Array.isArray(event)) {
+                  return event;
+                }
+                return event?.fileList ?? [];
+              }}
+            >
+              <Upload
+                accept={ATTACHMENT_ACCEPT_ATTRIBUTE}
+                beforeUpload={(file) => validateAttachmentBeforeUpload(file, message.error)}
+                multiple
+              >
+                <Button icon={<UploadOutlined />}>Click to upload files</Button>
+              </Upload>
+            </ProForm.Item>
+          </Col>
+        </Row>
+
+        <div className="flex justify-center gap-4 mt-6">
+          <Button onClick={onClose}>Cancel</Button>
+          <Button type="primary" onClick={() => form.submit()}>
+            Save Changes
+          </Button>
+        </div>
+      </ProForm>
+    </Modal>
+  );
 }

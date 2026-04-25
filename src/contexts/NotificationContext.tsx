@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import * as signalR from "@microsoft/signalr";
+import { createContext, useContext, useEffect, useState } from 'react';
+import * as signalR from '@microsoft/signalr';
 
 interface Notification {
   id: string;
@@ -13,20 +13,20 @@ interface Notification {
 const NotificationContext = createContext<{
   notifications: Notification[];
   markAsRead: (id: string) => void;
-}>({ notifications: [], markAsRead: () => { } });
+}>({ notifications: [], markAsRead: () => {} });
 
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("/notificationHub")
+      .withUrl('/notificationHub')
       .withAutomaticReconnect()
       .build();
 
     connection.start();
 
-    connection.on("ReceiveNotification", (notification: Notification) => {
+    connection.on('ReceiveNotification', (notification: Notification) => {
       setNotifications((prev) => [notification, ...prev]);
     });
 
@@ -36,13 +36,12 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
   }, []);
 
   const markAsRead = (id: string) => {
-    setNotifications((prev) => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     // Call API to mark as read
   };
 
   return (
-    <NotificationContext.Provider
-      value={{ notifications, markAsRead }}>
+    <NotificationContext.Provider value={{ notifications, markAsRead }}>
       {children}
     </NotificationContext.Provider>
   );

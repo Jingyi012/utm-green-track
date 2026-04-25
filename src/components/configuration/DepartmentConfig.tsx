@@ -1,253 +1,182 @@
-'use client'
-import { createDepartment, deleteDepartment, getAllDepartment, updateDepartment } from "@/lib/services/department";
-import { Department } from "@/lib/types/typing";
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { ActionType, ModalForm, ProColumns, ProFormText, ProTable } from "@ant-design/pro-components";
-import { App, Button, Popconfirm } from "antd";
-import { useRef, useState } from "react";
+import { Department } from '@/lib/types/typing';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  ModalForm,
+  PageContainer,
+  ProColumns,
+  ProFormText,
+  ProTable,
+} from '@ant-design/pro-components';
+import { Button, Popconfirm, Space } from 'antd';
+import { useMemo, useState } from 'react';
+import {
+  useCreateDepartment,
+  useDeleteDepartment,
+  useDepartmentList,
+  useUpdateDepartment,
+} from '@/hook/departments';
+import { TableActionButton, TableActionGroup } from '@/components/table/TableAction';
+
+type ModalMode = 'create' | 'edit' | null;
+
+type DepartmentFormValues = {
+  id?: string;
+  name: string;
+};
 
 export const DepartmentConfig: React.FC = () => {
-    const { message } = App.useApp();
-    const [loading, setLoading] = useState<boolean>(false);
-    const [configData, setConfigData] = useState<Department[]>([]);
-    const [selectedDepartment, setSelectedDepartment] = useState<Department>();
-    const [modalOpen, setModalOpen] = useState<boolean>(false);
-    const [addModalOpen, setAddModalOpen] = useState<boolean>(false);
-    const actionRef = useRef<ActionType | undefined>(undefined);
+  const [modalMode, setModalMode] = useState<ModalMode>(null);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const res = await getAllDepartment();
+  const { data: departments = [], isLoading: isFetching, refetch } = useDepartmentList();
 
-            if (res.success) {
-                setConfigData(res.data);
-                return {
-                    data: res.data
+  const { mutateAsync: createDepartment, isPending: isCreating } = useCreateDepartment();
+  const { mutateAsync: updateDepartment, isPending: isUpdating } = useUpdateDepartment();
+  const { mutateAsync: deleteDepartment, isPending: isDeleting } = useDeleteDepartment();
+
+  const loading = isFetching || isCreating || isUpdating || isDeleting;
+  const isModalOpen = modalMode !== null;
+  const isEditMode = modalMode === 'edit';
+
+  const closeModal = () => {
+    setModalMode(null);
+    setSelectedDepartment(null);
+  };
+
+  const columns: ProColumns<Department>[] = useMemo(
+    () => [
+      {
+        title: 'No.',
+        dataIndex: 'index',
+        width: 80,
+        render: (_text, _record, index) => index + 1,
+      },
+      {
+        title: 'Name',
+        dataIndex: 'name',
+      },
+      {
+        title: 'Action',
+        valueType: 'option',
+        width: 190,
+        render: (_text, record) => (
+          <TableActionGroup>
+            <TableActionButton
+              tone="edit"
+              icon={<EditOutlined />}
+              onClick={() => {
+                setSelectedDepartment(record);
+                setModalMode('edit');
+              }}
+            >
+              Edit
+            </TableActionButton>
+            <Popconfirm
+              title="Delete this department?"
+              okText="Yes"
+              cancelText="No"
+              onConfirm={async () => {
+                try {
+                  await deleteDepartment(record.id);
+                } catch {
+                  return;
                 }
-            } else {
-                return {
-                    data: []
-                }
-            }
+              }}
+            >
+              <TableActionButton tone="danger" icon={<DeleteOutlined />}>
+                Delete
+              </TableActionButton>
+            </Popconfirm>
+          </TableActionGroup>
+        ),
+      },
+    ],
+    [deleteDepartment],
+  );
 
-        } catch (err) {
-            message.error('Failed to fetch config data');
-            return {
-                data: []
-            }
-        } finally {
-            setLoading(false);
+  return (
+    <PageContainer title="Departments Configuration" style={{ minHeight: '500px' }}>
+      <ProTable<Department>
+        rowKey="id"
+        headerTitle="Departments"
+        loading={loading}
+        columns={columns}
+        dataSource={departments}
+        search={false}
+        pagination={false}
+        options={{
+          reload: () => refetch(),
+        }}
+        toolBarRender={() => [
+          <Button
+            key="add-department"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setSelectedDepartment(null);
+              setModalMode('create');
+            }}
+          >
+            Add Department
+          </Button>,
+        ]}
+      />
+
+      <ModalForm<DepartmentFormValues>
+        title={isEditMode ? 'Edit Department' : 'Add Department'}
+        open={isModalOpen}
+        initialValues={
+          isEditMode && selectedDepartment
+            ? {
+                id: selectedDepartment.id,
+                name: selectedDepartment.name,
+              }
+            : {
+                name: '',
+              }
         }
-    }
+        modalProps={{
+          destroyOnHidden: true,
+          onCancel: closeModal,
+        }}
+        onOpenChange={(open) => {
+          if (!open) closeModal();
+        }}
+        onFinish={async (values) => {
+          try {
+            if (isEditMode) {
+              if (!values.id) return false;
 
-    const handleCreateDepartment = async (name: string) => {
-        try {
-            setLoading(true);
-            const res = await createDepartment({
-                name
-            });
-            if (res.success) {
-                message.success("Department added successfully");
-                return true;
+              await updateDepartment({
+                id: values.id,
+                name: values.name,
+              });
             } else {
-                message.error(res.message || "Failed to add department");
-                return false;
+              await createDepartment({
+                name: values.name,
+              });
             }
 
-        } catch (err) {
-            message.error("Failed to add department");
+            closeModal();
+            return true;
+          } catch {
             return false;
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    const handleEditDepartment = async (id: string, name: string) => {
-        try {
-            setLoading(true);
-            const res = await updateDepartment(id, {
-                id,
-                name
-            });
-            if (res.success) {
-                message.success("Department updated successfully");
-                return true;
-            } else {
-                message.error(res.message || "Failed to update department");
-                return false;
-            }
-
-        } catch (err) {
-            message.error("Failed to update department");
-            return false;
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    const handleDeleteDepartment = async (id: string) => {
-        try {
-            setLoading(true);
-            const res = await deleteDepartment(id);
-            if (res.success) {
-                message.success("Department deleted successfully");
-                return true;
-            } else {
-                message.error(res.message || "Failed to delete department");
-                return false;
-            }
-
-        } catch (err) {
-            message.error("Failed to delete department");
-            return false;
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    const columns: ProColumns[] = [
-        {
-            title: 'No.',
-            dataIndex: 'index',
-            render: (_: any, __: any, index: number, action) => {
-                const current = action?.pageInfo?.current ?? 1;
-                const pageSize = action?.pageInfo?.pageSize ?? 10;
-                return (current - 1) * pageSize + index + 1;
-            },
-        },
-        {
-            title: 'Name',
-            dataIndex: 'name'
-        },
-        {
-            title: 'Action',
-            valueType: 'option',
-            render: (_: any, record: Department) => {
-                return (
-                    <>
-                        <Button icon={<EditOutlined />}
-                            style={{ marginRight: '20px' }}
-                            onClick={() => {
-                                setSelectedDepartment(record);
-                                setModalOpen(true);
-                            }} />
-                        <Popconfirm
-                            title="Delete this department?"
-                            onConfirm={async () => {
-                                await handleDeleteDepartment(record.id);
-                                if (actionRef.current) {
-                                    actionRef.current.reload();
-                                }
-                            }}
-                        >
-                            <Button danger icon={<DeleteOutlined />} />
-                        </Popconfirm>
-                    </>
-                )
-            }
-        }
-    ]
-
-
-    return (<>
-        <ProTable<Department>
-            headerTitle={'Departments'}
-            key={"id"}
-            loading={loading}
-            actionRef={actionRef}
-            dataSource={configData}
-            columns={columns}
-            search={false}
-            request={fetchData}
-            toolBarRender={() => [
-                <Button
-                    key="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => {
-                        setAddModalOpen(true);
-                    }}>
-
-                </Button>,
-            ]}
+          }
+        }}
+        submitter={{
+          searchConfig: {
+            submitText: isEditMode ? 'Update' : 'Create',
+          },
+        }}
+      >
+        <ProFormText
+          label="Name"
+          name="name"
+          placeholder="Enter department name"
+          rules={[{ required: true, message: 'Please enter department name' }]}
         />
-        <ModalForm
-            title="Edit Department"
-            open={modalOpen}
-            initialValues={selectedDepartment || {}}
-            modalProps={{
-                destroyOnClose: true,
-            }}
-            onOpenChange={(open) => {
-                if (!open) {
-                    setSelectedDepartment(undefined);
-                    setModalOpen(false)
-                }
-            }}
-            onFinish={async (values) => {
-                const success = await handleEditDepartment(values.id, values.name);
-                if (success) {
-                    if (actionRef.current) {
-                        actionRef.current.reload();
-                    }
-                    return true;
-                }
-                return false;
-            }}
-            submitter={{
-                searchConfig: {
-                    submitText: 'Submit',
-                },
-            }}
-        >
-            <ProFormText
-                label='Name'
-                name='name'
-                rules={[{ required: true }]}
-            />
-            <ProFormText
-                label='Id'
-                name='id'
-                hidden
-                rules={[{ required: true }]}
-            />
-        </ModalForm>
-
-        <ModalForm
-            title="Add Department"
-            open={addModalOpen}
-            modalProps={{
-                destroyOnClose: true,
-                onCancel: () => {
-                    setAddModalOpen(false)
-                },
-            }}
-            onOpenChange={(open) => {
-                if (!open) {
-                    setAddModalOpen(false)
-                }
-            }}
-            onFinish={async (values) => {
-                const success = await handleCreateDepartment(values.name);
-                if (success) {
-                    if (actionRef.current) {
-                        actionRef.current.reload();
-                    }
-                    return true;
-                }
-                return false;
-            }}
-            submitter={{
-                searchConfig: {
-                    submitText: 'Submit',
-                },
-            }}
-        >
-            <ProFormText
-                label='Name'
-                name='name'
-                rules={[{ required: true }]}
-            />
-        </ModalForm>
-    </>);
-}
+        <ProFormText name="id" hidden />
+      </ModalForm>
+    </PageContainer>
+  );
+};

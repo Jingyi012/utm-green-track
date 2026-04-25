@@ -1,54 +1,52 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter, usePathname, notFound } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { AppMenuItem, proLayoutMenuData } from "@/lib/config/menu";
-import ForbiddenPage from "@/components/layouts/forbiddenPage";
-
-function findItemAndEffectiveRoles(
-    items: AppMenuItem[],
-    path: string,
-    inheritedRoles?: string[]
-): { item: AppMenuItem | null; roles?: string[] } {
-    for (const item of items) {
-        const currentRoles = item.roles && item.roles.length > 0 ? item.roles : inheritedRoles;
-
-        if (item.path === path) return { item, roles: currentRoles };
-
-        if (item.children && item.children.length > 0) {
-            const found = findItemAndEffectiveRoles(item.children, path, currentRoles);
-            if (found.item) return found;
-        }
-    }
-    return { item: null, roles: inheritedRoles };
-}
+import { useEffect, useState } from 'react';
+import { useLocation } from '@tanstack/react-router';
+import { useAuth } from '@/contexts/AuthContext';
+import { getPageAccessRequirement } from '@/lib/utils/permissions';
+import ForbiddenPage from '@/components/layouts/forbiddenPage';
 
 export default function PageGuard({ children }: { children: React.ReactNode }) {
-    const { roles, user } = useAuth();
-    const router = useRouter();
-    const pathname = usePathname();
-    const [authorized, setAuthorized] = useState(false);
-    const [accessDenied, setAccessDenied] = useState(false);
+  const { permissions, hasPermission, user, isReady } = useAuth();
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
 
-    useEffect(() => {
-        const { item, roles: requiredRoles } = findItemAndEffectiveRoles(proLayoutMenuData, pathname);
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
 
-        if (!requiredRoles || requiredRoles.length === 0) {
-            setAuthorized(true);
-            return;
-        }
+    // If user is not authenticated, deny access
+    if (!user) {
+      setAccessDenied(false);
+      setAuthorized(false);
+      return;
+    }
 
-        const allowed = requiredRoles.some((r: string) => roles.includes(r));
-        if (!allowed) {
-            setAccessDenied(true);
-            setAuthorized(false);
-            return;
-        }
-        setAuthorized(true);
-    }, [pathname, roles]);
+    // Check permission-based access control using menu-configured access map
+    const access = getPageAccessRequirement(pathname);
 
-    if (accessDenied) return <ForbiddenPage />;
-    if (!authorized) return null;
-    return <>{children}</>;
+    const requiredPermission = access.requiredPermission;
+
+    if (requiredPermission) {
+      // If a specific permission is required, check it
+      if (!hasPermission(requiredPermission)) {
+        setAccessDenied(true);
+        setAuthorized(false);
+        return;
+      }
+    }
+
+    // If no permission is required, allow access
+    setAccessDenied(false);
+    setAuthorized(true);
+  }, [pathname, permissions, hasPermission, isReady, user]);
+
+  // Show nothing while loading auth state
+  if (!isReady || authorized === null) {
+    return null;
+  }
+
+  if (accessDenied) return <ForbiddenPage />;
+  if (!authorized) return null;
+  return <>{children}</>;
 }
