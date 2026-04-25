@@ -1,17 +1,19 @@
 import { useWasteRecordDropdownOptions } from '@/hook/options';
-import { useConfigList, useUpdateConfig } from '@/hook/configurations';
+import { configQueryKeys, useConfigList, useUpdateConfig } from '@/hook/configurations';
 import { Config } from '@/lib/types/typing';
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   ModalForm,
   PageContainer,
   ProColumns,
   ProFormDigit,
+  ProFormSelect,
   ProFormText,
   ProTable,
 } from '@ant-design/pro-components';
-import { Alert, Button, Select, Space, Typography } from 'antd';
-import { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Alert, Button, Select, Space, Typography, message } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
 import { TableActionButton } from '@/components/table/TableAction';
 
 const LANDFILLING_COST_PREFIX = 'LandfillingCost';
@@ -40,6 +42,11 @@ type ConfigFormValues = {
   value: string | number;
 };
 
+type AddYearFormValues = {
+  year: number;
+  sourceYear: number | 'default';
+};
+
 const CONFIG_DEFINITIONS: Record<'landfilling' | 'population', CampusYearConfigDefinition> = {
   landfilling: {
     title: 'Landfilling Cost by Campus and Year',
@@ -66,31 +73,41 @@ const toCampusToken = (campusName: string): string =>
 const buildCampusYearKey = (prefix: string, campusName: string, year: number): string =>
   `${prefix}_${toCampusToken(campusName)}_${year}`;
 
-const buildYearOptions = (currentYear: number): number[] =>
-  Array.from(
-    { length: currentYear - CONFIG_START_YEAR + 1 },
-    (_, index) => CONFIG_START_YEAR + index,
-  ).sort((a, b) => b - a);
+const parseConfigYear = (prefix: string, key: string): number | null => {
+  const normalizedPrefix = `${prefix}_`;
+
+  if (!key.startsWith(normalizedPrefix)) {
+    return null;
+  }
+
+  const segments = key.split('_');
+  const yearSegment = segments.at(-1);
+
+  if (!yearSegment) {
+    return null;
+  }
+
+  const parsedYear = Number(yearSegment);
+  return Number.isInteger(parsedYear) ? parsedYear : null;
+};
+
+const buildYearOptions = (configuredYears: number[]): number[] =>
+  Array.from(new Set(configuredYears)).sort((a, b) => b - a);
 
 const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }> = ({
   definition,
 }) => {
+  const queryClient = useQueryClient();
   const { campuses, isLoading: isCampusLoading } = useWasteRecordDropdownOptions();
 
   const [selectedYear, setSelectedYear] = useState<YearFilterValue>(new Date().getFullYear());
   const [selectedConfig, setSelectedConfig] = useState<Config | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [addYearModalOpen, setAddYearModalOpen] = useState(false);
 
   const currentYear = new Date().getFullYear();
 
   const campusNames = useMemo(() => campuses.map((campus) => campus.name), [campuses]);
-
-  const yearsToDisplay = useMemo(
-    () => (selectedYear === 'all' ? buildYearOptions(currentYear) : [selectedYear]),
-    [currentYear, selectedYear],
-  );
-
-  const availableYears = useMemo(() => buildYearOptions(currentYear), [currentYear]);
 
   const {
     data: configList = [],
@@ -100,17 +117,61 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
     refetch,
   } = useConfigList({
     prefix: definition.prefix,
-    year: selectedYear === 'all' ? undefined : selectedYear,
   });
 
   const { mutateAsync: updateConfig, isPending: isUpdating } = useUpdateConfig();
+  const { mutateAsync: initializeConfig, isPending: isInitializing } = useUpdateConfig({
+    invalidateOnSuccess: false,
+    successMessage: false,
+  });
+
+  const availableYears = useMemo(
+    () =>
+      buildYearOptions(
+        configList
+          .map((config) => parseConfigYear(definition.prefix, config.key))
+          .filter((year): year is number => year !== null),
+      ),
+    [configList, definition.prefix],
+  );
+
+  const yearsToDisplay = useMemo(
+    () => (selectedYear === 'all' ? availableYears : [selectedYear]),
+    [availableYears, selectedYear],
+  );
+
+  const configMap = useMemo(
+    () => new Map(configList.map((item) => [item.key, item.value])),
+    [configList],
+  );
+
+  const latestConfiguredYear = availableYears[0];
+
+  const addYearSourceOptions = useMemo(
+    () => [
+      { label: 'Use default values', value: 'default' as const },
+      ...availableYears.map((year) => ({
+        label: `Copy from ${year}`,
+        value: year,
+      })),
+    ],
+    [availableYears],
+  );
+
+  useEffect(() => {
+    if (selectedYear === 'all' || availableYears.length === 0) {
+      return;
+    }
+
+    if (!availableYears.includes(selectedYear)) {
+      setSelectedYear(availableYears[0]);
+    }
+  }, [availableYears, selectedYear]);
 
   const rows = useMemo<CampusYearConfigRow[]>(() => {
     if (campusNames.length === 0) {
       return [];
     }
-
-    const configMap = new Map(configList.map((item) => [item.key, item.value]));
 
     return campusNames.flatMap((campusName) =>
       yearsToDisplay.map((year) => {
@@ -124,13 +185,17 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
         };
       }),
     );
-  }, [campusNames, configList, definition.defaultValue, definition.prefix, yearsToDisplay]);
+  }, [campusNames, configMap, definition.defaultValue, definition.prefix, yearsToDisplay]);
 
-  const loading = isCampusLoading || isConfigFetching || isUpdating;
+  const loading = isCampusLoading || isConfigFetching || isUpdating || isInitializing;
 
   const closeModal = () => {
     setSelectedConfig(null);
     setModalOpen(false);
+  };
+
+  const closeAddYearModal = () => {
+    setAddYearModalOpen(false);
   };
 
   const handleEditConfig = async (values: ConfigFormValues) => {
@@ -141,6 +206,46 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
       });
 
       closeModal();
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleAddYear = async (values: AddYearFormValues) => {
+    if (campusNames.length === 0) {
+      message.warning('No campuses available to initialize.');
+      return false;
+    }
+
+    if (availableYears.includes(values.year)) {
+      message.warning(`Configuration for year ${values.year} already exists.`);
+      return false;
+    }
+
+    try {
+      await Promise.all(
+        campusNames.map((campusName) => {
+          const key = buildCampusYearKey(definition.prefix, campusName, values.year);
+          const sourceValue =
+            values.sourceYear === 'default'
+              ? null
+              : configMap.get(buildCampusYearKey(definition.prefix, campusName, values.sourceYear));
+
+          return initializeConfig({
+            key,
+            value: sourceValue ?? definition.defaultValue,
+          });
+        }),
+      );
+
+      await queryClient.invalidateQueries({
+        queryKey: configQueryKeys.lists(),
+      });
+
+      message.success(`${definition.title} for ${values.year} has been initialized.`);
+      setSelectedYear(values.year);
+      closeAddYearModal();
       return true;
     } catch {
       return false;
@@ -229,6 +334,9 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
                 })),
               ]}
             />
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddYearModalOpen(true)}>
+              Add Year
+            </Button>
           </Space>,
         ]}
       />
@@ -287,6 +395,48 @@ const CampusYearConfigTable: React.FC<{ definition: CampusYearConfigDefinition }
             placeholder={`Please enter ${definition.valueLabel.toLowerCase()}`}
           />
         )}
+      </ModalForm>
+
+      <ModalForm<AddYearFormValues>
+        title={`Add ${definition.valueLabel} Year`}
+        open={addYearModalOpen}
+        initialValues={{
+          year: Math.max(currentYear + 1, (latestConfiguredYear ?? currentYear) + 1),
+          sourceYear: latestConfiguredYear ?? 'default',
+        }}
+        modalProps={{
+          destroyOnHidden: true,
+          onCancel: closeAddYearModal,
+        }}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeAddYearModal();
+          }
+        }}
+        onFinish={handleAddYear}
+        submitter={{
+          searchConfig: {
+            submitText: 'Initialize Year',
+          },
+        }}
+      >
+        <ProFormDigit
+          label="Year"
+          name="year"
+          rules={[{ required: true, message: 'Year is required' }]}
+          fieldProps={{
+            min: CONFIG_START_YEAR,
+            precision: 0,
+          }}
+          placeholder="Please enter year"
+        />
+
+        <ProFormSelect
+          label="Initial Values"
+          name="sourceYear"
+          rules={[{ required: true, message: 'Please select how to initialize the year' }]}
+          options={addYearSourceOptions}
+        />
       </ModalForm>
     </>
   );

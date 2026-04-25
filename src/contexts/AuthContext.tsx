@@ -28,7 +28,6 @@ const parsePermissionsFromToken = (token: string): string[] => {
     const decoded = jwtDecode<JwtPermissionClaims>(token);
     // JWT standard uses "Permission" claim, but can also be an array of permissions
     if (decoded.Permission) {
-      console.log(decoded.Permission);
       if (Array.isArray(decoded.Permission)) {
         return decoded.Permission;
       }

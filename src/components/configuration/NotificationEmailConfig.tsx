@@ -99,9 +99,9 @@ export const NotificationEmailConfig: React.FC = () => {
 
     const queryKey = configQueryKeys.list({ prefix: NOTIFICATION_EMAIL_PREFIX });
     const nextValue = checked ? 'true' : 'false';
-    const previousValue =
-      (queryClient.getQueryData<Config[]>(queryKey) ?? configs).find((config) => config.key === key)
-        ?.value;
+    const previousValue = (queryClient.getQueryData<Config[]>(queryKey) ?? configs).find(
+      (config) => config.key === key,
+    )?.value;
 
     setSavingKeys((currentKeys) => [...currentKeys, key]);
     queryClient.setQueryData<Config[]>(queryKey, (currentConfigs = []) => {
@@ -184,13 +184,6 @@ export const NotificationEmailConfig: React.FC = () => {
             description={error instanceof Error ? error.message : 'Failed to fetch configuration'}
           />
         )}
-
-        <Card>
-          <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-            Separate email settings by recipient so it is easier to decide which events should
-            reach admins for review and which status updates should go back to users.
-          </Typography.Paragraph>
-        </Card>
 
         <Row gutter={[16, 16]}>
           {(['admin', 'user'] as const).map((groupKey) => {
