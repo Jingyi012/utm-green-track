@@ -187,6 +187,36 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
     }
   };
 
+  const renderMenuContent = useCallback(
+    (item: AppMenuItem, dom: React.ReactNode) => {
+      // 1. Get direct count for this specific path
+      const badgeCount = item.path ? (menuBadgeCounts[item.path] ?? 0) : 0;
+
+      // 2. Get aggregate count if this is a parent (has children)
+      // We pass the item's path to our existing aggregation function
+      const parentBadgeCount = item.children ? getParentBadgeCount(item.path) : 0;
+
+      const displayBadgeCount = badgeCount || parentBadgeCount;
+
+      if (displayBadgeCount > 0) {
+        return (
+          <div className="w-full flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-2">{dom}</span>
+            <Badge
+              count={displayBadgeCount}
+              color="#ff4d4f"
+              overflowCount={99}
+              size="small"
+              style={{ boxShadow: 'none' }}
+            />
+          </div>
+        );
+      }
+      return dom;
+    },
+    [menuBadgeCounts, getParentBadgeCount],
+  );
+
   return (
     <>
       <style>{`
@@ -232,37 +262,26 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
           },
         }}
         menuItemRender={(item, dom) => {
-          const badgeCount = item.path ? (menuBadgeCounts[item.path] ?? 0) : 0;
+          const menuContent = renderMenuContent(item, dom);
 
-          // For parent menu items without a path (groups), show aggregate badge from children
-          const parentBadgeCount =
-            !item.path && item.children ? getParentBadgeCount(item.path || '') : 0;
-          const displayBadgeCount = badgeCount || parentBadgeCount;
-
-          const menuContent =
-            displayBadgeCount > 0 ? (
-              <div className="w-full flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-2">{dom}</span>
-                <Badge count={displayBadgeCount} color="#ff4d4f" overflowCount={99} size="small" />
-              </div>
-            ) : (
-              dom
+          if (item.path && !item.children) {
+            return (
+              <a
+                href={item.path}
+                onClick={(e) => {
+                  e.preventDefault();
+                  void navigate({ href: item.path! });
+                }}
+                className="cursor-pointer w-full h-full flex items-center gap-2"
+              >
+                {menuContent}
+              </a>
             );
-
-          return item.path ? (
-            <a
-              href={item.path}
-              onClick={(e) => {
-                e.preventDefault();
-                void navigate({ href: item.path! });
-              }}
-              className="cursor-pointer w-full h-full flex items-center gap-2"
-            >
-              {menuContent}
-            </a>
-          ) : (
-            menuContent
-          );
+          }
+          return menuContent;
+        }}
+        subMenuItemRender={(item, dom) => {
+          return renderMenuContent(item, dom);
         }}
         token={{
           header: {

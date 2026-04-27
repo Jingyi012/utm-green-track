@@ -12,7 +12,7 @@ import type { AvailablePermission, Role } from '@/lib/services/rolePermission';
 import { TableActionButton } from '@/components/table/TableAction';
 
 type PageRule = {
-  path: string;
+  path?: string;
   displayName: string;
   requiredPermission?: string;
   hideInMenu?: boolean;
