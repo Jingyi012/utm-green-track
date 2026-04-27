@@ -45,6 +45,26 @@ export function YearlySummarySection({ data }: YearlySummarySectionProps) {
         }),
       ],
     },
+    annotations: Object.entries(
+      data.totalWasteGenerationByCampus.reduce((acc: Record<string, number>, curr) => {
+        acc[curr.campusName] = (acc[curr.campusName] || 0) + curr.totalWeightTonnes;
+        return acc;
+      }, {}),
+    ).map(([campusName, total]) => ({
+      type: 'text',
+      data: [{ campusName, totalWeightTonnes: total }],
+      encode: { x: 'campusName', y: 'totalWeightTonnes' },
+      style: {
+        text: `${total.toFixed(2)}`,
+        textBaseline: 'bottom',
+        textAlign: 'center',
+        fontSize: 12,
+        fontWeight: 'bold',
+        fill: '#000',
+        dy: -2,
+      },
+      tooltip: false,
+    })),
   };
 
   const wasteDiversionConfig = {
@@ -70,6 +90,26 @@ export function YearlySummarySection({ data }: YearlySummarySectionProps) {
         }),
       ],
     },
+    annotations: Object.entries(
+      data.totalWasteDiversionByCampus.reduce((acc: Record<string, number>, curr) => {
+        acc[curr.campusName] = (acc[curr.campusName] || 0) + curr.totalWeightTonnes;
+        return acc;
+      }, {}),
+    ).map(([campusName, total]) => ({
+      type: 'text',
+      data: [{ campusName, totalWeightTonnes: total }],
+      encode: { x: 'campusName', y: 'totalWeightTonnes' },
+      style: {
+        text: `${total.toFixed(2)}`,
+        textBaseline: 'bottom',
+        textAlign: 'center',
+        fontSize: 12,
+        fontWeight: 'bold',
+        fill: '#000',
+        dy: -2,
+      },
+      tooltip: false,
+    })),
   };
 
   const costConfig = {
@@ -93,11 +133,31 @@ export function YearlySummarySection({ data }: YearlySummarySectionProps) {
         }),
       ],
     },
+    annotations: data.totalWasteManagementCostByCampus.map((item) => ({
+      type: 'text',
+      data: [{ campusName: item.campusName, totalCostRm: item.totalCostRm }],
+      encode: { x: 'campusName', y: 'totalCostRm' },
+      style: {
+        text: `RM ${item.totalCostRm.toFixed(2)}`,
+        textBaseline: 'bottom',
+        textAlign: 'center',
+        fontSize: 12,
+        fontWeight: 'bold',
+        fill: '#000',
+        dy: -2,
+      },
+      tooltip: false,
+    })),
   };
 
   return (
     <ProCard direction="column" ghost>
-      <Space direction="vertical" size={16} style={{ width: '100%' }} styles={{ item: { width: '100%' } }}>
+      <Space
+        direction="vertical"
+        size={16}
+        style={{ width: '100%' }}
+        styles={{ item: { width: '100%' } }}
+      >
         <ProCard bordered>
           <Column {...wasteGenerationConfig} />
         </ProCard>

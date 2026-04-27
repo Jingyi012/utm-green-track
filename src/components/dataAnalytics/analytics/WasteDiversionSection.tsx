@@ -10,7 +10,7 @@ import {
 import { DIVERSION_METHOD_COLOR_SCALE } from '@/lib/utils/disposalMethodChart';
 import { MetricCardGrid } from './MetricCardGrid';
 import { formatFixed, formatKilograms, formatTonnes, monthLabel } from './helpers';
-const COMPOSITION_CONTENT_HEIGHT = 340;
+import WasteCompositionGrid from './WasteComposition/WasteCompositionGrid';
 
 interface WasteDiversionSectionProps {
   data: WasteDiversionData;
@@ -106,79 +106,6 @@ export function WasteDiversionSection({ data }: WasteDiversionSectionProps) {
     legend: { position: 'top' },
   };
 
-  const buildCompositionConfig = (
-    chartTitle: string,
-    values: { name: string; totalWeightTonnes: number; percentage: number }[],
-  ) => ({
-    title: chartTitle,
-    data: values,
-    height: COMPOSITION_CONTENT_HEIGHT,
-    angleField: 'totalWeightTonnes',
-    colorField: 'name',
-    radius: 0.8,
-    innerRadius: 0.55,
-    legend: { position: 'bottom' },
-    label: {
-      text: (datum: { name: string; percentage: number }) =>
-        `${datum.name} (${formatFixed(datum.percentage)}%)`,
-      position: 'outside',
-    },
-    tooltip: {
-      items: [
-        (datum: { totalWeightTonnes: number }) => ({
-          value: formatTonnes(datum.totalWeightTonnes),
-        }),
-      ],
-    },
-  });
-
-  const recycledCompositionData = data.recycledWasteComposition.filter(
-    (item) => item.totalWeightTonnes > 0,
-  );
-  const compostingCompositionData = data.compostingWasteComposition.filter(
-    (item) => item.totalWeightTonnes > 0,
-  );
-  const energyRecoveryCompositionData = data.energyRecoveryWasteComposition.filter(
-    (item) => item.totalWeightTonnes > 0,
-  );
-
-  const compositions = [
-    {
-      title: 'Recycled Waste Composition',
-      data: recycledCompositionData,
-      emptyText: 'No data for Recycled Waste Composition',
-    },
-    {
-      title: 'Composting Waste Composition',
-      data: compostingCompositionData,
-      emptyText: 'No data for Composting Waste Composition',
-    },
-    {
-      title: 'Energy Recovery Waste Composition',
-      data: energyRecoveryCompositionData,
-      emptyText: 'No data for Energy Recovery Waste Composition',
-    },
-  ];
-
-  const renderComposition = (item: (typeof compositions)[number]) => {
-    if (item.data.length > 0) {
-      return <Pie {...buildCompositionConfig(item.title, item.data)} />;
-    }
-
-    return (
-      <div
-        style={{
-          height: COMPOSITION_CONTENT_HEIGHT,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Empty description={item.emptyText} />
-      </div>
-    );
-  };
-
   return (
     <ProCard direction="column" ghost>
       <Space
@@ -217,11 +144,11 @@ export function WasteDiversionSection({ data }: WasteDiversionSectionProps) {
           />
         </ProCard>
 
-        <ProCard bordered split="vertical">
-          {compositions.map((item) => (
-            <ProCard key={item.title}>{renderComposition(item)}</ProCard>
-          ))}
-        </ProCard>
+        <WasteCompositionGrid
+          recycledWasteTypeComposition={data.recycledWasteTypeComposition}
+          compostingWasteTypeComposition={data.compostingWasteTypeComposition}
+          energyRecoveryWasteTypeComposition={data.energyRecoveryWasteTypeComposition}
+        />
       </Space>
     </ProCard>
   );

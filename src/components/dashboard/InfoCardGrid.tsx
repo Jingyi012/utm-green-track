@@ -1,26 +1,27 @@
-import { Col, Row, Typography, Table, Divider, Collapse } from 'antd';
+import { Col, Collapse, Divider, Row, Table, Typography } from 'antd';
 import { useMemo, useState } from 'react';
-import InfoCard from './InfoCard';
 import { BreakdownModal } from './BreakdownModal';
+import InfoCard from './InfoCard';
 
 const { Title } = Typography;
 
-interface WasteBreakdown {
+interface WasteTypeBreakdownByDisposalMethod {
   disposalMethod: string;
   wasteType: string;
-  totalWeight: number;
+  totalWeightTonnes: number;
 }
 
 interface InfoCardGridProps {
   totalWasteGenerated: number;
-  totalWasteRecycled: number;
+  totalWasteDiverted: number;
   totalWasteToLandfill: number;
+  wasteDiversionRate: number;
+  wasteRecyclingRate: number;
   totalGhgReduction: number;
-  totalLandfillCostSavings: number;
-  wasteTypeTotals: WasteBreakdown[];
+  wasteTypeBreakdownByDisposalMethod: WasteTypeBreakdownByDisposalMethod[];
 }
 
-type BreakdownType = 'generated' | 'diverted' | 'diversionRate' | null;
+type BreakdownType = 'generated' | 'diverted' | 'diversionRate' | 'recyclingRate' | null;
 
 interface BreakdownSummary {
   disposalMethod: string;
@@ -29,10 +30,12 @@ interface BreakdownSummary {
 
 export default function InfoCardGrid({
   totalWasteGenerated,
-  totalWasteRecycled,
+  totalWasteDiverted,
   totalWasteToLandfill,
+  wasteDiversionRate,
+  wasteRecyclingRate,
   totalGhgReduction,
-  wasteTypeTotals,
+  wasteTypeBreakdownByDisposalMethod,
 }: InfoCardGridProps) {
   const [activeBreakdown, setActiveBreakdown] = useState<BreakdownType>(null);
 
@@ -43,8 +46,8 @@ export default function InfoCardGrid({
     return ((n / divider) * 100).toFixed(2);
   };
 
-  const groupByDisposalMethod = (items: WasteBreakdown[]) => {
-    return items.reduce<Record<string, WasteBreakdown[]>>((acc, item) => {
+  const groupByDisposalMethod = (items: WasteTypeBreakdownByDisposalMethod[]) => {
+    return items.reduce<Record<string, WasteTypeBreakdownByDisposalMethod[]>>((acc, item) => {
       if (!acc[item.disposalMethod]) {
         acc[item.disposalMethod] = [];
       }
@@ -60,21 +63,32 @@ export default function InfoCardGrid({
       case 'generated':
         return {
           title: 'Breakdown: Total Waste Generated',
-          items: wasteTypeTotals,
+          items: wasteTypeBreakdownByDisposalMethod,
           isRate: false,
         };
 
       case 'diverted':
         return {
           title: 'Breakdown: Total Waste Diverted',
-          items: wasteTypeTotals.filter((x) => allowedMethods.includes(x.disposalMethod)),
+          items: wasteTypeBreakdownByDisposalMethod.filter((x) =>
+            allowedMethods.includes(x.disposalMethod),
+          ),
           isRate: false,
         };
 
       case 'diversionRate':
         return {
           title: 'Breakdown: Waste Diversion Rate',
-          items: wasteTypeTotals.filter((x) => allowedMethods.includes(x.disposalMethod)),
+          items: wasteTypeBreakdownByDisposalMethod.filter((x) =>
+            allowedMethods.includes(x.disposalMethod),
+          ),
+          isRate: true,
+        };
+
+      case 'recyclingRate':
+        return {
+          title: 'Breakdown: Waste Recycling Rate',
+          items: wasteTypeBreakdownByDisposalMethod.filter((x) => x.disposalMethod === 'Recycling'),
           isRate: true,
         };
 
@@ -91,11 +105,11 @@ export default function InfoCardGrid({
     if (!activeBreakdown) return null;
 
     const { title, items, isRate } = getBreakdownData(activeBreakdown);
-    const grouped = groupByDisposalMethod(items);
+    const grouped = groupByDisposalMethod(items ?? []);
 
     const summary: BreakdownSummary[] = Object.entries(grouped).map(([method, list]) => ({
       disposalMethod: method,
-      weight: list.reduce((sum, x) => sum + x.totalWeight, 0),
+      weight: list.reduce((sum, x) => sum + x.totalWeightTonnes, 0),
     }));
 
     const renderValue = (value: number) =>
@@ -105,7 +119,7 @@ export default function InfoCardGrid({
       { title: 'Waste Type', dataIndex: 'wasteType' },
       {
         title: isRate ? 'Rate' : 'Weight (Tonnes)',
-        dataIndex: 'totalWeight',
+        dataIndex: 'totalWeightTonnes',
         render: (value: number) => renderValue(value),
       },
     ];
@@ -152,7 +166,7 @@ export default function InfoCardGrid({
         </div>
       ),
     };
-  }, [activeBreakdown, totalWasteGenerated, wasteTypeTotals]);
+  }, [activeBreakdown, totalWasteGenerated, wasteTypeBreakdownByDisposalMethod]);
 
   const cardData = [
     {
@@ -166,7 +180,7 @@ export default function InfoCardGrid({
     {
       icon: <img src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
       itemLabel: 'Total Waste Diverted',
-      value: format(totalWasteRecycled),
+      value: format(totalWasteDiverted),
       unit: 'Tonnes',
       showMore: true,
       onShowMore: () => setActiveBreakdown('diverted'),
@@ -180,16 +194,24 @@ export default function InfoCardGrid({
     {
       icon: <img src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
       itemLabel: 'Waste Diversion Rate',
-      value: formatRate(totalWasteRecycled, totalWasteGenerated),
+      value: format(wasteDiversionRate),
       unit: '%',
       showMore: true,
       onShowMore: () => setActiveBreakdown('diversionRate'),
     },
     {
+      icon: <img src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
+      itemLabel: 'Waste Recycling Rate',
+      value: format(wasteRecyclingRate),
+      unit: '%',
+      showMore: true,
+      onShowMore: () => setActiveBreakdown('recyclingRate'),
+    },
+    {
       icon: <img src="/icons/totalGHGReduction.png" alt="" width={50} height={50} />,
       itemLabel: 'Est. GHG Reduction',
       value: format(totalGhgReduction),
-      unit: 'kg CO₂e',
+      unit: 'kg CO2e',
     },
   ];
 

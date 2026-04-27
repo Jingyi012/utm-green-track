@@ -44,6 +44,26 @@ export function LifetimeSummarySection({ data }: LifetimeSummarySectionProps) {
         }),
       ],
     },
+    annotations: Object.entries(
+      data.totalWasteGenerationByYear.reduce((acc: Record<string, number>, curr) => {
+        acc[curr.year] = (acc[curr.year] || 0) + curr.totalWeightTonnes;
+        return acc;
+      }, {}),
+    ).map(([year, total]) => ({
+      type: 'text',
+      data: [{ year: Number(year), totalWeightTonnes: total }],
+      encode: { x: 'year', y: 'totalWeightTonnes' },
+      style: {
+        text: `${total.toFixed(2)}`,
+        textBaseline: 'bottom',
+        textAlign: 'center',
+        fontSize: 12,
+        fontWeight: 'bold',
+        fill: '#000',
+        dy: -2,
+      },
+      tooltip: false,
+    })),
   };
 
   const diversionConfig = {
@@ -68,6 +88,26 @@ export function LifetimeSummarySection({ data }: LifetimeSummarySectionProps) {
         }),
       ],
     },
+    annotations: Object.entries(
+      data.totalWasteDiversionByYear.reduce((acc: Record<string, number>, curr) => {
+        acc[curr.year] = (acc[curr.year] || 0) + curr.totalWeightTonnes;
+        return acc;
+      }, {}),
+    ).map(([year, total]) => ({
+      type: 'text',
+      data: [{ year: Number(year), totalWeightTonnes: total }],
+      encode: { x: 'year', y: 'totalWeightTonnes' },
+      style: {
+        text: `${total.toFixed(2)}`,
+        textBaseline: 'bottom',
+        textAlign: 'center',
+        fontSize: 12,
+        fontWeight: 'bold',
+        fill: '#000',
+        dy: -2,
+      },
+      tooltip: false,
+    })),
   };
 
   const costConfig = {
@@ -90,6 +130,21 @@ export function LifetimeSummarySection({ data }: LifetimeSummarySectionProps) {
         }),
       ],
     },
+    annotations: data.totalWasteManagementCostByYear.map((item) => ({
+      type: 'text',
+      data: [{ year: item.year, totalCostRm: item.totalCostRm }],
+      encode: { x: 'year', y: 'totalCostRm' },
+      style: {
+        text: `RM ${item.totalCostRm.toFixed(2)}`,
+        textBaseline: 'bottom',
+        textAlign: 'center',
+        fontSize: 12,
+        fontWeight: 'bold',
+        fill: '#000',
+        dy: -2,
+      },
+      tooltip: false,
+    })),
   };
 
   return (

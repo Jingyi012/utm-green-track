@@ -1,5 +1,5 @@
 import { ProCard, ProForm, ProFormSelect } from '@ant-design/pro-components';
-import { Space } from 'antd';
+import { Flex, Space } from 'antd';
 
 interface OptionValue {
   label: string;
@@ -26,12 +26,12 @@ export function AnalyticsFilters({
   return (
     <ProCard bordered>
       <ProForm submitter={false}>
-        <Space wrap size="middle">
+        <Flex justify="space-between" align="flex-start" style={{ width: '100%' }}>
           <ProFormSelect
             name="year"
             label="Year"
             rules={[{ required: true, message: 'Year is required' }]}
-            width={140}
+            width="md"
             options={yearOptions}
             fieldProps={{
               value: year,
@@ -46,7 +46,7 @@ export function AnalyticsFilters({
             name="campus"
             label="UTM Campus"
             rules={[{ required: true, message: 'UTM Campus is required' }]}
-            width={280}
+            width="md"
             options={campusOptions}
             fieldProps={{
               value: campusId,
@@ -56,7 +56,7 @@ export function AnalyticsFilters({
               allowClear: false,
             }}
           />
-        </Space>
+        </Flex>
       </ProForm>
     </ProCard>
   );

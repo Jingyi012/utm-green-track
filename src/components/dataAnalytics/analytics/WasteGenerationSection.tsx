@@ -1,10 +1,11 @@
 import { Col, Empty, Row, Space } from 'antd';
-import { Column, Pie } from '@ant-design/charts';
+import { Pie } from '@ant-design/charts';
 import { ProCard } from '@ant-design/pro-components';
 import { WasteGenerationAnalysisSection as WasteGenerationData } from '@/lib/types/dataAnalytics';
 import { DISPOSAL_METHOD_COLOR_SCALE } from '@/lib/utils/disposalMethodChart';
 import { MetricCardGrid } from './MetricCardGrid';
-import { formatFixed, formatPopulation, monthLabel } from './helpers';
+import { formatFixed, formatPopulation } from './helpers';
+import { WasteGenerationTrendChart } from './charts/WasteGenerationTrendChart';
 
 interface WasteGenerationSectionProps {
   data: WasteGenerationData;
@@ -44,51 +45,38 @@ export function WasteGenerationSection({ data }: WasteGenerationSectionProps) {
     },
   ];
 
-  const trendData = data.wasteGenerationTrend.map((item) => ({
-    ...item,
-    monthLabel: monthLabel(item.month),
-  }));
-
   const disposalMethodBreakdownData = data.disposalMethodBreakdown.filter(
     (item) => item.totalWeightTonnes > 0,
   );
-
-  const wasteGenerationTrendConfig = {
-    title: 'Waste Generation Trend (By Month)',
-    data: trendData,
-    xField: 'monthLabel',
-    yField: 'totalWeightTonnes',
-    colorField: 'disposalMethod',
-    scale: DISPOSAL_METHOD_COLOR_SCALE,
-    stack: true,
-    axis: {
-      x: { title: 'Month' },
-      y: { title: 'Weight (tonnes)' },
-    },
-    tooltip: {
-      items: [
-        (datum: { totalWeightTonnes: number }) => ({
-          value: `${datum.totalWeightTonnes.toFixed(2)} tonnes`,
-        }),
-      ],
-    },
-    legend: { position: 'top' },
-  };
 
   const disposalMethodBreakdownConfig = {
     title: 'Disposal Method Breakdown',
     data: disposalMethodBreakdownData,
     angleField: 'totalWeightTonnes',
-    colorField: 'name',
+    colorField: 'disposalMethod',
     scale: DISPOSAL_METHOD_COLOR_SCALE,
     radius: 0.8,
     innerRadius: 0.55,
     legend: { position: 'bottom' },
     label: {
-      text: (datum: { name: string; percentage: number }) =>
-        `${datum.name} (${formatFixed(datum.percentage)}%)`,
+      text: (datum: { disposalMethod: string; percentage: number }) =>
+        `${datum.disposalMethod} (${datum.percentage.toFixed(2)}%)`,
       position: 'outside',
     },
+    annotations: [
+      {
+        type: 'text',
+        style: {
+          text: `Total\n${formatFixed(disposalMethodBreakdownData.reduce((sum, item) => sum + item.totalWeightTonnes, 0))} Tonnes`,
+          x: '50%',
+          y: '50%',
+          textAlign: 'center',
+          fontSize: 16,
+          fontStyle: 'bold',
+        },
+        tooltip: false,
+      },
+    ],
     tooltip: {
       items: [
         (datum: { totalWeightTonnes: number }) => ({
@@ -109,7 +97,10 @@ export function WasteGenerationSection({ data }: WasteGenerationSectionProps) {
         <MetricCardGrid items={metrics} />
 
         <ProCard bordered>
-          {trendData.length > 0 ? <Column {...wasteGenerationTrendConfig} /> : <Empty />}
+          <WasteGenerationTrendChart
+            data={data.wasteGenerationTrend}
+            title="Waste Generation Trend (By Month)"
+          />
         </ProCard>
 
         <ProCard bordered>

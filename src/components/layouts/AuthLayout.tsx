@@ -152,7 +152,7 @@ export default function AuthLayout({
           {/* Logo Container with Enhanced Styling */}
           <div className="flex items-center space-x-6 mb-4 relative">
             <div className="relative">
-              <div className="absolute inset-0 bg-white rounded-full opacity-90 scale-110 group-hover:scale-125 transition-transform duration-300"></div>
+              <div className="absolute inset-0 bg-white rounded-full opacity-70 scale-110 group-hover:scale-125 transition-transform duration-300"></div>
               <img
                 src="/images/logo2.png"
                 alt="GreenTrack System Logo"

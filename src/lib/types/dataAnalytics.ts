@@ -15,10 +15,22 @@ export interface MonthlyMethodValue {
   totalWeightTonnes: number;
 }
 
-export interface CategoryWeightValue {
-  name: string;
+export interface DisposalMethodWeightShare {
+  disposalMethod: string;
   totalWeightTonnes: number;
   percentage: number;
+}
+
+export interface WasteTypeWeightShare {
+  wasteType: string;
+  totalWeightTonnes: number;
+  percentage: number;
+}
+
+export interface WasteTypeBreakdownByDisposalMethodValue {
+  disposalMethod: string;
+  wasteType: string;
+  totalWeightTonnes: number;
 }
 
 export interface RankedDiversionItem {
@@ -54,7 +66,8 @@ export interface WasteGenerationAnalysisSection {
   estimatedWastePerCapitaKgPerPersonPerDay: number;
   campusPopulation: number;
   wasteGenerationTrend: MonthlyMethodValue[];
-  disposalMethodBreakdown: CategoryWeightValue[];
+  disposalMethodBreakdown: DisposalMethodWeightShare[];
+  wasteTypeBreakdownByDisposalMethod: WasteTypeBreakdownByDisposalMethodValue[];
 }
 
 export interface WasteDiversionAnalysisSection {
@@ -66,9 +79,9 @@ export interface WasteDiversionAnalysisSection {
   topPerformingPtjs: RankedDiversionItem[];
   topPerformingProgrammes: RankedProgrammeDiversionItem[];
   diversionTrend: MonthlyMethodValue[];
-  recycledWasteComposition: CategoryWeightValue[];
-  compostingWasteComposition: CategoryWeightValue[];
-  energyRecoveryWasteComposition: CategoryWeightValue[];
+  recycledWasteTypeComposition: WasteTypeWeightShare[];
+  compostingWasteTypeComposition: WasteTypeWeightShare[];
+  energyRecoveryWasteTypeComposition: WasteTypeWeightShare[];
 }
 
 export interface WasteManagementCostAnalysisSection {

@@ -1,96 +1,30 @@
 import { useEffect, useState } from 'react';
 import InfoCardGrid from './InfoCardGrid';
-import { App, Card, Col, Divider, Row, Select, Skeleton, Space, Splitter } from 'antd';
-import { getCampusYearlySummary } from '@/lib/services/wasteRecord';
-import { Column, Pie } from '@ant-design/charts';
-import {
-  CampusYearlySummaryResponse,
-  MonthlyWasteSummary,
-  TotalSummary,
-} from '@/lib/types/wasteSummary';
+import { App, Empty, Skeleton, Space } from 'antd';
+import { getYearlyDataAnalytics } from '@/lib/services/wasteRecord';
+import { YearlyDataAnalyticsResponse } from '@/lib/types/dataAnalytics';
 import { useWasteRecordDropdownOptions } from '@/hook/options';
-import { MONTH_LABELS_SHORT } from '@/lib/enum/monthName';
-import { DISPOSAL_METHOD_COLOR_SCALE } from '@/lib/utils/disposalMethodChart';
 import React from 'react';
-import { PageContainer } from '@ant-design/pro-components';
+import { PageContainer, ProCard } from '@ant-design/pro-components';
+import { AnalyticsFilters } from '@/components/dataAnalytics/analytics/AnalyticsFilters';
+import { WasteGenerationTrendChart } from '@/components/dataAnalytics/analytics/charts/WasteGenerationTrendChart';
+import WasteCompositionGrid from '../dataAnalytics/analytics/WasteComposition/WasteCompositionGrid';
 
-export interface ChartDataItem {
-  month: string;
-  disposalMethod: string;
-  //wasteType: string;
-  totalWeight: number;
-}
+function getRequestErrorMessage(error: unknown, fallback: string): string {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'response' in error &&
+    typeof (error as { response?: unknown }).response === 'object' &&
+    (error as { response?: { data?: unknown } }).response?.data &&
+    typeof (error as { response?: { data?: unknown } }).response?.data === 'object'
+  ) {
+    const responseData = (error as { response?: { data?: { error?: string; message?: string } } })
+      .response?.data;
+    return responseData?.error || responseData?.message || fallback;
+  }
 
-export interface PieChartData {
-  wasteType: string;
-  disposalMethod: string;
-  totalWeight: number;
-}
-
-export function transformMonthlyChartData(
-  rawData: MonthlyWasteSummary[],
-  disposalMethods: string[],
-): ChartDataItem[] {
-  const monthLabels = MONTH_LABELS_SHORT;
-
-  // Initialize all months × disposalMethods with 0
-  const chartData: ChartDataItem[] = monthLabels.flatMap((monthName, monthIndex) =>
-    disposalMethods.map((method) => ({
-      month: monthName,
-      disposalMethod: method,
-      totalWeight: 0,
-    })),
-  );
-
-  // Build a lookup for quick update
-  const lookup = new Map<string, ChartDataItem>();
-  chartData.forEach((item) => {
-    lookup.set(`${item.month}_${item.disposalMethod}`, item);
-  });
-
-  // Apply actual rawData if any
-  rawData.forEach((summary) => {
-    const monthName = monthLabels[summary.month - 1];
-
-    summary.wasteTypeTotals.forEach((total) => {
-      const key = `${monthName}_${total.disposalMethod}`;
-      const existing = lookup.get(key);
-      if (existing) {
-        existing.totalWeight += total.totalWeight;
-      }
-    });
-  });
-
-  return chartData;
-}
-
-function transformRecyclableWasteType(monthlyWasteSummary: MonthlyWasteSummary[]): PieChartData[] {
-  const totals: Record<string, Record<string, number>> = {};
-
-  monthlyWasteSummary.forEach((monthData) => {
-    monthData.wasteTypeTotals.forEach((item) => {
-      if (item.disposalMethod !== 'Landfilling') {
-        if (!totals[item.disposalMethod]) {
-          totals[item.disposalMethod] = {};
-        }
-        totals[item.disposalMethod][item.wasteType] =
-          (totals[item.disposalMethod][item.wasteType] || 0) + item.totalWeight;
-      }
-    });
-  });
-
-  const result: PieChartData[] = [];
-  Object.entries(totals).forEach(([disposalMethod, wasteTypes]) => {
-    Object.entries(wasteTypes).forEach(([wasteType, totalWeight]) => {
-      result.push({
-        disposalMethod,
-        wasteType,
-        totalWeight: parseFloat(totalWeight.toFixed(2)),
-      });
-    });
-  });
-
-  return result;
+  return fallback;
 }
 
 const DashboardSection: React.FC = () => {
@@ -101,50 +35,36 @@ const DashboardSection: React.FC = () => {
     const year = startYear + i;
     return { label: year.toString(), value: year };
   }).reverse();
-  const { campuses, disposalMethods } = useWasteRecordDropdownOptions();
+  const { campuses } = useWasteRecordDropdownOptions();
   const [selectedCampus, setSelectedCampus] = useState<string>();
   const [year, setYear] = useState(currentYear);
   const [chartLoading, setChartLoading] = useState<boolean>(false);
-  const [summary, setSummary] = useState<TotalSummary>({
-    totalWasteGenerated: 0,
-    totalWasteRecycled: 0,
-    totalWasteToLandfill: 0,
-    totalGhgReduction: 0,
-    totalLandfillCostSavings: 0,
-  });
-  const [campusYearlySummary, setCampusYearlySummary] = useState<CampusYearlySummaryResponse>();
-  const [monthlyChartData, setMonthlyChartData] = useState<ChartDataItem[]>([]);
-  const [pieChartData, setPieChartData] = useState<PieChartData[]>([]);
-  const [sizes, setSizes] = React.useState<(number | string)[]>(['60%', '40%']);
+  const [analyticsData, setAnalyticsData] = useState<YearlyDataAnalyticsResponse | null>(null);
+  const campusOptions = campuses.map((campus) => ({
+    label: campus.name,
+    value: campus.id,
+  }));
 
-  const fecthMonthlyData = async () => {
+  const fetchData = async () => {
+    if (!selectedCampus) {
+      return;
+    }
+
     try {
       setChartLoading(true);
+      const analyticsResponse = await getYearlyDataAnalytics({
+        campusId: selectedCampus,
+        year,
+      });
 
-      const response = await getCampusYearlySummary(selectedCampus!, year);
-      if (!response?.success || !response?.data) {
+      if (!analyticsResponse?.success || !analyticsResponse?.data) {
+        message.error('Failed to fetch analytics data');
         return;
       }
 
-      const { totalSummary, monthlyWasteSummary } = response.data;
-
-      setCampusYearlySummary(response.data);
-
-      if (totalSummary) {
-        setSummary(totalSummary);
-      }
-
-      if (monthlyWasteSummary?.length) {
-        const disposalMethodNames = disposalMethods.map((method) => method.name);
-
-        const chartData = transformMonthlyChartData(monthlyWasteSummary, disposalMethodNames);
-        setMonthlyChartData(chartData);
-
-        const pieChart = transformRecyclableWasteType(monthlyWasteSummary);
-        setPieChartData(pieChart);
-      }
-    } catch {
-      message.error('Failed to fetch monthly data');
+      setAnalyticsData(analyticsResponse.data);
+    } catch (error: unknown) {
+      message.error(getRequestErrorMessage(error, 'Failed to fetch dashboard data'));
     } finally {
       setChartLoading(false);
     }
@@ -157,176 +77,69 @@ const DashboardSection: React.FC = () => {
   }, [campuses]);
 
   useEffect(() => {
-    if (year && selectedCampus) fecthMonthlyData();
+    if (year && selectedCampus) fetchData();
   }, [year, selectedCampus]);
 
-  const totals: Record<string, number> = monthlyChartData.reduce((acc, curr) => {
-    acc[curr.month] = (acc[curr.month] || 0) + curr.totalWeight;
-    return acc;
-  }, {});
-
-  const config = {
-    title: 'UTM Solid Waste Generation Trends',
-    data: monthlyChartData,
-    xField: 'month',
-    yField: 'totalWeight',
-    stack: true,
-    colorField: 'disposalMethod',
-    scale: DISPOSAL_METHOD_COLOR_SCALE,
-    legend: {
-      position: 'top',
-    },
-    xAxis: {
-      label: {
-        autoRotate: false,
-      },
-    },
-    axis: {
-      x: { title: 'MONTHS', tickCount: 24 },
-      y: { title: 'WEIGHT (TONNES)', grid: true },
-    },
-    interactions: [
-      {
-        type: 'active-region',
-        enable: true,
-      },
-    ],
-    tooltip: {
-      items: [
-        (datum: { totalWeight: number }) => ({
-          value: `${datum.totalWeight.toFixed(2)} tonnes`,
-        }),
-      ],
-    },
-    annotations: Object.entries(totals).map(([month, total]) => ({
-      type: 'text',
-      data: [{ month, totalWeight: total }], // Fake data point for positioning
-      encode: { x: 'month', y: 'totalWeight' },
-      style: {
-        text: `${total.toFixed(2)}`,
-        textBaseline: 'bottom', // Sit on top of the bar
-        textAlign: 'center',
-        fontSize: 12,
-        fontWeight: 'bold',
-        fill: '#000', // Black text
-        dy: -2, // Move up slightly
-      },
-      tooltip: false, // Disable tooltip for this text
-    })),
-  };
-  const totalSum = pieChartData.reduce((acc, curr) => acc + curr.totalWeight, 0);
-  const pieConfig = {
-    title: 'Statistics of recyclable items by waste type',
-    data: pieChartData,
-    angleField: 'totalWeight',
-    colorField: 'wasteType',
-    radius: 0.8,
-    innerRadius: 0.5,
-    label: {
-      text: (d) => {
-        const percent = (d.totalWeight / totalSum) * 100;
-        return `${d.wasteType}\n${d.totalWeight} Tonnes (${percent}%)`;
-      },
-      position: 'outside',
-      style: {
-        fontWeight: 'bold',
-      },
-    },
-    annotations: [
-      {
-        type: 'text',
-        style: {
-          text: `Total\n${totalSum.toFixed(2)} Tonnes`,
-          x: '50%',
-          y: '50%',
-          textAlign: 'center',
-          fontSize: 16,
-          fontStyle: 'bold',
-        },
-        tooltip: false,
-      },
-    ],
-    legend: {
-      color: {
-        title: false,
-        position: 'right',
-        rowPadding: 5,
-      },
-    },
-    tooltip: {
-      title: (datum: { disposalMethod: any; wasteType: any }) => ({
-        value: `${datum.disposalMethod} - ${datum.wasteType} `,
-      }),
-      items: [
-        (datum: { totalWeight: number }) => ({
-          name: 'Total Weight',
-          value: `${datum.totalWeight.toFixed(2)} Tonnes`,
-        }),
-      ],
-    },
-  };
-
   return (
-    <PageContainer title={'Dashboard'}>
-      <Row gutter={16} wrap align="middle" justify="space-between">
-        <Col xs={24} sm={12} md={8}>
-          <label>UTM Campus</label>
-          <Select
-            placeholder="Choose a campus"
-            value={selectedCampus}
-            onChange={(value) => setSelectedCampus(value)}
-            options={campuses.map((campus) => ({
-              label: campus.name,
-              value: campus.id,
-            }))}
-            style={{ width: '100%' }}
-          />
-        </Col>
-        <Col xs={24} sm={12} md={8}>
-          <label>Year</label>
-          <Select
-            placeholder="Choose a year"
-            value={year}
-            onChange={(value) => setYear(value)}
-            options={yearOptions}
-            style={{ width: '100%' }}
-          />
-        </Col>
-      </Row>
-      <br />
-      <Skeleton loading={chartLoading}>
-        <InfoCardGrid {...summary} wasteTypeTotals={campusYearlySummary?.wasteTypeTotals ?? []} />
+    <PageContainer title="Dashboard">
+      {/* Main Vertical Layout: size 24 provides better breathing room for large dashboards */}
+      <Space direction="vertical" size={24} style={{ width: '100%' }}>
+        {/* SECTION 1: Filters */}
+        <AnalyticsFilters
+          year={year}
+          campusId={selectedCampus}
+          yearOptions={yearOptions}
+          campusOptions={campusOptions}
+          onYearChange={setYear}
+          onCampusChange={setSelectedCampus}
+        />
 
-        <br />
+        <Skeleton active loading={chartLoading}>
+          {analyticsData ? (
+            <Space direction="vertical" size={24} style={{ width: '100%' }}>
+              {/* SECTION 2: Metrics Overview */}
+              <InfoCardGrid
+                totalWasteGenerated={analyticsData.wasteGeneration.totalWasteGeneratedTonnes}
+                totalWasteDiverted={analyticsData.wasteGeneration.totalWasteDivertedTonnes}
+                totalWasteToLandfill={analyticsData.wasteGeneration.totalWasteToLandfillTonnes}
+                wasteDiversionRate={analyticsData.wasteDiversion.wasteDiversionRatePercent}
+                wasteRecyclingRate={analyticsData.wasteDiversion.recyclingRatePercent}
+                totalGhgReduction={analyticsData.wasteDiversion.estimatedGhgReductionKgCo2e}
+                wasteTypeBreakdownByDisposalMethod={
+                  analyticsData.wasteGeneration.wasteTypeBreakdownByDisposalMethod
+                }
+              />
 
-        <Row gutter={[16, 16]}>
-          <Col span={24}>
-            <div
-              style={{
-                backgroundColor: 'white',
-                width: '100%',
-                borderRadius: 8,
-                padding: 16,
-              }}
-            >
-              <Column {...config} />
-            </div>
-          </Col>
+              {/* SECTION 3: Trend Chart */}
+              <ProCard bordered>
+                <WasteGenerationTrendChart
+                  title={'UTM Solid Waste Generation Trends'}
+                  data={analyticsData.wasteGeneration.wasteGenerationTrend}
+                />
+              </ProCard>
 
-          <Col span={24}>
-            <div
-              style={{
-                backgroundColor: 'white',
-                width: '100%',
-                borderRadius: 8,
-                padding: 16,
-              }}
-            >
-              <Pie {...pieConfig} />
-            </div>
-          </Col>
-        </Row>
-      </Skeleton>
+              {/* SECTION 4: Waste Composition Grid */}
+              <ProCard bordered>
+                <WasteCompositionGrid
+                  recycledWasteTypeComposition={
+                    analyticsData.wasteDiversion.recycledWasteTypeComposition
+                  }
+                  compostingWasteTypeComposition={
+                    analyticsData.wasteDiversion.compostingWasteTypeComposition
+                  }
+                  energyRecoveryWasteTypeComposition={
+                    analyticsData.wasteDiversion.energyRecoveryWasteTypeComposition
+                  }
+                />
+              </ProCard>
+            </Space>
+          ) : (
+            <ProCard ghost>
+              <Empty description="No dashboard analytics data available." />
+            </ProCard>
+          )}
+        </Skeleton>
+      </Space>
     </PageContainer>
   );
 };

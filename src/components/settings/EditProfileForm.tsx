@@ -54,17 +54,16 @@ const EditProfileForm = () => {
   const handleSubmit = async (values: any) => {
     try {
       setSubmitting(true);
-      const payload = {
-        userId: userData?.id,
+
+      const res = await updateProfile({
         name: values.name,
         contactNumber: values.contactNumber,
         staffMatricNo: values.staffMatricNo,
         departmentId: values.departmentId,
+        unit: values.unit,
         positionId: values.positionId,
-        roleIds: values.roleIds ? [values.roleIds] : [],
-      };
-
-      const res = await updateProfile(payload);
+        roleIds: values.roleIds ? values.roleIds : [],
+      });
       if (res.success) {
         message.success('Profile updated successfully');
         setUserData({ ...userData!, ...values });
