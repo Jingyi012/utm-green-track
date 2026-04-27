@@ -12,7 +12,7 @@ import {
 } from '@/hook/wasteRecords';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWasteRecordDropdownOptions, useProfileDropdownOptions } from '@/hook/options';
-import WasteRecordDrawerForm from './WasteRecordDrawerForm';
+import WasteRecordForm from './WasteRecordForm';
 import {
   CheckOutlined,
   CloseOutlined,
@@ -437,7 +437,7 @@ const WasteRecordDetailPage: React.FC<WasteRecordDetailPageProps> = ({ source = 
 
           {isEditMode ? (
             <ProCard title="Edit Waste Record" bordered>
-              <WasteRecordDrawerForm
+              <WasteRecordForm
                 campuses={campuses}
                 departments={departments}
                 disposalMethods={disposalMethods}

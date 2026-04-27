@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tooltip } from 'antd';
-import { dateTimeFormatter } from '@/lib/utils/formatter';
+import { dateFormatter, dateTimeFormatter } from '@/lib/utils/formatter';
 import { WasteRecord } from '@/lib/types/wasteRecord';
 import { Campus, Department, DisposalMethodWithWasteType } from '@/lib/types/typing';
 import { wasteRecordStatusLabels, WasteRecordStatus } from '@/lib/enum/status';
@@ -57,12 +57,7 @@ export const renderAttachments = (_: unknown, record: WasteRecord) => {
     return (
       <div style={cellContentStyle}>
         <Tooltip title={file.fileName}>
-          <a
-            href={file.filePath}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={fileLinkStyle}
-          >
+          <a href={file.filePath} target="_blank" rel="noopener noreferrer" style={fileLinkStyle}>
             {file.fileName}
           </a>
         </Tooltip>
@@ -215,7 +210,7 @@ export const getBaseColumns = (params: {
       title: 'Date of Program/ Initiative',
       dataIndex: 'programDate',
       width: 180,
-      render: (programDate: string | Date | null | undefined) => dateTimeFormatter(programDate),
+      render: (programDate: string | null | undefined) => dateFormatter(programDate),
       hideInSearch: true,
       align: 'center' as const,
     },

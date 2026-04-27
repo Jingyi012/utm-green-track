@@ -1,79 +1,22 @@
 import { useMemo, useState } from 'react';
-import { App, Button, Card, Col, Row, Space, Table, Typography, Upload, UploadFile } from 'antd';
+import { App, Button, UploadFile } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { Key } from 'react';
 import dayjs from 'dayjs';
-import {
-  PageContainer,
-  ProForm,
-  ProFormDatePicker,
-  ProFormDateTimePicker,
-  ProFormDigit,
-  ProFormList,
-  ProFormSelect,
-  ProFormText,
-} from '@ant-design/pro-components';
-import { DeleteOutlined, EditOutlined, UploadOutlined } from '@ant-design/icons';
+import { PageContainer, ProForm } from '@ant-design/pro-components';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { createWasteRecords } from '@/lib/services/wasteRecord';
 import { useProfileDropdownOptions, useWasteRecordDropdownOptions } from '@/hook/options';
 import { useWasteEntryStore } from '@/lib/store/useWasteEntryStore';
-import { dateTimeFormatter } from '@/lib/utils/formatter';
+import { dateFormatter } from '@/lib/utils/formatter';
 import { WasteRecordDraftInput, WasteRecordInput } from '@/lib/types/wasteRecord';
 import EditFormModal from './EditFormModal';
-import {
-  ATTACHMENT_ACCEPT_ATTRIBUTE,
-  ATTACHMENT_ACCEPT_LABEL,
-  validateAttachmentBeforeUpload,
-} from '@/lib/utils/attachmentValidation';
-
-const { Title, Text } = Typography;
-
-const WASTE_PAIR_SEPARATOR = '::';
-
-type WasteItemFormValue = {
-  wastePairKey: string;
-  wasteWeight: number;
-  attachments?: UploadFile[];
-};
-
-type WasteEntryFormValues = {
-  date?: string;
-  campusId: string;
-  departmentId: string;
-  unit?: string;
-  location: string;
-  program?: string;
-  programDate?: string;
-  wasteItems: WasteItemFormValue[];
-};
-
-type WastePairMeta = {
-  disposalMethodId: string;
-  wasteTypeId: string;
-};
-
-const getWastePairKey = (disposalMethodId: string, wasteTypeId: string): string =>
-  `${disposalMethodId}${WASTE_PAIR_SEPARATOR}${wasteTypeId}`;
-
-const toIsoString = (value: unknown): string | undefined => {
-  if (!value) {
-    return undefined;
-  }
-
-  if (dayjs.isDayjs(value)) {
-    return value.toISOString();
-  }
-
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  return undefined;
-};
+import { toDateOnlyString } from '@/lib/utils/dateField';
+import WasteEntryFormCard from './newForm/WasteEntryFormCard';
+import WasteEntryRecordsCard from './newForm/WasteEntryRecordsCard';
+import { getWastePairKey } from './newForm/helpers';
+import { WasteEntryFormValues, WastePairMeta } from './newForm/types';
+import { sanitizeUploadFileList } from '@/lib/utils/uploadFiles';
 
 export default function WasteEntryForm() {
   const [form] = ProForm.useForm<WasteEntryFormValues>();
@@ -116,10 +59,13 @@ export default function WasteEntryForm() {
     [tableData],
   );
 
+  const selectedRecords = useMemo(() => {
+    const selectedKeySet = new Set(selectedRowKeys.map(String));
+    return tableData.filter((record) => selectedKeySet.has(record.key));
+  }, [selectedRowKeys, tableData]);
+
   const resetWholeForm = (): void => {
     form.resetFields();
-    form.setFieldValue('date', dayjs());
-    form.setFieldValue('wasteItems', [{}]);
   };
 
   const handleAdd = async (): Promise<void> => {
@@ -136,8 +82,10 @@ export default function WasteEntryForm() {
       }
 
       const normalizedProgram = values.program?.trim() || undefined;
-      const normalizedProgramDate = normalizedProgram ? toIsoString(values.programDate) : undefined;
-      const normalizedDate = toIsoString(values.date) ?? new Date().toISOString();
+      const normalizedProgramDate = normalizedProgram
+        ? toDateOnlyString(values.programDate)
+        : undefined;
+      const normalizedDate = toDateOnlyString(values.date) ?? dayjs().format('YYYY-MM-DD');
 
       const sharedRecord = {
         date: normalizedDate,
@@ -172,7 +120,7 @@ export default function WasteEntryForm() {
           wasteTypeId: pair.wasteTypeId,
           wasteWeight: Number(item.wasteWeight),
           status: '',
-          attachments: [...(item.attachments ?? [])],
+          attachments: sanitizeUploadFileList(item.attachments),
         };
 
         addRecord(newRow);
@@ -253,24 +201,16 @@ export default function WasteEntryForm() {
         const hide = message.loading('Submitting records...', 0);
 
         try {
-          const wasteRecords: WasteRecordInput[] = tableData.map((record) => ({
-            ...record,
-            date: record.date,
-            attachments: (record.attachments ?? [])
-              .map((file) => file.originFileObj)
-              .filter((file): file is NonNullable<UploadFile['originFileObj']> => Boolean(file)),
-          }));
+          const response = await submitRecords(tableData);
 
-          const response = await createWasteRecords({ wasteRecords });
-
-          if (response?.success) {
-            message.success('All waste records submitted successfully');
-            clearRecords();
-            setSelectedRowKeys([]);
-            resetWholeForm();
-          } else {
-            message.error(response?.message || 'Failed to submit waste records');
+          if (!response.success) {
+            return;
           }
+
+          message.success('All waste records submitted successfully');
+          clearRecords();
+          setSelectedRowKeys([]);
+          resetWholeForm();
         } catch (error) {
           console.error('Batch submission failed:', error);
           message.error('Unexpected error occurred during submission');
@@ -279,6 +219,67 @@ export default function WasteEntryForm() {
         }
       },
     });
+  };
+
+  const handleSubmitSelected = (): void => {
+    if (selectedRecords.length === 0) {
+      message.warning('Please select at least one record to submit.');
+      return;
+    }
+
+    modal.confirm({
+      title: 'Confirm Selected Submission',
+      content: `Are you sure you want to submit ${selectedRecords.length} selected record(s)?`,
+      okText: 'Yes, Submit',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        const hide = message.loading('Submitting selected records...', 0);
+
+        try {
+          const response = await submitRecords(selectedRecords);
+
+          if (!response.success) {
+            return;
+          }
+
+          const selectedKeySet = new Set(selectedRowKeys.map(String));
+          const remainingRecords = tableData.filter((record) => !selectedKeySet.has(record.key));
+
+          setRecords(remainingRecords);
+          setSelectedRowKeys([]);
+
+          if (remainingRecords.length === 0) {
+            resetWholeForm();
+          }
+
+          message.success('Selected waste records submitted successfully');
+        } catch (error) {
+          console.error('Selected submission failed:', error);
+          message.error('Unexpected error occurred during submission');
+        } finally {
+          hide();
+        }
+      },
+    });
+  };
+
+  const submitRecords = async (records: WasteRecordDraftInput[]) => {
+    console.log(records);
+    const wasteRecords: WasteRecordInput[] = records.map((record) => ({
+      ...record,
+      date: record.date,
+      attachments: (record.attachments ?? [])
+        .map((file) => file.originFileObj)
+        .filter((file): file is NonNullable<UploadFile['originFileObj']> => Boolean(file)),
+    }));
+
+    const response = await createWasteRecords({ wasteRecords });
+
+    if (!response.success) {
+      message.error(response.message || 'Failed to submit waste records');
+    }
+
+    return response;
   };
 
   const columns: ColumnsType<WasteRecordDraftInput> = [
@@ -291,8 +292,8 @@ export default function WasteEntryForm() {
     {
       title: 'Date',
       dataIndex: 'date',
-      width: 100,
-      render: (date: string) => dateTimeFormatter(date),
+      width: 120,
+      render: (date: string) => dateFormatter(date),
     },
     {
       title: 'UTM Campus',
@@ -311,6 +312,7 @@ export default function WasteEntryForm() {
       title: 'Unit',
       dataIndex: 'unit',
       width: 140,
+      render: (text: string) => text || '-',
     },
     {
       title: 'Location',
@@ -326,7 +328,7 @@ export default function WasteEntryForm() {
       title: 'Program Date',
       dataIndex: 'programDate',
       width: 160,
-      render: (programDate: string | undefined) => dateTimeFormatter(programDate),
+      render: (programDate: string | undefined) => dateFormatter(programDate),
     },
     {
       title: 'Disposal Method',
@@ -392,237 +394,54 @@ export default function WasteEntryForm() {
     },
   ];
 
+  const campusOptions = useMemo(
+    () =>
+      campuses.map((campus) => ({
+        label: campus.name,
+        value: campus.id,
+      })),
+    [campuses],
+  );
+
+  const departmentOptions = useMemo(
+    () =>
+      departments.map((department) => ({
+        label: department.name,
+        value: department.id,
+      })),
+    [departments],
+  );
+
   return (
     <PageContainer title={false}>
-      <Card loading={isLoading} style={{ marginBottom: 24 }}>
-        <ProForm<WasteEntryFormValues>
-          form={form}
-          layout="vertical"
-          submitter={false}
-          onFinish={handleAdd}
-          initialValues={{ date: dayjs(), wasteItems: [{}] }}
-        >
-          <Title level={5}>Basic Information</Title>
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <ProFormSelect
-                name="campusId"
-                label="UTM Campus"
-                placeholder="Please select campus"
-                rules={[{ required: true, message: 'Please select a campus' }]}
-                options={campuses.map((campus) => ({
-                  label: campus.name,
-                  value: campus.id,
-                }))}
-                fieldProps={{ showSearch: true, optionFilterProp: 'label' }}
-              />
-            </Col>
-            <Col xs={24} md={12}>
-              <ProFormSelect
-                name="departmentId"
-                label="Faculty / Department / College / PTJ"
-                placeholder="Select faculty / department / college / PTJ"
-                rules={[
-                  { required: true, message: 'Please select faculty / department / college / PTJ' },
-                ]}
-                options={departments.map((department) => ({
-                  label: department.name,
-                  value: department.id,
-                }))}
-                fieldProps={{ showSearch: true, optionFilterProp: 'label' }}
-              />
-            </Col>
-            <Col xs={24} md={12}>
-              <ProFormText name="unit" label="Unit" placeholder="Please enter unit" />
-            </Col>
-            <Col xs={24} md={12}>
-              <ProFormText
-                name="location"
-                label="Location"
-                placeholder="Please enter location"
-                rules={[{ required: true, message: 'Please enter location' }]}
-              />
-            </Col>
+      <WasteEntryFormCard
+        form={form}
+        isLoading={Boolean(isLoading)}
+        campusOptions={campusOptions}
+        departmentOptions={departmentOptions}
+        wastePairOptions={wastePairOptions}
+        onAddToTable={() => {
+          void handleAdd();
+        }}
+        onReset={resetWholeForm}
+        onAttachmentError={message.error}
+      />
 
-            <Col xs={24} md={12}>
-              <ProFormDatePicker
-                name="date"
-                label="Date"
-                placeholder="Please select record date"
-                rules={[{ required: true, message: 'Please select record date' }]}
-                width="xl"
-                fieldProps={{
-                  allowClear: false,
-                  format: 'DD/MM/YYYY',
-                  style: { width: '100%' },
-                }}
-              />
-            </Col>
-          </Row>
-
-          <Title level={5} style={{ marginTop: 8 }}>
-            Waste Information
-          </Title>
-
-          <ProFormList
-            name="wasteItems"
-            copyIconProps={false}
-            deleteIconProps={{
-              tooltipText: 'Remove this line',
-            }}
-            creatorButtonProps={{
-              creatorButtonText: 'Add another line item',
-              type: 'dashed',
-            }}
-            min={1}
-            itemRender={({ listDom, action }) => (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 1fr) auto',
-                  columnGap: 12,
-                  alignItems: 'start',
-                }}
-              >
-                <div>{listDom}</div>
-                <div style={{ paddingTop: 32 }}>{action}</div>
-              </div>
-            )}
-          >
-            <Row gutter={16}>
-              <Col xs={24} md={11}>
-                <ProFormSelect
-                  name="wastePairKey"
-                  label="Disposal Method + Waste Type"
-                  placeholder="Select disposal method and waste type"
-                  rules={[
-                    { required: true, message: 'Please select disposal method + waste type' },
-                  ]}
-                  options={wastePairOptions}
-                  fieldProps={{
-                    showSearch: true,
-                    optionFilterProp: 'label',
-                  }}
-                />
-              </Col>
-              <Col xs={24} md={6}>
-                <ProFormDigit
-                  name="wasteWeight"
-                  label="Waste Weight (kg)"
-                  placeholder="Weight"
-                  rules={[{ required: true, message: 'Please enter waste weight' }]}
-                  fieldProps={{
-                    min: 0,
-                    step: 0.1,
-                    precision: 2,
-                  }}
-                  min={0}
-                />
-              </Col>
-              <Col xs={24} md={7}>
-                <ProForm.Item
-                  name="attachments"
-                  label="Attachment (.pdf, .jpg, .png)"
-                  valuePropName="fileList"
-                  getValueFromEvent={(event: { fileList: UploadFile[] } | UploadFile[]) =>
-                    Array.isArray(event) ? event : (event?.fileList ?? [])
-                  }
-                >
-                  <Upload
-                    accept={ATTACHMENT_ACCEPT_ATTRIBUTE}
-                    beforeUpload={(file) => validateAttachmentBeforeUpload(file, message.error)}
-                    multiple
-                    style={{ width: '100%' }}
-                  >
-                    <Button icon={<UploadOutlined />} style={{ width: '100%' }}>
-                      Upload
-                    </Button>
-                  </Upload>
-                </ProForm.Item>
-              </Col>
-            </Row>
-          </ProFormList>
-          <Text type="secondary">{ATTACHMENT_ACCEPT_LABEL}</Text>
-
-          <Title level={5} style={{ marginTop: 8 }}>
-            Waste Diversion Initiative (If any)
-          </Title>
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <ProFormText
-                name="program"
-                label="Name of Program / Initiative"
-                placeholder="Please enter program / initiative name"
-              />
-            </Col>
-            <Col xs={24} md={12}>
-              <ProFormDatePicker
-                name="programDate"
-                label="Date of Program / Initiative"
-                placeholder="Please enter date of program / initiative"
-                fieldProps={{
-                  allowClear: false,
-                  format: 'DD/MM/YYYY',
-                  style: { width: '100%' },
-                }}
-              />
-            </Col>
-          </Row>
-
-          <Row gutter={16} style={{ marginTop: 16 }}>
-            <Col>
-              <Button type="primary" onClick={() => form.submit()}>
-                Add To Table
-              </Button>
-            </Col>
-            <Col>
-              <Button danger onClick={resetWholeForm}>
-                Reset Form
-              </Button>
-            </Col>
-          </Row>
-        </ProForm>
-      </Card>
-
-      <Card>
-        <div
-          style={{
-            marginBottom: 12,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Space wrap>
-            <Text strong>{`Records: ${tableData.length}`}</Text>
-            <Text strong>{`Total Weight: ${totalWeight.toFixed(2)} kg`}</Text>
-          </Space>
-          {selectedRowKeys.length > 0 && (
-            <Button danger onClick={handleBatchDelete}>
-              Delete Selected ({selectedRowKeys.length})
-            </Button>
-          )}
-        </div>
-        <Table<WasteRecordDraftInput>
-          dataSource={tableData}
-          columns={columns}
-          rowSelection={{
-            selectedRowKeys,
-            onChange: (keys) => setSelectedRowKeys(keys),
-          }}
-          pagination={false}
-          bordered
-          scroll={{ x: 1500 }}
-          style={{ marginBottom: 16 }}
-        />
-        <div className="flex justify-center">
-          <Button type="primary" onClick={handleSubmit} disabled={tableData.length === 0}>
-            Submit All Records
-          </Button>
-        </div>
-      </Card>
+      <WasteEntryRecordsCard
+        tableData={tableData}
+        totalWeight={totalWeight}
+        selectedRowKeys={selectedRowKeys}
+        columns={columns}
+        onSelectionChange={setSelectedRowKeys}
+        onSubmitAll={() => {
+          void handleSubmit();
+        }}
+        onSubmitSelected={handleSubmitSelected}
+        onDeleteSelected={handleBatchDelete}
+      />
 
       <EditFormModal
+        key={editingRecord?.key}
         open={isModalOpen}
         record={editingRecord}
         campuses={campuses}

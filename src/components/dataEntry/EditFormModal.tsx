@@ -2,7 +2,6 @@ import { Modal, Button, Upload, App, Col, Row, Typography, UploadFile } from 'an
 import {
   ProForm,
   ProFormDatePicker,
-  ProFormDateTimePicker,
   ProFormDigit,
   ProFormSelect,
   ProFormText,
@@ -11,12 +10,13 @@ import { UploadOutlined } from '@ant-design/icons';
 import { WasteTypeWithEmissionFactor } from '@/lib/types/typing';
 import { useState, useEffect } from 'react';
 import { WasteRecordDraftInput } from '@/lib/types/wasteRecord';
-import dayjs from 'dayjs';
 import {
   ATTACHMENT_ACCEPT_ATTRIBUTE,
   ATTACHMENT_ACCEPT_LABEL,
   validateAttachmentBeforeUpload,
 } from '@/lib/utils/attachmentValidation';
+import { toDateOnlyString, toPickerDateValue } from '@/lib/utils/dateField';
+import { sanitizeUploadFileList } from '@/lib/utils/uploadFiles';
 
 const { Title } = Typography;
 
@@ -40,35 +40,6 @@ type Props = {
   onSave: (values: Partial<WasteRecordDraftInput>, recordKey: string) => void;
 };
 
-const toPickerValue = (value?: string | null) => {
-  if (!value) {
-    return undefined;
-  }
-
-  const parsed = dayjs(value);
-  return parsed.isValid() ? parsed : undefined;
-};
-
-const toIsoString = (value: unknown): string | undefined => {
-  if (!value) {
-    return undefined;
-  }
-
-  if (dayjs.isDayjs(value)) {
-    return value.toISOString();
-  }
-
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  return undefined;
-};
-
 export default function EditformModal({
   open,
   record,
@@ -87,8 +58,8 @@ export default function EditformModal({
     if (record) {
       form.setFieldsValue({
         ...record,
-        date: toPickerValue(record.date),
-        programDate: toPickerValue(record.programDate),
+        date: toPickerDateValue(record.date),
+        programDate: toPickerDateValue(record.programDate),
       });
       const method = disposalMethods.find((item) => item.id === record.disposalMethodId);
       setWasteTypes(method?.wasteTypes ?? []);
@@ -111,8 +82,9 @@ export default function EditformModal({
     onSave(
       {
         ...values,
-        date: toIsoString(values.date) ?? record.date,
-        programDate: toIsoString(values.programDate),
+        date: toDateOnlyString(values.date) ?? record.date,
+        programDate: toDateOnlyString(values.programDate) ?? record.programDate,
+        attachments: sanitizeUploadFileList(values.attachments),
       },
       record.key,
     );
@@ -137,7 +109,11 @@ export default function EditformModal({
               label="Record Date"
               placeholder="Please select record date"
               rules={[{ required: true, message: 'Please select record date' }]}
-              fieldProps={{ allowClear: false, format: 'DD/MM/YYYY' }}
+              fieldProps={{
+                format: 'DD/MM/YYYY',
+                allowClear: false,
+                style: { width: '100%' },
+              }}
             />
           </Col>
           <Col xs={24} md={12}>
@@ -197,10 +173,14 @@ export default function EditformModal({
             />
           </Col>
           <Col xs={24} md={12}>
-            <ProFormDateTimePicker
+            <ProFormDatePicker
               name="programDate"
               label="Date of Program / Initiative"
               placeholder="Please enter date of program / initiative"
+              fieldProps={{
+                format: 'DD/MM/YYYY',
+                style: { width: '100%' },
+              }}
             />
           </Col>
         </Row>
@@ -264,10 +244,9 @@ export default function EditformModal({
               extra={ATTACHMENT_ACCEPT_LABEL}
               valuePropName="fileList"
               getValueFromEvent={(event: { fileList: UploadFile[] } | UploadFile[]) => {
-                if (Array.isArray(event)) {
-                  return event;
-                }
-                return event?.fileList ?? [];
+                return sanitizeUploadFileList(
+                  Array.isArray(event) ? event : (event?.fileList ?? []),
+                );
               }}
             >
               <Upload

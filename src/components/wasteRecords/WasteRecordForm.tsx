@@ -5,7 +5,6 @@ import {
   ProFormText,
   ProFormDigit,
   ProForm,
-  ProFormDateTimePicker,
   ProFormTextArea,
 } from '@ant-design/pro-components';
 import { ProCard } from '@ant-design/pro-components';
@@ -20,12 +19,13 @@ import { WasteRecordStatus, wasteRecordStatusLabels } from '@/lib/enum/status';
 import { UploadOutlined } from '@ant-design/icons';
 import { WasteRecord } from '@/lib/types/wasteRecord';
 import { useAuth } from '@/contexts/AuthContext';
-import dayjs from 'dayjs';
 import {
   ATTACHMENT_ACCEPT_ATTRIBUTE,
   ATTACHMENT_ACCEPT_LABEL,
   validateAttachmentBeforeUpload,
 } from '@/lib/utils/attachmentValidation';
+import { toDateOnlyString, toPickerDateValue } from '@/lib/utils/dateField';
+import { sanitizeUploadFileList } from '@/lib/utils/uploadFiles';
 
 const { Title } = Typography;
 export type FormValueType = Partial<WasteRecord>;
@@ -41,7 +41,7 @@ export type UpdateFormDrawerProps = {
   isEditMode?: boolean;
 };
 
-const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
+const WasteRecordForm: React.FC<UpdateFormDrawerProps> = ({
   campuses,
   departments,
   disposalMethods,
@@ -57,39 +57,11 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
   const [selectedDisposalMethod, setSelectedDisposalMethod] = useState<string>();
   const [wasteTypes, setWasteTypes] = useState<WasteTypeWithEmissionFactor[]>([]);
 
-  const toPickerValue = (value?: string | null) => {
-    if (!value) {
-      return undefined;
-    }
-    const parsed = dayjs(value);
-    return parsed.isValid() ? parsed : undefined;
-  };
-
-  const toIsoString = (value: unknown): string | undefined => {
-    if (!value) {
-      return undefined;
-    }
-
-    if (dayjs.isDayjs(value)) {
-      return value.toISOString();
-    }
-
-    if (value instanceof Date) {
-      return value.toISOString();
-    }
-
-    if (typeof value === 'string') {
-      return value;
-    }
-
-    return undefined;
-  };
-
   const normalizedInitialValues = useMemo(
     () => ({
       ...initialValues,
-      date: toPickerValue(initialValues?.date),
-      programDate: toPickerValue(initialValues?.programDate),
+      date: toPickerDateValue(initialValues?.date),
+      programDate: toPickerDateValue(initialValues?.programDate),
     }),
     [initialValues],
   );
@@ -144,8 +116,9 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
       onFinish={async (values) => {
         const payload: FormValueType = {
           ...values,
-          date: toIsoString(values.date),
-          programDate: toIsoString(values.programDate),
+          date: toDateOnlyString(values.date),
+          programDate: toDateOnlyString(values.programDate),
+          uploadedAttachments: sanitizeUploadFileList(values.uploadedAttachments),
         };
 
         const success = await onSubmit(payload);
@@ -256,12 +229,17 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
             />
           </Col>
           <Col xs={24} md={12}>
-            <ProFormDateTimePicker
+            <ProFormDatePicker
               name="programDate"
               label="Date of Program/ Initiative"
               placeholder="Please enter date of program / initiative"
               rules={[]}
               disabled={!isEditMode}
+              fieldProps={{
+                allowClear: false,
+                format: 'DD/MM/YYYY',
+                style: { width: '100%' },
+              }}
             />
           </Col>
         </Row>
@@ -381,7 +359,7 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
           label="Attachment (Optional)"
           extra={ATTACHMENT_ACCEPT_LABEL}
           valuePropName="fileList"
-          getValueFromEvent={(e) => e.fileList}
+          getValueFromEvent={(e) => sanitizeUploadFileList(e?.fileList ?? [])}
         >
           <Upload
             name="fileList"
@@ -402,4 +380,4 @@ const WasteRecordDrawerForm: React.FC<UpdateFormDrawerProps> = ({
   );
 };
 
-export default WasteRecordDrawerForm;
+export default WasteRecordForm;

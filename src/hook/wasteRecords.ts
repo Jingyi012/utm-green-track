@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { message } from 'antd';
+import { App } from 'antd';
 import {
   getWasteRecordsPaginated,
   getWasteRecordById,
@@ -203,6 +203,7 @@ export const useLifetimeAnalytics = (campusId: string, enabled = true) => {
 
 // Mutation Hooks
 export const useUpdateWasteRecord = () => {
+  const { message } = App.useApp();
   const queryClient = useQueryClient();
   const refreshBadges = useBadgeRefresh();
 
@@ -230,6 +231,7 @@ export const useUpdateWasteRecord = () => {
 };
 
 export const useDeleteWasteRecord = () => {
+  const { message } = App.useApp();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -249,6 +251,7 @@ export const useDeleteWasteRecord = () => {
 };
 
 export const useUploadAttachments = () => {
+  const { message } = App.useApp();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -268,6 +271,7 @@ export const useUploadAttachments = () => {
 };
 
 export const useDeleteAttachment = () => {
+  const { message } = App.useApp();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -290,6 +294,7 @@ export const useDeleteAttachment = () => {
 };
 
 export const useSaveWasteRecord = () => {
+  const { message } = App.useApp();
   const queryClient = useQueryClient();
   const refreshBadges = useBadgeRefresh();
 
@@ -342,6 +347,7 @@ export const useSaveWasteRecord = () => {
 };
 
 export const useUpdateWasteRecordApprovalStatus = () => {
+  const { message } = App.useApp();
   const queryClient = useQueryClient();
   const refreshBadges = useBadgeRefresh();
 
@@ -371,6 +377,8 @@ export const useUpdateWasteRecordApprovalStatus = () => {
 };
 
 const useExportWasteRecords = (format: 'excel' | 'pdf') => {
+  const { message } = App.useApp();
+
   return useMutation({
     mutationFn: async ({ year, month }: ExportWasteRecordInput) => {
       const hide = message.loading(
