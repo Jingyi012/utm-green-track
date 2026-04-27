@@ -158,7 +158,7 @@ export const proLayoutMenuData: AppMenuItem[] = [
     path: '/data-analytics',
     name: 'Data Analytics',
     icon: <GrAnalytics />,
-    requiredPermission: APP_PERMISSIONS.WASTE_RECORD.READ,
+    requiredPermission: ADMIN_OPERATION_PERMISSION,
   },
   {
     path: '/configurations',
