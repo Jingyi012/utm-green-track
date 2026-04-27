@@ -345,8 +345,13 @@ const WasteManagementTable: React.FC = () => {
     const campusFilter = isAdmin ? campusId : selectedCampus;
     const departmentFilter = isAdmin ? departmentId : selectedDepartment;
 
-    if (!campusFilter || !departmentFilter) {
-      message.warning(getRequiredFilterWarning());
+    if (!campusFilter) {
+      message.warning('Please select UTM Campus first.');
+      return;
+    }
+
+    if (!isAdmin && !departmentFilter) {
+      message.warning('Please select Faculty / Department / College / PTJ first.');
       return;
     }
 

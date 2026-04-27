@@ -148,7 +148,12 @@ const UserManagement: React.FC = () => {
           persistenceType: 'localStorage',
         }}
         columns={columns}
-        pagination={{}}
+        pagination={{
+          current: filters.pageNumber,
+          pageSize: filters.pageSize,
+          total: userData?.totalCount,
+          showSizeChanger: true,
+        }}
         dataSource={userData?.data ?? []}
         request={(params: { current?: number; pageSize?: number; [key: string]: unknown }) => {
           setFilters({

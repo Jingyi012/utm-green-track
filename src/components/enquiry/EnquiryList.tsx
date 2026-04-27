@@ -39,7 +39,7 @@ export const EnquiryList: React.FC = () => {
   const actionRef = useRef<ActionType | undefined>(undefined);
   const { user, hasRole } = useAuth();
 
-  const { data: enquiryData, isLoading, refetch } = useEnquiryList(filters);
+  const { data: enquiryData, isLoading, refetch, isRefetching } = useEnquiryList(filters);
   const { mutateAsync: deleteEnquiry, isPending: isDeleting } = useDeleteEnquiry();
   const { mutateAsync: createEnquiry, isPending: isCreating } = useCreateEnquiry();
   const { mutateAsync: updateEnquiryStatus, isPending: isUpdatingStatus } =
@@ -200,11 +200,14 @@ export const EnquiryList: React.FC = () => {
         rowKey="id"
         headerTitle="Enquiry List"
         actionRef={actionRef}
-        loading={isLoading}
+        loading={isLoading || isRefetching}
         columns={columns}
         dataSource={enquiryData?.data ?? []}
         pagination={{
-          pageSize: 20,
+          current: filters.pageNumber,
+          pageSize: filters.pageSize,
+          total: enquiryData?.totalCount,
+          showSizeChanger: true,
         }}
         request={(params: any) => {
           setFilters({

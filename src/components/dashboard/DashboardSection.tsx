@@ -119,19 +119,17 @@ const DashboardSection: React.FC = () => {
               </ProCard>
 
               {/* SECTION 4: Waste Composition Grid */}
-              <ProCard bordered>
-                <WasteCompositionGrid
-                  recycledWasteTypeComposition={
-                    analyticsData.wasteDiversion.recycledWasteTypeComposition
-                  }
-                  compostingWasteTypeComposition={
-                    analyticsData.wasteDiversion.compostingWasteTypeComposition
-                  }
-                  energyRecoveryWasteTypeComposition={
-                    analyticsData.wasteDiversion.energyRecoveryWasteTypeComposition
-                  }
-                />
-              </ProCard>
+              <WasteCompositionGrid
+                recycledWasteTypeComposition={
+                  analyticsData.wasteDiversion.recycledWasteTypeComposition
+                }
+                compostingWasteTypeComposition={
+                  analyticsData.wasteDiversion.compostingWasteTypeComposition
+                }
+                energyRecoveryWasteTypeComposition={
+                  analyticsData.wasteDiversion.energyRecoveryWasteTypeComposition
+                }
+              />
             </Space>
           ) : (
             <ProCard ghost>

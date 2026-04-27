@@ -23,24 +23,28 @@ export function WasteDiversionSection({ data }: WasteDiversionSectionProps) {
       title: 'Waste Diversion Rate',
       value: formatFixed(data.wasteDiversionRatePercent),
       unit: '%',
+      helperText: `${formatTonnes(data.totalWasteDivertedTonnes)} diverted`,
     },
     {
       key: 'recycling-rate',
       title: 'Recycling Rate',
       value: formatFixed(data.recyclingRatePercent),
       unit: '%',
+      helperText: `${formatTonnes(data.totalRecycledWasteTonnes)} recycled`,
     },
     {
       key: 'composting-rate',
       title: 'Composting Rate',
       value: formatFixed(data.compostingRatePercent),
       unit: '%',
+      helperText: `${formatTonnes(data.totalCompostingWasteTonnes)} composted`,
     },
     {
       key: 'energy-recovery-rate',
       title: 'Energy Recovery Rate',
       value: formatFixed(data.energyRecoveryRatePercent),
       unit: '%',
+      helperText: `${formatTonnes(data.totalEnergyRecoveryWasteTonnes)} recovered`,
     },
     {
       key: 'ghg-reduction',

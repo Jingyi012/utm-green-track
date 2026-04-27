@@ -16,7 +16,8 @@ export function YearlySummarySection({ data }: YearlySummarySectionProps) {
   const hasAnyData =
     data.totalWasteGenerationByCampus.length > 0 ||
     data.totalWasteDiversionByCampus.length > 0 ||
-    data.totalWasteManagementCostByCampus.length > 0;
+    data.totalWasteManagementCostByCampus.length > 0 ||
+    data.totalEstimatedSavingsFromWasteDiversionByCampus.length > 0;
 
   if (!hasAnyData) {
     return <Empty description="No yearly summary data available." />;
@@ -150,6 +151,44 @@ export function YearlySummarySection({ data }: YearlySummarySectionProps) {
     })),
   };
 
+  const savingsConfig = {
+    title: 'UTM Est. Savings From Waste Diversion',
+    height: 320,
+    data: data.totalEstimatedSavingsFromWasteDiversionByCampus,
+    xField: 'campusName',
+    yField: 'totalCostRm',
+    color: DEFAULT_WASTE_BAR_COLOR,
+    axis: {
+      x: { title: 'Campus' },
+      y: { title: 'Savings (RM)' },
+    },
+    legend: false,
+    interactions: [{ type: 'active-region', enable: true }],
+    tooltip: {
+      items: [
+        (datum: { totalCostRm: number }) => ({
+          name: 'Est. Savings',
+          value: `RM ${formatFixed(datum.totalCostRm)}`,
+        }),
+      ],
+    },
+    annotations: data.totalEstimatedSavingsFromWasteDiversionByCampus.map((item) => ({
+      type: 'text',
+      data: [{ campusName: item.campusName, totalCostRm: item.totalCostRm }],
+      encode: { x: 'campusName', y: 'totalCostRm' },
+      style: {
+        text: `RM ${item.totalCostRm.toFixed(2)}`,
+        textBaseline: 'bottom',
+        textAlign: 'center',
+        fontSize: 12,
+        fontWeight: 'bold',
+        fill: '#000',
+        dy: -2,
+      },
+      tooltip: false,
+    })),
+  };
+
   return (
     <ProCard direction="column" ghost>
       <Space
@@ -166,6 +205,9 @@ export function YearlySummarySection({ data }: YearlySummarySectionProps) {
         </ProCard>
         <ProCard bordered>
           <Column {...costConfig} />
+        </ProCard>
+        <ProCard bordered>
+          <Column {...savingsConfig} />
         </ProCard>
       </Space>
     </ProCard>

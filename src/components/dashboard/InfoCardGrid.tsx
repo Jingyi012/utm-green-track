@@ -1,15 +1,7 @@
-import { Col, Collapse, Divider, Row, Table, Typography } from 'antd';
+import { Col, Row } from 'antd';
 import { useMemo, useState } from 'react';
-import { BreakdownModal } from './BreakdownModal';
+import { WasteBreakdownItem, WasteBreakdownModal } from '@/components/analyticsShared/WasteBreakdownModal';
 import InfoCard from './InfoCard';
-
-const { Title } = Typography;
-
-interface WasteTypeBreakdownByDisposalMethod {
-  disposalMethod: string;
-  wasteType: string;
-  totalWeightTonnes: number;
-}
 
 interface InfoCardGridProps {
   totalWasteGenerated: number;
@@ -18,15 +10,10 @@ interface InfoCardGridProps {
   wasteDiversionRate: number;
   wasteRecyclingRate: number;
   totalGhgReduction: number;
-  wasteTypeBreakdownByDisposalMethod: WasteTypeBreakdownByDisposalMethod[];
+  wasteTypeBreakdownByDisposalMethod: WasteBreakdownItem[];
 }
 
-type BreakdownType = 'generated' | 'diverted' | 'diversionRate' | 'recyclingRate' | null;
-
-interface BreakdownSummary {
-  disposalMethod: string;
-  weight: number;
-}
+type BreakdownType = 'generated' | 'diverted' | 'landfill' | 'diversionRate' | 'recyclingRate' | null;
 
 export default function InfoCardGrid({
   totalWasteGenerated,
@@ -40,21 +27,6 @@ export default function InfoCardGrid({
   const [activeBreakdown, setActiveBreakdown] = useState<BreakdownType>(null);
 
   const format = (n: number) => n.toFixed(2);
-
-  const formatRate = (n: number, divider: number) => {
-    if (!divider) return '0.00';
-    return ((n / divider) * 100).toFixed(2);
-  };
-
-  const groupByDisposalMethod = (items: WasteTypeBreakdownByDisposalMethod[]) => {
-    return items.reduce<Record<string, WasteTypeBreakdownByDisposalMethod[]>>((acc, item) => {
-      if (!acc[item.disposalMethod]) {
-        acc[item.disposalMethod] = [];
-      }
-      acc[item.disposalMethod].push(item);
-      return acc;
-    }, {});
-  };
 
   const getBreakdownData = (type: Exclude<BreakdownType, null>) => {
     const allowedMethods = ['Recycling', 'Composting', 'Energy Recovery'];
@@ -73,6 +45,13 @@ export default function InfoCardGrid({
           items: wasteTypeBreakdownByDisposalMethod.filter((x) =>
             allowedMethods.includes(x.disposalMethod),
           ),
+          isRate: false,
+        };
+
+      case 'landfill':
+        return {
+          title: 'Breakdown: Total Waste to Landfill',
+          items: wasteTypeBreakdownByDisposalMethod.filter((x) => x.disposalMethod === 'Landfilling'),
           isRate: false,
         };
 
@@ -104,69 +83,8 @@ export default function InfoCardGrid({
   const modalData = useMemo(() => {
     if (!activeBreakdown) return null;
 
-    const { title, items, isRate } = getBreakdownData(activeBreakdown);
-    const grouped = groupByDisposalMethod(items ?? []);
-
-    const summary: BreakdownSummary[] = Object.entries(grouped).map(([method, list]) => ({
-      disposalMethod: method,
-      weight: list.reduce((sum, x) => sum + x.totalWeightTonnes, 0),
-    }));
-
-    const renderValue = (value: number) =>
-      isRate ? `${formatRate(value, totalWasteGenerated)}%` : format(value);
-
-    const detailColumns = [
-      { title: 'Waste Type', dataIndex: 'wasteType' },
-      {
-        title: isRate ? 'Rate' : 'Weight (Tonnes)',
-        dataIndex: 'totalWeightTonnes',
-        render: (value: number) => renderValue(value),
-      },
-    ];
-
-    const summaryColumns = [
-      { title: 'Disposal Method', dataIndex: 'disposalMethod' },
-      {
-        title: isRate ? 'Total Rate' : 'Total (Tonnes)',
-        dataIndex: 'weight',
-        render: (value: number) => renderValue(value),
-      },
-    ];
-
-    const collapseItems = Object.entries(grouped).map(([method, list]) => ({
-      key: method,
-      label: method,
-      children: (
-        <Table
-          dataSource={list}
-          pagination={false}
-          columns={detailColumns}
-          rowKey={(row) => `${method}-${row.wasteType}`}
-        />
-      ),
-    }));
-
-    return {
-      title,
-      content: (
-        <div>
-          <Title level={4}>Summary by Disposal Method</Title>
-          <Table
-            dataSource={summary}
-            pagination={false}
-            columns={summaryColumns}
-            rowKey={(row) => row.disposalMethod}
-            style={{ marginBottom: 20 }}
-          />
-
-          <Divider />
-
-          <Title level={4}>Detailed Breakdown</Title>
-          <Collapse accordion items={collapseItems} />
-        </div>
-      ),
-    };
-  }, [activeBreakdown, totalWasteGenerated, wasteTypeBreakdownByDisposalMethod]);
+    return getBreakdownData(activeBreakdown);
+  }, [activeBreakdown, wasteTypeBreakdownByDisposalMethod]);
 
   const cardData = [
     {
@@ -190,6 +108,8 @@ export default function InfoCardGrid({
       itemLabel: 'Total Waste to Landfill',
       value: format(totalWasteToLandfill),
       unit: 'Tonnes',
+      showMore: true,
+      onShowMore: () => setActiveBreakdown('landfill'),
     },
     {
       icon: <img src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
@@ -225,13 +145,14 @@ export default function InfoCardGrid({
         ))}
       </Row>
 
-      <BreakdownModal
+      <WasteBreakdownModal
         open={!!activeBreakdown}
         onClose={() => setActiveBreakdown(null)}
         title={modalData?.title ?? ''}
-      >
-        {modalData?.content}
-      </BreakdownModal>
+        items={(modalData?.items ?? []) as WasteBreakdownItem[]}
+        totalWasteGenerated={totalWasteGenerated}
+        displayMode={modalData?.isRate ? 'rate' : 'weight'}
+      />
     </>
   );
 }

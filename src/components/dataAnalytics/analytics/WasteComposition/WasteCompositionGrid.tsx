@@ -1,6 +1,6 @@
 // components/dataAnalytics/analytics/WasteCompositionGrid.tsx
 import React from 'react';
-import { Empty } from 'antd';
+import { Col, Empty, Row } from 'antd';
 import { Pie } from '@ant-design/charts';
 import { ProCard } from '@ant-design/pro-components';
 import { WasteTypeWeightShare } from '@/lib/types/dataAnalytics';
@@ -36,26 +36,28 @@ const WasteCompositionGrid: React.FC<WasteCompositionGridProps> = ({
   ];
 
   return (
-    <ProCard bordered split="vertical">
+    <Row gutter={[16, 16]}>
       {compositions.map((item) => (
-        <ProCard key={item.title}>
-          {item.data.length > 0 ? (
-            <Pie {...buildCompositionPieConfig(item.title, item.data)} />
-          ) : (
-            <div
-              style={{
-                height: COMPOSITION_CONTENT_HEIGHT,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Empty description={item.emptyText} />
-            </div>
-          )}
-        </ProCard>
+        <Col xs={24} md={12} key={item.title}>
+          <ProCard bordered>
+            {item.data.length > 0 ? (
+              <Pie {...buildCompositionPieConfig(item.title, item.data)} />
+            ) : (
+              <div
+                style={{
+                  height: COMPOSITION_CONTENT_HEIGHT,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Empty description={item.emptyText} />
+              </div>
+            )}
+          </ProCard>
+        </Col>
       ))}
-    </ProCard>
+    </Row>
   );
 };
 

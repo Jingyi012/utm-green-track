@@ -36,7 +36,8 @@ const UserApproval: React.FC = () => {
   } | null>(null);
 
   const { data: userData, isLoading: isFetching, refetch } = useUserList(filters);
-  const { mutateAsync: updateApprovalStatus, isPending: isUpdating } = useUpdateUserApprovalStatus();
+  const { mutateAsync: updateApprovalStatus, isPending: isUpdating } =
+    useUpdateUserApprovalStatus();
 
   const openRejectModal = (users: UserDetails[]) => {
     setRejectingUsers(users);
@@ -183,6 +184,9 @@ const UserApproval: React.FC = () => {
         }}
         columns={columns}
         pagination={{
+          current: filters.pageNumber,
+          pageSize: filters.pageSize,
+          total: userData?.totalCount,
           showSizeChanger: true,
         }}
         dataSource={userData?.data ?? []}

@@ -58,7 +58,12 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
   const [changeRequestModalOpen, setChangeRequestModalOpen] = useState<boolean>(false);
   const [activeDeleteRecordId, setActiveDeleteRecordId] = useState<string | null>(null);
 
-  const { data: wasteRecordData, isLoading: isFetching, refetch } = useWasteRecordList(filters);
+  const {
+    data: wasteRecordData,
+    isLoading: isWasteRecordLoading,
+    refetch,
+    isRefetching,
+  } = useWasteRecordList(filters);
   const { mutateAsync: deleteWasteRecord, isPending: isDeleting } = useDeleteWasteRecord();
   const { mutateAsync: exportWasteRecordExcel, isPending: isExportingExcel } =
     useExportWasteRecordExcel();
@@ -258,7 +263,7 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         rowKey="id"
         headerTitle="Waste Record List"
         actionRef={actionRef}
-        loading={isFetching || isLoading}
+        loading={isWasteRecordLoading || isLoading || isRefetching}
         tableLayout="fixed"
         scroll={{ x: 2100 }}
         columnsState={{
@@ -269,6 +274,9 @@ const WasteRecordManagement: React.FC<WasteRecordManagementProps> = ({ isViewFor
         }}
         columns={columns}
         pagination={{
+          current: filters.pageNumber,
+          pageSize: filters.pageSize,
+          total: wasteRecordData?.totalCount,
           showSizeChanger: true,
         }}
         dataSource={wasteRecordData?.data ?? []}

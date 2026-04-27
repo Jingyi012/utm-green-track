@@ -1,4 +1,4 @@
-import { Col, Row, Space, Typography } from 'antd';
+import { Button, Col, Row, Space, Typography } from 'antd';
 
 const { Text, Title } = Typography;
 
@@ -8,6 +8,9 @@ export interface MetricCardItem {
   value: string | number;
   unit?: string;
   unitPosition?: 'prefix' | 'suffix';
+  helperText?: string;
+  showMore?: boolean;
+  onShowMore?: () => void;
 }
 
 interface MetricCardGridProps {
@@ -18,7 +21,7 @@ export function MetricCardGrid({ items }: MetricCardGridProps) {
   return (
     <Row gutter={[16, 16]} align="stretch">
       {items.map((item) => (
-        <Col xs={24} sm={12} lg={8} xl={6} key={item.key} style={{ display: 'flex' }}>
+        <Col xs={24} sm={12} lg={8} xl={8} key={item.key} style={{ display: 'flex' }}>
           <Space
             direction="vertical"
             size={4}
@@ -31,6 +34,7 @@ export function MetricCardGrid({ items }: MetricCardGridProps) {
               border: '1px solid #f0f0f0',
               borderRadius: 8,
               backgroundColor: '#fff',
+              position: 'relative',
             }}
           >
             <Text
@@ -55,6 +59,20 @@ export function MetricCardGrid({ items }: MetricCardGridProps) {
                 <Text style={{ fontSize: 16 }}>{item.unit}</Text>
               ) : null}
             </div>
+
+            {item.helperText ? (
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                {item.helperText}
+              </Text>
+            ) : null}
+
+            {item.showMore ? (
+              <div style={{ marginTop: 'auto', textAlign: 'right' }}>
+                <Button type="link" size="small" style={{ padding: 0 }} onClick={item.onShowMore}>
+                  Show More
+                </Button>
+              </div>
+            ) : null}
           </Space>
         </Col>
       ))}

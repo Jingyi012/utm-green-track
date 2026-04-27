@@ -67,7 +67,12 @@ const WasteRecordApproval: React.FC = () => {
     isAdmin: true,
   });
 
-  const { data: wasteRecordData, isLoading: isFetching, refetch } = useWasteRecordList(filters);
+  const {
+    data: wasteRecordData,
+    isLoading: isWasteRecordLoading,
+    refetch,
+    isRefetching,
+  } = useWasteRecordList(filters);
   const { mutateAsync: updateApprovalStatus, isPending: isUpdating } =
     useUpdateWasteRecordApprovalStatus();
 
@@ -172,9 +177,7 @@ const WasteRecordApproval: React.FC = () => {
     activeStatusUpdate.recordIds[0] === recordId;
 
   const isBatchActionLoading = (status: WasteRecordStatus) =>
-    isUpdating &&
-    activeStatusUpdate?.status === status &&
-    activeStatusUpdate.recordIds.length > 1;
+    isUpdating && activeStatusUpdate?.status === status && activeStatusUpdate.recordIds.length > 1;
 
   const columns: ProColumns<WasteRecord>[] = [
     ...getBaseColumns({ campuses, departments, disposalMethods, showUserColumn: true }),
@@ -355,7 +358,7 @@ const WasteRecordApproval: React.FC = () => {
         rowKey="id"
         headerTitle="Waste Record List"
         actionRef={actionRef}
-        loading={isFetching || isLoading}
+        loading={isWasteRecordLoading || isLoading || isRefetching}
         tableLayout="fixed"
         scroll={{ x: 2500 }}
         columnsState={{
@@ -364,7 +367,12 @@ const WasteRecordApproval: React.FC = () => {
         }}
         columns={columns}
         dataSource={wasteRecordData?.data ?? []}
-        pagination={{ showSizeChanger: true }}
+        pagination={{
+          current: filters.pageNumber,
+          pageSize: filters.pageSize,
+          total: wasteRecordData?.totalCount,
+          showSizeChanger: true,
+        }}
         request={(params: { current?: number; pageSize?: number; [key: string]: unknown }) => {
           setFilters((prev) => ({
             ...prev,
@@ -411,15 +419,10 @@ const WasteRecordApproval: React.FC = () => {
           >
             Batch Approve
           </Button>
-          <Button
-            onClick={() => openStatusModal(selectedRows, WasteRecordStatus.RevisionRequired)}
-          >
+          <Button onClick={() => openStatusModal(selectedRows, WasteRecordStatus.RevisionRequired)}>
             Batch Revision
           </Button>
-          <Button
-            danger
-            onClick={() => openStatusModal(selectedRows, WasteRecordStatus.Rejected)}
-          >
+          <Button danger onClick={() => openStatusModal(selectedRows, WasteRecordStatus.Rejected)}>
             Batch Reject
           </Button>
         </FooterToolbar>

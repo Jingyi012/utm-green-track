@@ -26,7 +26,11 @@ export function AnalyticsFilters({
   return (
     <ProCard bordered>
       <ProForm submitter={false}>
-        <Flex justify="space-between" align="flex-start" style={{ width: '100%' }}>
+        <Flex
+          justify="space-between"
+          align="flex-start"
+          style={{ width: '100%', flexWrap: 'wrap' }}
+        >
           <ProFormSelect
             name="year"
             label="Year"

@@ -55,7 +55,7 @@ const MyRequestManagement: React.FC = () => {
     status: RequestStatus.Pending,
   });
 
-  const { data: requestData, isLoading, refetch } = useMyRequestList(filters);
+  const { data: requestData, isLoading, refetch, isRefetching } = useMyRequestList(filters);
   const { mutateAsync: deleteMyRequest, isPending: isDeleting } = useDeleteMyRequest();
 
   const tabList = useMemo(
@@ -253,12 +253,15 @@ const MyRequestManagement: React.FC = () => {
         rowKey="id"
         headerTitle="Request List"
         actionRef={actionRef}
-        loading={isLoading}
+        loading={isLoading || isRefetching}
         tableLayout="fixed"
         scroll={{ x: 1550 }}
         columns={columns}
         search={false}
         pagination={{
+          current: filters.pageNumber,
+          pageSize: filters.pageSize,
+          total: requestData?.totalCount,
           showSizeChanger: true,
           defaultPageSize: 20,
         }}

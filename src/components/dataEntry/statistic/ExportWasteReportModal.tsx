@@ -79,13 +79,12 @@ export const ExportWasteReportModal = ({
             <ProFormSelect
               name="departmentId"
               label="Faculty / Department / College / PTJ"
-              placeholder="Select faculty / department / college / PTJ"
+              placeholder="All departments"
               options={departments.map((d) => ({ label: d.name, value: d.id }))}
               fieldProps={{
                 showSearch: true,
                 optionFilterProp: 'label',
               }}
-              rules={[{ required: true }]}
               allowClear
             />
           </>

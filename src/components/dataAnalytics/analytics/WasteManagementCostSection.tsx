@@ -35,7 +35,7 @@ export function WasteManagementCostSection({ data }: WasteManagementCostSectionP
     },
   ];
 
-  const monthlyData = data.monthlyExpenditureTrend
+  const monthlyData = (data?.monthlyExpenditureTrend || [])
     .map((item) => ({
       ...item,
       monthLabel: monthLabel(item.month),
@@ -44,54 +44,97 @@ export function WasteManagementCostSection({ data }: WasteManagementCostSectionP
     }))
     .sort((a, b) => a.month - b.month);
 
+  const monthlySavingsData = (data?.monthlyEstimatedSavingsFromWasteDiversionTrend || [])
+    .map((item) => ({
+      ...item,
+      monthLabel: monthLabel(item.month),
+      totalWasteDivertedTonnes: Number(item.totalWasteDivertedTonnes) || 0,
+      estimatedSavingsRm: Number(item.estimatedSavingsRm) || 0,
+    }))
+    .sort((a, b) => a.month - b.month);
+
+  // 2. Optimized Config for Expenditure Chart
   const dualAxesConfig = {
-    title: 'Monthly Expenditure Trend',
-    legend: { color: false },
-    scale: { y: { independent: true, nice: true } },
+    xField: 'monthLabel',
+    legend: false,
     children: [
       {
         type: 'interval',
         data: monthlyData,
-        xField: 'monthLabel',
         yField: 'landfillWeightTonnes',
-        axis: {
-          x: { title: 'Month' },
-          y: { title: 'Landfill (tonnes)' },
-        },
-        legend: false,
+        scale: { y: { nice: true } },
+        axis: { y: { title: 'Landfill (tonnes)' } },
+        style: { fill: METHOD_COLOR_MAP.Landfilling },
         tooltip: {
-          title: 'monthLabel',
           items: [
-            (datum: { landfillWeightTonnes: number }) => ({
-              name: 'Landfill (tonnes)',
+            (datum: any) => ({
+              name: 'Landfill',
               value: `${formatFixed(datum.landfillWeightTonnes)} tonnes`,
               color: METHOD_COLOR_MAP.Landfilling,
             }),
           ],
         },
-        style: { fill: METHOD_COLOR_MAP.Landfilling },
       },
       {
         type: 'line',
         data: monthlyData,
-        xField: 'monthLabel',
         yField: 'managementCostRm',
-        axis: {
-          y: { position: 'right', title: 'Cost (RM)' },
-        },
-        legend: false,
+        scale: { y: { nice: true } },
+        axis: { y: { position: 'right', title: 'Cost (RM)' } },
+        style: { lineWidth: 4, stroke: COLORS.yellow },
+        smooth: true,
         tooltip: {
-          title: 'monthLabel',
           items: [
-            (datum: { managementCostRm: number }) => ({
+            (datum: any) => ({
               name: 'Management Cost',
               value: `RM ${formatFixed(datum.managementCostRm)}`,
               color: COLORS.yellow,
             }),
           ],
         },
-        style: { lineWidth: 4, stroke: COLORS.yellow },
+      },
+    ],
+  };
+
+  // 3. Optimized Config for Savings Chart
+  const monthlySavingsConfig = {
+    xField: 'monthLabel',
+    legend: false,
+    children: [
+      {
+        type: 'interval',
+        data: monthlySavingsData,
+        yField: 'totalWasteDivertedTonnes',
+        scale: { y: { nice: true } },
+        axis: { y: { title: 'Waste Diverted (tonnes)' } },
+        style: { fill: COLORS.green },
+        tooltip: {
+          items: [
+            (datum: any) => ({
+              name: 'Waste Diverted',
+              value: `${formatFixed(datum.totalWasteDivertedTonnes)} tonnes`,
+              color: COLORS.green,
+            }),
+          ],
+        },
+      },
+      {
+        type: 'line',
+        data: monthlySavingsData,
+        yField: 'estimatedSavingsRm',
+        scale: { y: { nice: true } },
+        axis: { y: { position: 'right', title: 'Savings (RM)' } },
+        style: { lineWidth: 4, stroke: COLORS.orange },
         smooth: true,
+        tooltip: {
+          items: [
+            (datum: any) => ({
+              name: 'Est. Savings',
+              value: `RM ${formatFixed(datum.estimatedSavingsRm)}`,
+              color: COLORS.orange,
+            }),
+          ],
+        },
       },
     ],
   };
@@ -108,6 +151,10 @@ export function WasteManagementCostSection({ data }: WasteManagementCostSectionP
 
         <ProCard bordered>
           {monthlyData.length > 0 ? <DualAxes {...dualAxesConfig} /> : <Empty />}
+        </ProCard>
+
+        <ProCard bordered>
+          {monthlySavingsData.length > 0 ? <DualAxes {...monthlySavingsConfig} /> : <Empty />}
         </ProCard>
       </Space>
     </ProCard>

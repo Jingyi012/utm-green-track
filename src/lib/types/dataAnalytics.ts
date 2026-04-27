@@ -53,10 +53,17 @@ export interface MonthlyCostTrend {
   managementCostRm: number;
 }
 
+export interface MonthlySavingsTrend {
+  month: number;
+  totalWasteDivertedTonnes: number;
+  estimatedSavingsRm: number;
+}
+
 export interface YearlySummarySection {
   totalWasteGenerationByCampus: CampusMethodValue[];
   totalWasteDiversionByCampus: CampusMethodValue[];
   totalWasteManagementCostByCampus: CampusCostValue[];
+  totalEstimatedSavingsFromWasteDiversionByCampus: CampusCostValue[];
 }
 
 export interface WasteGenerationAnalysisSection {
@@ -71,6 +78,10 @@ export interface WasteGenerationAnalysisSection {
 }
 
 export interface WasteDiversionAnalysisSection {
+  totalWasteDivertedTonnes: number;
+  totalRecycledWasteTonnes: number;
+  totalCompostingWasteTonnes: number;
+  totalEnergyRecoveryWasteTonnes: number;
   wasteDiversionRatePercent: number;
   recyclingRatePercent: number;
   compostingRatePercent: number;
@@ -89,6 +100,7 @@ export interface WasteManagementCostAnalysisSection {
   estimatedSavingsFromWasteDiversionRm: number;
   landfillingCostPerTonneRm: number;
   monthlyExpenditureTrend: MonthlyCostTrend[];
+  monthlyEstimatedSavingsFromWasteDiversionTrend: MonthlySavingsTrend[];
 }
 
 export interface YearlyDataAnalyticsResponse {
@@ -118,4 +130,5 @@ export interface LifetimeDataAnalyticsResponse {
   totalWasteGenerationByYear: YearlyMethodValue[];
   totalWasteDiversionByYear: YearlyMethodValue[];
   totalWasteManagementCostByYear: YearlyCostValue[];
+  totalEstimatedSavingsFromWasteDiversionByYear: YearlyCostValue[];
 }
