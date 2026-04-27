@@ -236,7 +236,7 @@ const WasteRecordForm: React.FC<UpdateFormDrawerProps> = ({
               rules={[]}
               disabled={!isEditMode}
               fieldProps={{
-                allowClear: false,
+                allowClear: true,
                 format: 'DD/MM/YYYY',
                 style: { width: '100%' },
               }}
@@ -335,16 +335,6 @@ const WasteRecordForm: React.FC<UpdateFormDrawerProps> = ({
                 name="comment"
                 label="Comment"
                 placeholder="Please enter revision / reject reason"
-                rules={
-                  isAdmin
-                    ? [
-                        {
-                          required: true,
-                          message: 'Revision / reject reason is required',
-                        },
-                      ]
-                    : []
-                }
                 disabled={!isAdmin || !isEditMode}
               />
             </Col>
