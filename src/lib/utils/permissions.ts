@@ -19,7 +19,9 @@ const buildPagePermissionMap = (
 
   for (const item of items) {
     const requiredPermission = item.requiredPermission ?? inheritedPermission;
-    map[normalizePath(item.path)] = { requiredPermission };
+    if (item.path) {
+      map[normalizePath(item.path)] = { requiredPermission };
+    }
 
     if (item.children?.length) {
       Object.assign(map, buildPagePermissionMap(item.children, requiredPermission));

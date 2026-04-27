@@ -194,7 +194,7 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
 
       // 2. Get aggregate count if this is a parent (has children)
       // We pass the item's path to our existing aggregation function
-      const parentBadgeCount = item.children ? getParentBadgeCount(item.path) : 0;
+      const parentBadgeCount = item.children ? getParentBadgeCount(item.path!) : 0;
 
       const displayBadgeCount = badgeCount || parentBadgeCount;
 

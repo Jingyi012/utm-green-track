@@ -45,7 +45,8 @@ const getPageRules = (
 
   for (const item of items) {
     const requiredPermission = item.requiredPermission ?? inheritedPermission;
-    const displayName = [...parentNames, item.name].join(' > ');
+    const itemName = item.name ?? item.path ?? 'Untitled Page';
+    const displayName = [...parentNames, itemName].join(' > ');
 
     pages.push({
       path: item.path,
@@ -55,7 +56,7 @@ const getPageRules = (
     });
 
     if (item.children?.length) {
-      pages.push(...getPageRules(item.children, requiredPermission, [...parentNames, item.name]));
+      pages.push(...getPageRules(item.children, requiredPermission, [...parentNames, itemName]));
     }
   }
 

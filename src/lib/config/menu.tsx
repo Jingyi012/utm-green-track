@@ -29,7 +29,7 @@ const ADMIN_OPERATION_PERMISSION = APP_PERMISSIONS.ADMIN_OPERATION.WRITE;
 
 export interface AppMenuItem {
   path?: string | undefined;
-  name: string;
+  name?: string;
   icon?: ReactNode;
   requiredPermission?: string;
   showInMenuWithoutPermission?: boolean;
