@@ -233,8 +233,17 @@ export const AppProLayout: React.FC<AppProLayoutProps> = ({ children }) => {
       <ProLayout
         title="UTM Green Track"
         logo={
-          <div className="relative h-8 w-8">
-            <img src="/images/logo2.png" alt="Logo" className="h-full w-full object-contain" />
+          <div
+            style={{
+              width: '56px',
+              height: '56px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'visible',
+            }}
+          >
+            <img src="/images/logo2.png" alt="Logo" style={{ height: '100%', width: 'auto' }} />
           </div>
         }
         layout="mix"
