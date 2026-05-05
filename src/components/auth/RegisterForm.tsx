@@ -96,6 +96,7 @@ export default function RegistrationForm() {
               name="name"
               label="Full Name"
               placeholder="e.g. John Doe"
+              getValueFromEvent={(e) => e?.target?.value?.toUpperCase?.() ?? ''}
               rules={[{ required: true, message: 'Please enter your name' }]}
             />
           </Col>
@@ -178,6 +179,7 @@ export default function RegistrationForm() {
               placeholder="Select your role"
               options={roleOptions}
               rules={[{ required: true, message: 'Please select a role' }]}
+              disabled={!selectedPosition}
             />
           </Col>
 

@@ -4,6 +4,7 @@ export const COLORS = {
   green: '#2ffa14ff',
   orange: '#ee752fff',
   yellow: '#f5f071',
+  red: '#ff0000',
 };
 
 export const METHOD_COLOR_MAP = {

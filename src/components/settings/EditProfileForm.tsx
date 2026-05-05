@@ -24,6 +24,13 @@ const EditProfileForm = () => {
   const [editMode, setEditMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const selectedRoleNames = useMemo(() => {
+    if (!userData?.roleIds?.length) return [];
+    return userData.roleIds
+      .map((roleId) => roles.find((r) => r.id === roleId)?.name)
+      .filter((roleName): roleName is string => Boolean(roleName));
+  }, [roles, userData?.roleIds]);
+
   // Role options filter
   const roleOptions = useMemo(() => {
     if (!userData?.positionId) return [];
@@ -99,10 +106,7 @@ const EditProfileForm = () => {
             column={2}
             bordered
             size="default"
-            dataSource={{
-              ...userData,
-              role: userData.roleIds?.[0] || '-',
-            }}
+            dataSource={userData}
           >
             <ProDescriptions.Item label="Full Name">{userData.name}</ProDescriptions.Item>
             <ProDescriptions.Item label="UTM Email">{userData.email}</ProDescriptions.Item>
@@ -121,7 +125,7 @@ const EditProfileForm = () => {
               {positions.find((p) => p.id === userData.positionId)?.name}
             </ProDescriptions.Item>
             <ProDescriptions.Item label="Role">
-              {roles.find((r) => r.id === userData.roleIds[0])?.name}
+              {selectedRoleNames.length ? selectedRoleNames.join(', ') : '-'}
             </ProDescriptions.Item>
           </ProDescriptions>
         )}
@@ -132,7 +136,7 @@ const EditProfileForm = () => {
             layout="vertical"
             initialValues={{
               ...userData,
-              role: userData.roleIds[0],
+              roleIds: userData.roleIds ?? [],
             }}
             onFinish={handleSubmit}
             submitter={{
@@ -150,7 +154,12 @@ const EditProfileForm = () => {
           >
             <Row gutter={16}>
               <Col md={12}>
-                <ProFormText name="name" label="Full Name" rules={[{ required: true }]} />
+                <ProFormText
+                  name="name"
+                  label="Full Name"
+                  getValueFromEvent={(e) => e?.target?.value?.toUpperCase?.() ?? ''}
+                  rules={[{ required: true }]}
+                />
               </Col>
 
               <Col md={12}>
@@ -200,7 +209,13 @@ const EditProfileForm = () => {
               </Col>
 
               <Col md={12}>
-                <ProFormSelect name="roleIds" label="Role" options={roleOptions} disabled />
+                <ProFormSelect
+                  name="roleIds"
+                  label="Role"
+                  options={roleOptions}
+                  mode="multiple"
+                  disabled
+                />
               </Col>
             </Row>
           </ProForm>

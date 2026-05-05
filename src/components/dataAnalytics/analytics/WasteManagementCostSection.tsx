@@ -55,6 +55,7 @@ export function WasteManagementCostSection({ data }: WasteManagementCostSectionP
 
   // 2. Optimized Config for Expenditure Chart
   const dualAxesConfig = {
+    title: 'Monthly Landfill Volume vs. Disposal Cost',
     xField: 'monthLabel',
     legend: false,
     children: [
@@ -81,14 +82,14 @@ export function WasteManagementCostSection({ data }: WasteManagementCostSectionP
         yField: 'managementCostRm',
         scale: { y: { nice: true } },
         axis: { y: { position: 'right', title: 'Cost (RM)' } },
-        style: { lineWidth: 4, stroke: COLORS.yellow },
+        style: { lineWidth: 4, stroke: COLORS.red },
         smooth: true,
         tooltip: {
           items: [
             (datum: any) => ({
               name: 'Management Cost',
               value: `RM ${formatFixed(datum.managementCostRm)}`,
-              color: COLORS.yellow,
+              color: COLORS.red,
             }),
           ],
         },
@@ -98,6 +99,7 @@ export function WasteManagementCostSection({ data }: WasteManagementCostSectionP
 
   // 3. Optimized Config for Savings Chart
   const monthlySavingsConfig = {
+    title: 'Monthly Waste Diversion vs. Cost Savings',
     xField: 'monthLabel',
     legend: false,
     children: [
@@ -124,14 +126,14 @@ export function WasteManagementCostSection({ data }: WasteManagementCostSectionP
         yField: 'estimatedSavingsRm',
         scale: { y: { nice: true } },
         axis: { y: { position: 'right', title: 'Savings (RM)' } },
-        style: { lineWidth: 4, stroke: COLORS.orange },
+        style: { lineWidth: 4, stroke: COLORS.blue },
         smooth: true,
         tooltip: {
           items: [
             (datum: any) => ({
               name: 'Est. Savings',
               value: `RM ${formatFixed(datum.estimatedSavingsRm)}`,
-              color: COLORS.orange,
+              color: COLORS.blue,
             }),
           ],
         },
@@ -147,15 +149,21 @@ export function WasteManagementCostSection({ data }: WasteManagementCostSectionP
         style={{ width: '100%' }}
         styles={{ item: { width: '100%' } }}
       >
-        <MetricCardGrid items={metrics} />
+        <div data-analytics-export-section="waste-cost-metrics">
+          <MetricCardGrid items={metrics} />
+        </div>
 
-        <ProCard bordered>
-          {monthlyData.length > 0 ? <DualAxes {...dualAxesConfig} /> : <Empty />}
-        </ProCard>
+        <div data-analytics-export-section="waste-cost-expenditure">
+          <ProCard bordered>
+            {monthlyData.length > 0 ? <DualAxes {...dualAxesConfig} /> : <Empty />}
+          </ProCard>
+        </div>
 
-        <ProCard bordered>
-          {monthlySavingsData.length > 0 ? <DualAxes {...monthlySavingsConfig} /> : <Empty />}
-        </ProCard>
+        <div data-analytics-export-section="waste-cost-savings">
+          <ProCard bordered>
+            {monthlySavingsData.length > 0 ? <DualAxes {...monthlySavingsConfig} /> : <Empty />}
+          </ProCard>
+        </div>
       </Space>
     </ProCard>
   );

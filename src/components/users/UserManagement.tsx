@@ -38,17 +38,7 @@ const UserManagement: React.FC = () => {
 
   const handleUserUpdate = async (user: UserDetails) => {
     try {
-      await updateUser({
-        userId: user.id,
-        name: user.name,
-        email: user.email,
-        contactNumber: user.contactNumber,
-        staffMatricNo: user.staffMatricNo,
-        departmentId: user.departmentId,
-        positionId: user.positionId,
-        roleIds: user.roleIds,
-        status: user.status,
-      });
+      await updateUser({ ...user, userId: user.id });
       return true;
     } catch {
       return false;

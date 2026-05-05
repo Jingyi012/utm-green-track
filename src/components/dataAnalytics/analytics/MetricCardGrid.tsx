@@ -1,6 +1,6 @@
 import { Button, Col, Row, Space, Typography } from 'antd';
 
-const { Text, Title } = Typography;
+const { Text, Title, Paragraph } = Typography;
 
 export interface MetricCardItem {
   key: string;
@@ -37,14 +37,20 @@ export function MetricCardGrid({ items }: MetricCardGridProps) {
               position: 'relative',
             }}
           >
-            <Text
+            <Paragraph
               type="secondary"
-              style={{ fontSize: 14, display: 'block', whiteSpace: 'nowrap' }}
-              ellipsis={{ tooltip: item.title }}
+              style={{
+                fontSize: 14,
+                lineHeight: '28px',
+                minHeight: 28,
+                margin: 0,
+                paddingBottom: 2,
+              }}
+              ellipsis={{ rows: 1, tooltip: item.title }}
               title={item.title}
             >
               {item.title}
-            </Text>
+            </Paragraph>
 
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
               {item.unit && item.unitPosition === 'prefix' ? (

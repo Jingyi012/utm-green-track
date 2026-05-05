@@ -4,6 +4,7 @@ import { ProCard } from '@ant-design/pro-components';
 import { useEffect, useMemo, useState } from 'react';
 import { LifetimeDataAnalyticsResponse } from '@/lib/types/dataAnalytics';
 import {
+  COLORS,
   DEFAULT_WASTE_BAR_COLOR,
   DISPOSAL_METHOD_COLOR_SCALE,
 } from '@/lib/utils/disposalMethodChart';
@@ -13,9 +14,21 @@ const { Text } = Typography;
 
 interface LifetimeSummarySectionProps {
   data: LifetimeDataAnalyticsResponse;
+  startYear?: number;
+  endYear?: number;
+  onStartYearChange?: (year: number) => void;
+  onEndYearChange?: (year: number) => void;
+  showControls?: boolean;
 }
 
-export function LifetimeSummarySection({ data }: LifetimeSummarySectionProps) {
+export function LifetimeSummarySection({
+  data,
+  startYear: controlledStartYear,
+  endYear: controlledEndYear,
+  onStartYearChange,
+  onEndYearChange,
+  showControls = true,
+}: LifetimeSummarySectionProps) {
   const availableYears = useMemo(
     () =>
       Array.from(
@@ -33,22 +46,49 @@ export function LifetimeSummarySection({ data }: LifetimeSummarySectionProps) {
       data.totalWasteManagementCostByYear,
     ],
   );
-  const [startYear, setStartYear] = useState<number>();
-  const [endYear, setEndYear] = useState<number>();
+  const [internalStartYear, setInternalStartYear] = useState<number>();
+  const [internalEndYear, setInternalEndYear] = useState<number>();
+
+  const startYear = controlledStartYear ?? internalStartYear;
+  const endYear = controlledEndYear ?? internalEndYear;
+
+  const handleStartYearChange = (value: number) => {
+    if (onStartYearChange) {
+      onStartYearChange(value);
+      return;
+    }
+    setInternalStartYear(value);
+  };
+
+  const handleEndYearChange = (value: number) => {
+    if (onEndYearChange) {
+      onEndYearChange(value);
+      return;
+    }
+    setInternalEndYear(value);
+  };
 
   useEffect(() => {
     if (availableYears.length === 0) {
-      setStartYear(undefined);
-      setEndYear(undefined);
+      if (!onStartYearChange) {
+        setInternalStartYear(undefined);
+      }
+      if (!onEndYearChange) {
+        setInternalEndYear(undefined);
+      }
       return;
     }
 
     const latestYear = availableYears[availableYears.length - 1];
     const defaultStartYear = availableYears[Math.max(0, availableYears.length - 10)];
 
-    setStartYear(defaultStartYear);
-    setEndYear(latestYear);
-  }, [availableYears]);
+    if (controlledStartYear === undefined) {
+      setInternalStartYear(defaultStartYear);
+    }
+    if (controlledEndYear === undefined) {
+      setInternalEndYear(latestYear);
+    }
+  }, [availableYears, controlledEndYear, controlledStartYear, onEndYearChange, onStartYearChange]);
 
   const filteredGenerationData = useMemo(
     () =>
@@ -190,7 +230,7 @@ export function LifetimeSummarySection({ data }: LifetimeSummarySectionProps) {
     data: filteredCostData,
     xField: 'year',
     yField: 'totalCostRm',
-    color: DEFAULT_WASTE_BAR_COLOR,
+    style: { fill: COLORS.gray },
     axis: {
       x: { title: 'Year' },
       y: { title: 'Cost (RM)' },
@@ -269,44 +309,54 @@ export function LifetimeSummarySection({ data }: LifetimeSummarySectionProps) {
         style={{ width: '100%' }}
         styles={{ item: { width: '100%' } }}
       >
-        <Space wrap size={12} align="center">
-          <Text strong>Year Range</Text>
-          <Select
-            value={startYear}
-            options={yearOptions}
-            style={{ width: 120 }}
-            onChange={(value) => {
-              setStartYear(value);
-              if (endYear !== undefined && value > endYear) {
-                setEndYear(value);
-              }
-            }}
-          />
-          <Text type="secondary">to</Text>
-          <Select
-            value={endYear}
-            options={yearOptions}
-            style={{ width: 120 }}
-            onChange={(value) => {
-              setEndYear(value);
-              if (startYear !== undefined && value < startYear) {
-                setStartYear(value);
-              }
-            }}
-          />
-        </Space>
-        <ProCard bordered>
-          <Column {...generationConfig} />
-        </ProCard>
-        <ProCard bordered>
-          <Column {...diversionConfig} />
-        </ProCard>
-        <ProCard bordered>
-          <Column {...costConfig} />
-        </ProCard>
-        <ProCard bordered>
-          <Column {...savingsConfig} />
-        </ProCard>
+        {showControls ? (
+          <Space wrap size={12} align="center">
+            <Text strong>Year Range</Text>
+            <Select
+              value={startYear}
+              options={yearOptions}
+              style={{ width: 120 }}
+              onChange={(value) => {
+                handleStartYearChange(value);
+                if (endYear !== undefined && value > endYear) {
+                  handleEndYearChange(value);
+                }
+              }}
+            />
+            <Text type="secondary">to</Text>
+            <Select
+              value={endYear}
+              options={yearOptions}
+              style={{ width: 120 }}
+              onChange={(value) => {
+                handleEndYearChange(value);
+                if (startYear !== undefined && value < startYear) {
+                  handleStartYearChange(value);
+                }
+              }}
+            />
+          </Space>
+        ) : null}
+        <div data-analytics-export-section="lifetime-generation">
+          <ProCard bordered>
+            <Column {...generationConfig} />
+          </ProCard>
+        </div>
+        <div data-analytics-export-section="lifetime-diversion">
+          <ProCard bordered>
+            <Column {...diversionConfig} />
+          </ProCard>
+        </div>
+        <div data-analytics-export-section="lifetime-cost">
+          <ProCard bordered>
+            <Column {...costConfig} />
+          </ProCard>
+        </div>
+        <div data-analytics-export-section="lifetime-savings">
+          <ProCard bordered>
+            <Column {...savingsConfig} />
+          </ProCard>
+        </div>
       </Space>
     </ProCard>
   );

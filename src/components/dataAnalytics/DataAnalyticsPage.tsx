@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from '@tanstack/react-router';
-import { App, Empty, Space, Tabs } from 'antd';
+import { App, Button, Empty, Space, Tabs } from 'antd';
 import { PageContainer, ProCard } from '@ant-design/pro-components';
+import { DownloadOutlined } from '@ant-design/icons';
 import { WhiteBgWrapper } from '@/components/wrapper/whiteBgWrapper';
 import { useWasteRecordDropdownOptions } from '@/hook/options';
 import { getLifetimeDataAnalytics, getYearlyDataAnalytics } from '@/lib/services/wasteRecord';
@@ -9,6 +10,7 @@ import {
   LifetimeDataAnalyticsResponse,
   YearlyDataAnalyticsResponse,
 } from '@/lib/types/dataAnalytics';
+import { exportDataAnalyticsPdf } from '@/lib/reportExports/dataAnalytics';
 import { AnalyticsFilters } from './analytics/AnalyticsFilters';
 import {
   YEARLY_ANALYTICS_SECTION_KEYS,
@@ -16,6 +18,10 @@ import {
   YearlyAnalyticsSectionKey,
 } from './analytics/YearlyAnalyticsPanel';
 import { LifetimeSummarySection } from './analytics/LifetimeSummarySection';
+import { YearlySummarySection } from './analytics/YearlySummarySection';
+import { WasteGenerationSection } from './analytics/WasteGenerationSection';
+import { WasteDiversionSection } from './analytics/WasteDiversionSection';
+import { WasteManagementCostSection } from './analytics/WasteManagementCostSection';
 
 const START_YEAR = 2020;
 const CURRENT_YEAR = new Date().getFullYear();
@@ -76,8 +82,12 @@ const DataAnalyticsPage: React.FC = () => {
   });
   const [yearlyLoading, setYearlyLoading] = useState<boolean>(false);
   const [lifetimeLoading, setLifetimeLoading] = useState<boolean>(false);
+  const [downloadLoading, setDownloadLoading] = useState<boolean>(false);
   const [yearlyData, setYearlyData] = useState<YearlyDataAnalyticsResponse>();
   const [lifetimeData, setLifetimeData] = useState<LifetimeDataAnalyticsResponse>();
+  const [exportContainer, setExportContainer] = useState<HTMLDivElement | null>(null);
+  const [lifetimeStartYear, setLifetimeStartYear] = useState<number>();
+  const [lifetimeEndYear, setLifetimeEndYear] = useState<number>();
 
   const yearOptions = useMemo(
     () =>
@@ -92,6 +102,21 @@ const DataAnalyticsPage: React.FC = () => {
     () => campuses.map((campus) => ({ label: campus.name, value: campus.id })),
     [campuses],
   );
+
+  const lifetimeYearOptions = useMemo(() => {
+    if (!lifetimeData) return [];
+
+    return Array.from(
+      new Set([
+        ...lifetimeData.totalWasteGenerationByYear.map((item) => item.year),
+        ...lifetimeData.totalWasteDiversionByYear.map((item) => item.year),
+        ...lifetimeData.totalWasteManagementCostByYear.map((item) => item.year),
+        ...lifetimeData.totalEstimatedSavingsFromWasteDiversionByYear.map((item) => item.year),
+      ]),
+    )
+      .sort((a, b) => a - b)
+      .map((value) => ({ label: value.toString(), value }));
+  }, [lifetimeData]);
 
   useEffect(() => {
     if (campusOptions.length === 0) {
@@ -145,6 +170,25 @@ const DataAnalyticsPage: React.FC = () => {
   }, [fetchLifetimeData]);
 
   useEffect(() => {
+    if (lifetimeYearOptions.length === 0) {
+      setLifetimeStartYear(undefined);
+      setLifetimeEndYear(undefined);
+      return;
+    }
+
+    const values = lifetimeYearOptions.map((option) => Number(option.value));
+    const latestYear = values[values.length - 1];
+    const defaultStartYear = values[Math.max(0, values.length - 10)];
+
+    setLifetimeStartYear((current) =>
+      current !== undefined && values.includes(current) ? current : defaultStartYear,
+    );
+    setLifetimeEndYear((current) =>
+      current !== undefined && values.includes(current) ? current : latestYear,
+    );
+  }, [lifetimeYearOptions]);
+
+  useEffect(() => {
     const nextParams = new URLSearchParams(searchStr);
     let hasChanges = false;
 
@@ -179,6 +223,61 @@ const DataAnalyticsPage: React.FC = () => {
     }
   }, [activeTab, campusId, navigate, pathname, searchStr, year, yearlySection]);
 
+  const handleDownloadPdf = async () => {
+    if (!campusId) {
+      message.warning('Please select a campus before downloading.');
+      return;
+    }
+
+    if (!yearlyData && !lifetimeData) {
+      message.warning('No analytics data available to download.');
+      return;
+    }
+
+    const campusNameForExport =
+      yearlyData?.campusName ||
+      lifetimeData?.campusName ||
+      campusOptions.find((option) => String(option.value) === campusId)?.label ||
+      'Campus';
+
+    try {
+      setDownloadLoading(true);
+      if (!exportContainer) {
+        message.warning('No analytics content available to export.');
+        return;
+      }
+
+      await exportDataAnalyticsPdf({
+        container: exportContainer,
+        campusName: String(campusNameForExport),
+        periodLabel:
+          activeTab === 'yearly'
+            ? String(year)
+            : `${lifetimeStartYear ?? '-'} - ${lifetimeEndYear ?? '-'}`,
+        analysisTab: activeTab,
+      });
+    } catch {
+      message.error('Failed to generate analytics PDF.');
+    } finally {
+      setDownloadLoading(false);
+    }
+  };
+
+  const downloadButton = (
+    <Button
+      key="download-analytics-pdf"
+      type="primary"
+      icon={<DownloadOutlined />}
+      loading={downloadLoading}
+      disabled={yearlyLoading || lifetimeLoading || (!yearlyData && !lifetimeData)}
+      onClick={() => {
+        void handleDownloadPdf();
+      }}
+    >
+      Download PDF
+    </Button>
+  );
+
   return (
     <PageContainer title="Data Analytics" loading={isLoading}>
       <WhiteBgWrapper>
@@ -189,14 +288,6 @@ const DataAnalyticsPage: React.FC = () => {
             style={{ width: '100%' }}
             styles={{ item: { width: '100%' } }}
           >
-            <AnalyticsFilters
-              year={year}
-              campusId={campusId}
-              yearOptions={yearOptions}
-              campusOptions={campusOptions}
-              onYearChange={setYear}
-              onCampusChange={setCampusId}
-            />
             <ProCard bordered>
               <Tabs
                 activeKey={activeTab}
@@ -208,35 +299,121 @@ const DataAnalyticsPage: React.FC = () => {
                     key: 'yearly',
                     label: 'Yearly Analysis',
                     children: (
-                      <ProCard loading={yearlyLoading} ghost>
-                        {yearlyData ? (
-                          <YearlyAnalyticsPanel
-                            data={yearlyData}
-                            activeSection={yearlySection}
-                            onSectionChange={setYearlySection}
-                          />
-                        ) : (
-                          <Empty description="No yearly analytics data available." />
-                        )}
-                      </ProCard>
+                      <Space
+                        direction="vertical"
+                        size={16}
+                        style={{ width: '100%' }}
+                        styles={{ item: { width: '100%' } }}
+                      >
+                        <AnalyticsFilters
+                          year={year}
+                          campusId={campusId}
+                          yearOptions={yearOptions}
+                          campusOptions={campusOptions}
+                          onYearChange={setYear}
+                          onCampusChange={setCampusId}
+                          actionNode={downloadButton}
+                        />
+                        <ProCard loading={yearlyLoading} ghost>
+                          {yearlyData ? (
+                            <YearlyAnalyticsPanel
+                              data={yearlyData}
+                              activeSection={yearlySection}
+                              onSectionChange={setYearlySection}
+                            />
+                          ) : (
+                            <Empty description="No yearly analytics data available." />
+                          )}
+                        </ProCard>
+                      </Space>
                     ),
                   },
                   {
                     key: 'lifetime',
                     label: 'Lifetime Analysis',
                     children: (
-                      <ProCard loading={lifetimeLoading} ghost>
-                        {lifetimeData ? (
-                          <LifetimeSummarySection data={lifetimeData} />
-                        ) : (
-                          <Empty description="No lifetime analytics data available." />
-                        )}
-                      </ProCard>
+                      <Space
+                        direction="vertical"
+                        size={16}
+                        style={{ width: '100%' }}
+                        styles={{ item: { width: '100%' } }}
+                      >
+                        <AnalyticsFilters
+                          campusId={campusId}
+                          campusOptions={campusOptions}
+                          onCampusChange={setCampusId}
+                          startYear={lifetimeStartYear}
+                          endYear={lifetimeEndYear}
+                          rangeYearOptions={lifetimeYearOptions}
+                          onStartYearChange={(value) => {
+                            setLifetimeStartYear(value);
+                            if (lifetimeEndYear !== undefined && value > lifetimeEndYear) {
+                              setLifetimeEndYear(value);
+                            }
+                          }}
+                          onEndYearChange={(value) => {
+                            setLifetimeEndYear(value);
+                            if (lifetimeStartYear !== undefined && value < lifetimeStartYear) {
+                              setLifetimeStartYear(value);
+                            }
+                          }}
+                          actionNode={downloadButton}
+                        />
+                        <ProCard loading={lifetimeLoading} ghost>
+                          {lifetimeData ? (
+                            <LifetimeSummarySection
+                              data={lifetimeData}
+                              startYear={lifetimeStartYear}
+                              endYear={lifetimeEndYear}
+                              onStartYearChange={setLifetimeStartYear}
+                              onEndYearChange={setLifetimeEndYear}
+                              showControls={false}
+                            />
+                          ) : (
+                            <Empty description="No lifetime analytics data available." />
+                          )}
+                        </ProCard>
+                      </Space>
                     ),
                   },
                 ]}
               />
             </ProCard>
+            <div
+              ref={setExportContainer}
+              style={{
+                position: 'absolute',
+                left: '-100000px',
+                top: 0,
+                width: 1200,
+                padding: 24,
+                background: '#fff',
+              }}
+            >
+              {activeTab === 'yearly' && yearlyData ? (
+                <Space
+                  direction="vertical"
+                  size={16}
+                  style={{ width: '100%' }}
+                  styles={{ item: { width: '100%' } }}
+                >
+                  <YearlySummarySection data={yearlyData.summary} />
+                  <WasteGenerationSection data={yearlyData.wasteGeneration} />
+                  <WasteDiversionSection data={yearlyData.wasteDiversion} />
+                  <WasteManagementCostSection data={yearlyData.wasteManagementCost} />
+                </Space>
+              ) : null}
+              {activeTab === 'lifetime' && lifetimeData ? (
+                <LifetimeSummarySection
+                  data={lifetimeData}
+                  startYear={lifetimeStartYear}
+                  endYear={lifetimeEndYear}
+                  onStartYearChange={setLifetimeStartYear}
+                  onEndYearChange={setLifetimeEndYear}
+                  showControls={false}
+                />
+              ) : null}
+            </div>
           </Space>
         </ProCard>
       </WhiteBgWrapper>

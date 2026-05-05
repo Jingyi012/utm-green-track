@@ -3,6 +3,7 @@ import { Column } from '@ant-design/charts';
 import { ProCard } from '@ant-design/pro-components';
 import { YearlySummarySection as YearlySummaryData } from '@/lib/types/dataAnalytics';
 import {
+  COLORS,
   DEFAULT_WASTE_BAR_COLOR,
   DISPOSAL_METHOD_COLOR_SCALE,
 } from '@/lib/utils/disposalMethodChart';
@@ -119,7 +120,7 @@ export function YearlySummarySection({ data }: YearlySummarySectionProps) {
     data: data.totalWasteManagementCostByCampus,
     xField: 'campusName',
     yField: 'totalCostRm',
-    color: DEFAULT_WASTE_BAR_COLOR,
+    style: { fill: COLORS.gray },
     axis: {
       x: { title: 'Campus' },
       y: { title: 'Cost (RM)' },
@@ -157,7 +158,7 @@ export function YearlySummarySection({ data }: YearlySummarySectionProps) {
     data: data.totalEstimatedSavingsFromWasteDiversionByCampus,
     xField: 'campusName',
     yField: 'totalCostRm',
-    color: DEFAULT_WASTE_BAR_COLOR,
+    style: { fill: DEFAULT_WASTE_BAR_COLOR },
     axis: {
       x: { title: 'Campus' },
       y: { title: 'Savings (RM)' },
@@ -197,18 +198,26 @@ export function YearlySummarySection({ data }: YearlySummarySectionProps) {
         style={{ width: '100%' }}
         styles={{ item: { width: '100%' } }}
       >
-        <ProCard bordered>
-          <Column {...wasteGenerationConfig} />
-        </ProCard>
-        <ProCard bordered>
-          <Column {...wasteDiversionConfig} />
-        </ProCard>
-        <ProCard bordered>
-          <Column {...costConfig} />
-        </ProCard>
-        <ProCard bordered>
-          <Column {...savingsConfig} />
-        </ProCard>
+        <div data-analytics-export-section="summary-generation">
+          <ProCard bordered>
+            <Column {...wasteGenerationConfig} />
+          </ProCard>
+        </div>
+        <div data-analytics-export-section="summary-diversion">
+          <ProCard bordered>
+            <Column {...wasteDiversionConfig} />
+          </ProCard>
+        </div>
+        <div data-analytics-export-section="summary-cost">
+          <ProCard bordered>
+            <Column {...costConfig} />
+          </ProCard>
+        </div>
+        <div data-analytics-export-section="summary-savings">
+          <ProCard bordered>
+            <Column {...savingsConfig} />
+          </ProCard>
+        </div>
       </Space>
     </ProCard>
   );

@@ -41,7 +41,7 @@ const UserDetailsDrawerForm: React.FC<UpdateFormDrawerProps> = ({
   const handlePositionChange = (value: string) => {
     setSelectedPosition(value);
     // Clear roles when position changes
-    form.setFieldValue('roles', []);
+    form.setFieldValue('roleIds', []);
   };
 
   const roleOptions = useMemo(() => {
@@ -151,9 +151,14 @@ const UserDetailsDrawerForm: React.FC<UpdateFormDrawerProps> = ({
               }}
             />
           </Col>
-        </Row>
-
-        <Row gutter={16}>
+          <Col span={12}>
+            <ProFormText
+              name="unit"
+              label="Unit"
+              placeholder="Enter your unit"
+              disabled={!isEditing}
+            />
+          </Col>
           <Col span={12}>
             <ProFormText
               name="staffMatricNo"
@@ -177,14 +182,13 @@ const UserDetailsDrawerForm: React.FC<UpdateFormDrawerProps> = ({
               onChange={handlePositionChange}
             />
           </Col>
-        </Row>
 
-        <Row gutter={16}>
           <Col span={12}>
             <ProFormText
               name="name"
               label="Full Name"
               placeholder="Enter your name"
+              getValueFromEvent={(e) => e?.target?.value?.toUpperCase?.() ?? ''}
               rules={[{ required: true, message: 'Enter your name' }]}
               disabled={!isEditing}
             />
@@ -200,9 +204,7 @@ const UserDetailsDrawerForm: React.FC<UpdateFormDrawerProps> = ({
               disabled={!isEditing || !selectedPosition}
             />
           </Col>
-        </Row>
 
-        <Row gutter={16}>
           <Col span={12}>
             <ProFormText
               name="contactNumber"
@@ -218,6 +220,7 @@ const UserDetailsDrawerForm: React.FC<UpdateFormDrawerProps> = ({
               disabled={!isEditing}
             />
           </Col>
+
           <Col span={12}>
             <ProFormSelect
               name="status"

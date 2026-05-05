@@ -1,5 +1,6 @@
 import { ProCard, ProForm, ProFormSelect } from '@ant-design/pro-components';
-import { Flex, Space } from 'antd';
+import { Flex } from 'antd';
+import type { ReactNode } from 'react';
 
 interface OptionValue {
   label: string;
@@ -7,45 +8,38 @@ interface OptionValue {
 }
 
 interface AnalyticsFiltersProps {
-  year: number;
   campusId?: string;
-  yearOptions: OptionValue[];
   campusOptions: OptionValue[];
-  onYearChange: (year: number) => void;
   onCampusChange: (campusId: string) => void;
+  year?: number;
+  yearOptions?: OptionValue[];
+  onYearChange?: (year: number) => void;
+  startYear?: number;
+  endYear?: number;
+  rangeYearOptions?: OptionValue[];
+  onStartYearChange?: (year: number) => void;
+  onEndYearChange?: (year: number) => void;
+  actionNode?: ReactNode;
 }
 
 export function AnalyticsFilters({
-  year,
   campusId,
-  yearOptions,
   campusOptions,
-  onYearChange,
   onCampusChange,
+  year,
+  yearOptions,
+  onYearChange,
+  startYear,
+  endYear,
+  rangeYearOptions,
+  onStartYearChange,
+  onEndYearChange,
+  actionNode,
 }: AnalyticsFiltersProps) {
   return (
     <ProCard bordered>
       <ProForm submitter={false}>
-        <Flex
-          justify="space-between"
-          align="flex-start"
-          style={{ width: '100%', flexWrap: 'wrap' }}
-        >
-          <ProFormSelect
-            name="year"
-            label="Year"
-            rules={[{ required: true, message: 'Year is required' }]}
-            width="md"
-            options={yearOptions}
-            fieldProps={{
-              value: year,
-              onChange: (value) => onYearChange(Number(value)),
-              optionFilterProp: 'label',
-              showSearch: true,
-              allowClear: false,
-            }}
-          />
-
+        <Flex gap={16} align="flex-end" style={{ width: '100%', flexWrap: 'wrap' }}>
           <ProFormSelect
             name="campus"
             label="UTM Campus"
@@ -60,6 +54,56 @@ export function AnalyticsFilters({
               allowClear: false,
             }}
           />
+          {yearOptions && onYearChange ? (
+            <ProFormSelect
+              name="year"
+              label="Year"
+              rules={[{ required: true, message: 'Year is required' }]}
+              width="md"
+              options={yearOptions}
+              fieldProps={{
+                value: year,
+                onChange: (value) => onYearChange(Number(value)),
+                optionFilterProp: 'label',
+                showSearch: true,
+                allowClear: false,
+              }}
+            />
+          ) : null}
+
+          {rangeYearOptions && onStartYearChange ? (
+            <ProFormSelect
+              name="startYear"
+              label="Start Year"
+              width="sm"
+              options={rangeYearOptions}
+              fieldProps={{
+                value: startYear,
+                onChange: (value) => onStartYearChange(Number(value)),
+                optionFilterProp: 'label',
+                showSearch: true,
+                allowClear: false,
+              }}
+            />
+          ) : null}
+
+          {rangeYearOptions && onEndYearChange ? (
+            <ProFormSelect
+              name="endYear"
+              label="End Year"
+              width="sm"
+              options={rangeYearOptions}
+              fieldProps={{
+                value: endYear,
+                onChange: (value) => onEndYearChange(Number(value)),
+                optionFilterProp: 'label',
+                showSearch: true,
+                allowClear: false,
+              }}
+            />
+          ) : null}
+
+          {actionNode ? <div style={{ marginLeft: 'auto' }}>{actionNode}</div> : null}
         </Flex>
       </ProForm>
     </ProCard>

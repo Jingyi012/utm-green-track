@@ -19,7 +19,7 @@ export const buildCompositionPieConfig = (
     legend: { position: 'bottom' },
     label: {
       text: (datum) => `${datum.wasteType} (${datum.percentage.toFixed(2)}%)`,
-      position: 'outside',
+      position: 'spider',
     },
     annotations: [
       {

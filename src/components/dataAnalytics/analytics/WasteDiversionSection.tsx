@@ -118,41 +118,51 @@ export function WasteDiversionSection({ data }: WasteDiversionSectionProps) {
         style={{ width: '100%' }}
         styles={{ item: { width: '100%' } }}
       >
-        <MetricCardGrid items={metrics} />
+        <div data-analytics-export-section="waste-diversion-metrics">
+          <MetricCardGrid items={metrics} />
+        </div>
 
-        <ProCard bordered>{trendData.length > 0 ? <Line {...trendConfig} /> : <Empty />}</ProCard>
+        <div data-analytics-export-section="waste-diversion-trend">
+          <ProCard bordered>{trendData.length > 0 ? <Line {...trendConfig} /> : <Empty />}</ProCard>
+        </div>
 
-        <ProCard title="Top Performing PTJs" bordered>
-          <ProTable<RankedDiversionItem>
-            rowKey="rank"
-            search={false}
-            options={false}
-            pagination={false}
-            columns={topPtjColumns}
-            dataSource={data.topPerformingPtjs}
-            toolBarRender={false}
+        <div data-analytics-export-section="waste-diversion-ptj">
+          <ProCard title="Top Performing PTJs" bordered>
+            <ProTable<RankedDiversionItem>
+              rowKey="rank"
+              search={false}
+              options={false}
+              pagination={false}
+              columns={topPtjColumns}
+              dataSource={data.topPerformingPtjs}
+              toolBarRender={false}
+            />
+          </ProCard>
+        </div>
+
+        <div data-analytics-export-section="waste-diversion-programmes">
+          <ProCard title="Top Performing Programmes" bordered>
+            <ProTable<RankedProgrammeDiversionItem>
+              rowKey={(record) =>
+                `${record.rank}-${record.programmeName}-${record.programmeDate ?? 'na'}`
+              }
+              search={false}
+              options={false}
+              pagination={false}
+              columns={topProgrammeColumns}
+              dataSource={data.topPerformingProgrammes}
+              toolBarRender={false}
+            />
+          </ProCard>
+        </div>
+
+        <div data-analytics-export-section="waste-diversion-composition">
+          <WasteCompositionGrid
+            recycledWasteTypeComposition={data.recycledWasteTypeComposition}
+            compostingWasteTypeComposition={data.compostingWasteTypeComposition}
+            energyRecoveryWasteTypeComposition={data.energyRecoveryWasteTypeComposition}
           />
-        </ProCard>
-
-        <ProCard title="Top Performing Programmes" bordered>
-          <ProTable<RankedProgrammeDiversionItem>
-            rowKey={(record) =>
-              `${record.rank}-${record.programmeName}-${record.programmeDate ?? 'na'}`
-            }
-            search={false}
-            options={false}
-            pagination={false}
-            columns={topProgrammeColumns}
-            dataSource={data.topPerformingProgrammes}
-            toolBarRender={false}
-          />
-        </ProCard>
-
-        <WasteCompositionGrid
-          recycledWasteTypeComposition={data.recycledWasteTypeComposition}
-          compostingWasteTypeComposition={data.compostingWasteTypeComposition}
-          energyRecoveryWasteTypeComposition={data.energyRecoveryWasteTypeComposition}
-        />
+        </div>
       </Space>
     </ProCard>
   );

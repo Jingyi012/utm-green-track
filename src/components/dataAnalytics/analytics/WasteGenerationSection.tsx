@@ -73,7 +73,7 @@ export function WasteGenerationSection({ data }: WasteGenerationSectionProps) {
     label: {
       text: (datum: { disposalMethod: string; percentage: number }) =>
         `${datum.disposalMethod} (${datum.percentage.toFixed(2)}%)`,
-      position: 'outside',
+      position: 'spider',
     },
     annotations: [
       {
@@ -139,26 +139,28 @@ export function WasteGenerationSection({ data }: WasteGenerationSectionProps) {
           style={{ width: '100%' }}
           styles={{ item: { width: '100%' } }}
         >
-          <MetricCardGrid items={metrics} />
+          <div data-analytics-export-section="waste-generation-metrics">
+            <MetricCardGrid items={metrics} />
+          </div>
 
-          <ProCard bordered>
-            <WasteGenerationTrendChart
-              data={data.wasteGenerationTrend}
-              title="Waste Generation Trend (By Month)"
-            />
-          </ProCard>
+          <div data-analytics-export-section="waste-generation-trend">
+            <ProCard bordered>
+              <WasteGenerationTrendChart
+                data={data.wasteGenerationTrend}
+                title="Waste Generation Trend (By Month)"
+              />
+            </ProCard>
+          </div>
 
-          <ProCard bordered>
-            <Row gutter={[16, 16]}>
-              <Col xs={24} lg={16}>
-                {disposalMethodBreakdownData.length > 0 ? (
-                  <Pie {...disposalMethodBreakdownConfig} />
-                ) : (
-                  <Empty />
-                )}
-              </Col>
-            </Row>
-          </ProCard>
+          <div data-analytics-export-section="waste-generation-breakdown">
+            <ProCard bordered>
+              {disposalMethodBreakdownData.length > 0 ? (
+                <Pie {...disposalMethodBreakdownConfig} />
+              ) : (
+                <Empty />
+              )}
+            </ProCard>
+          </div>
         </Space>
       </ProCard>
 
