@@ -1,6 +1,9 @@
 import { Col, Row } from 'antd';
 import { useMemo, useState } from 'react';
-import { WasteBreakdownItem, WasteBreakdownModal } from '@/components/analyticsShared/WasteBreakdownModal';
+import {
+  WasteBreakdownItem,
+  WasteBreakdownModal,
+} from '@/components/analyticsShared/WasteBreakdownModal';
 import InfoCard from './InfoCard';
 
 interface InfoCardGridProps {
@@ -13,7 +16,13 @@ interface InfoCardGridProps {
   wasteTypeBreakdownByDisposalMethod: WasteBreakdownItem[];
 }
 
-type BreakdownType = 'generated' | 'diverted' | 'landfill' | 'diversionRate' | 'recyclingRate' | null;
+type BreakdownType =
+  | 'generated'
+  | 'diverted'
+  | 'landfill'
+  | 'diversionRate'
+  | 'recyclingRate'
+  | null;
 
 export default function InfoCardGrid({
   totalWasteGenerated,
@@ -51,7 +60,9 @@ export default function InfoCardGrid({
       case 'landfill':
         return {
           title: 'Breakdown: Total Waste to Landfill',
-          items: wasteTypeBreakdownByDisposalMethod.filter((x) => x.disposalMethod === 'Landfilling'),
+          items: wasteTypeBreakdownByDisposalMethod.filter(
+            (x) => x.disposalMethod === 'Landfilling',
+          ),
           isRate: false,
         };
 
@@ -88,7 +99,14 @@ export default function InfoCardGrid({
 
   const cardData = [
     {
-      icon: <img src="/icons/totalWasteGenerated.png" alt="" width={50} height={50} />,
+      icon: (
+        <img
+          src="/icons/totalWasteGenerated_icon.png"
+          alt="Total waste generated icon"
+          width={50}
+          height={50}
+        />
+      ),
       itemLabel: 'Total Waste Generated',
       value: format(totalWasteGenerated),
       unit: 'Tonnes',
@@ -96,7 +114,14 @@ export default function InfoCardGrid({
       onShowMore: () => setActiveBreakdown('generated'),
     },
     {
-      icon: <img src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
+      icon: (
+        <img
+          src="/icons/totalWasteDiverted_icon.png"
+          alt="Total waste diverted icon"
+          width={50}
+          height={50}
+        />
+      ),
       itemLabel: 'Total Waste Diverted',
       value: format(totalWasteDiverted),
       unit: 'Tonnes',
@@ -104,7 +129,14 @@ export default function InfoCardGrid({
       onShowMore: () => setActiveBreakdown('diverted'),
     },
     {
-      icon: <img src="/icons/totalWasteToLandfill.png" alt="" width={50} height={50} />,
+      icon: (
+        <img
+          src="/icons/totalWasteToLandfill.png"
+          alt="Total waste to landfill icon"
+          width={50}
+          height={50}
+        />
+      ),
       itemLabel: 'Total Waste to Landfill',
       value: format(totalWasteToLandfill),
       unit: 'Tonnes',
@@ -112,7 +144,14 @@ export default function InfoCardGrid({
       onShowMore: () => setActiveBreakdown('landfill'),
     },
     {
-      icon: <img src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
+      icon: (
+        <img
+          src="/icons/wasteDiversionRate_icon.png"
+          alt="Waste diversion rate icon"
+          width={30}
+          height={50}
+        />
+      ),
       itemLabel: 'Waste Diversion Rate',
       value: format(wasteDiversionRate),
       unit: '%',
@@ -120,7 +159,14 @@ export default function InfoCardGrid({
       onShowMore: () => setActiveBreakdown('diversionRate'),
     },
     {
-      icon: <img src="/icons/totalWasteReduction.png" alt="" width={50} height={50} />,
+      icon: (
+        <img
+          src="/icons/wasteRecyclingRate_icon.png"
+          alt="Waste recycling rate icon"
+          width={30}
+          height={50}
+        />
+      ),
       itemLabel: 'Waste Recycling Rate',
       value: format(wasteRecyclingRate),
       unit: '%',
