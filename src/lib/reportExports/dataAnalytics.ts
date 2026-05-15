@@ -87,7 +87,11 @@ export async function exportDataAnalyticsPdf({
   currentY += 5;
   doc.text(`${analysisTab === 'yearly' ? 'Year' : 'Year Range'}: ${periodLabel}`, margin, currentY);
   currentY += 5;
-  doc.text(`View: ${analysisTab === 'yearly' ? 'Yearly Analysis' : 'Lifetime Analysis'}`, margin, currentY);
+  doc.text(
+    `View: ${analysisTab === 'yearly' ? 'Yearly Analysis' : 'Lifetime Analysis'}`,
+    margin,
+    currentY,
+  );
   currentY += 8;
 
   for (let index = 0; index < sections.length; index += 1) {
@@ -114,8 +118,30 @@ export async function exportDataAnalyticsPdf({
       lastSectionLabel = sectionLabel;
     }
 
-    doc.addImage(dataUrl, 'PNG', margin, currentY + sectionTitleHeight, contentWidth, renderedHeight);
+    doc.addImage(
+      dataUrl,
+      'PNG',
+      margin,
+      currentY + sectionTitleHeight,
+      contentWidth,
+      renderedHeight,
+    );
     currentY += sectionTitleHeight + renderedHeight + 8;
+  }
+
+  // Add footer to all pages
+  const footerText = 'This is a computer-generated report verified by the UTM GreenTrack System';
+  const totalPages = (doc as any).internal.pages.length - 1;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.text(footerText, margin, pageHeight - 10);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 10, {
+      align: 'right',
+    } as any);
   }
 
   const safeCampus = campusName.replace(/\s+/g, '_');

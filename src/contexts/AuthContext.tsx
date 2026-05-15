@@ -35,7 +35,6 @@ const parsePermissionsFromToken = (token: string): string[] => {
     }
     return [];
   } catch (error) {
-    console.error('Error parsing JWT token:', error);
     return [];
   }
 };
@@ -54,6 +53,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setPermissions(perms);
     }
     setIsReady(true);
+  }, []);
+
+  // Listen for auth token updates (e.g., from route guard)
+  useEffect(() => {
+    const handleTokenUpdate = () => {
+      const parsedUser = getStoredUser();
+      if (parsedUser) {
+        setUser(parsedUser);
+        const perms = parsePermissionsFromToken(parsedUser.jwToken);
+        setPermissions(perms);
+      }
+    };
+
+    window.addEventListener('auth:token-updated', handleTokenUpdate);
+    return () => {
+      window.removeEventListener('auth:token-updated', handleTokenUpdate);
+    };
   }, []);
 
   const login = (data: AuthUser) => {

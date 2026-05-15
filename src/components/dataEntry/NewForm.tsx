@@ -212,7 +212,6 @@ export default function WasteEntryForm() {
           setSelectedRowKeys([]);
           resetWholeForm();
         } catch (error) {
-          console.error('Batch submission failed:', error);
           message.error('Unexpected error occurred during submission');
         } finally {
           hide();
@@ -254,7 +253,6 @@ export default function WasteEntryForm() {
 
           message.success('Selected waste records submitted successfully');
         } catch (error) {
-          console.error('Selected submission failed:', error);
           message.error('Unexpected error occurred during submission');
         } finally {
           hide();
@@ -264,7 +262,6 @@ export default function WasteEntryForm() {
   };
 
   const submitRecords = async (records: WasteRecordDraftInput[]) => {
-    console.log(records);
     const wasteRecords: WasteRecordInput[] = records.map((record) => ({
       ...record,
       date: record.date,
