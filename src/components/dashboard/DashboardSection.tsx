@@ -72,7 +72,7 @@ const DashboardSection: React.FC = () => {
 
   useEffect(() => {
     if (campuses && campuses.length > 0) {
-      setSelectedCampus(campuses[0].id);
+      setSelectedCampus((currentCampus) => currentCampus ?? campuses[0].id);
     }
   }, [campuses]);
 
